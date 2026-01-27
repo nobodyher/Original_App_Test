@@ -71,6 +71,8 @@ import { clamp, normalizeUser, getRecipeCost, exportToCSV } from "./utils/helper
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
 import * as salonService from "./services/salonService";
+import * as inventoryService from "./services/inventoryService";
+import * as expenseService from "./services/expenseService";
 
 // ✅ NUEVO: Catálogo de extras con precios por uña
 // ✅ NUEVO: Catálogo de extras con precios por uña
@@ -1494,7 +1496,7 @@ const SalonApp = () => {
 
     let totalReplenishmentCost = filteredServices.reduce((sum, s) => {
       // ✅ NUEVO: Usar el valor guardado de reposición, o calcular basado en categoría para compatibilidad
-      return sum + (s.reposicion || salonService.calculateTotalReplenishmentCost(s.services || [], materialRecipes));
+      return sum + (s.reposicion || inventoryService.calculateTotalReplenishmentCost(s.services || [], materialRecipes));
     }, 0);
     // Restar gastos de reposición
     const reposicionExpenses = filteredExpenses.reduce((sum, e) => {
@@ -2599,6 +2601,14 @@ const SalonApp = () => {
       minStockAlert: "",
     });
 
+    const [newChemicalProduct, setNewChemicalProduct] = useState({
+      name: "",
+      quantity: "",
+      unit: "ml",
+      purchasePrice: "",
+      yield: "",
+    });
+
     const [editingExtraId, setEditingExtraId] = useState<string | null>(null);
     const [newExtraName, setNewExtraName] = useState("");
     const [newExtraPrice, setNewExtraPrice] = useState("");
@@ -2769,248 +2779,45 @@ const SalonApp = () => {
       }
     };
 
-    // ✅ TEMPORAL: Función para inicializar datos de materiales
-    const initializeMaterialsData = async () => {
-      if (
-        !window.confirm(
-          "¿Inicializar datos de materiales? Esto agregará 8 productos químicos y 6 recetas.",
-        )
-      )
-        return;
 
+
+    const addChemicalProduct = async () => {
       try {
-        // Productos químicos
-        const chemicalProductsData = [
-          {
-            name: "Primer Extra Bond",
-            quantity: 30,
-            unit: "ml",
-            purchasePrice: 11.5,
-            yield: 100,
-            costPerService: 0.115,
-            stock: 10,
-            minStock: 2,
-            active: true,
-          },
-          {
-            name: "Top Coat",
-            quantity: 15,
-            unit: "ml",
-            purchasePrice: 2.25,
-            yield: 25,
-            costPerService: 0.09,
-            stock: 15,
-            minStock: 3,
-            active: true,
-          },
-          {
-            name: "Base Coat",
-            quantity: 12,
-            unit: "ml",
-            purchasePrice: 2.5,
-            yield: 40,
-            costPerService: 0.0625,
-            stock: 12,
-            minStock: 3,
-            active: true,
-          },
-          {
-            name: "Color Gel (Tono base)",
-            quantity: 12,
-            unit: "ml",
-            purchasePrice: 2.5,
-            yield: 40,
-            costPerService: 0.0625,
-            stock: 20,
-            minStock: 5,
-            active: true,
-          },
-          {
-            name: "Gel Blanco (Francés)",
-            quantity: 12,
-            unit: "ml",
-            purchasePrice: 2.0,
-            yield: 40,
-            costPerService: 0.05,
-            stock: 8,
-            minStock: 2,
-            active: true,
-          },
-          {
-            name: "Base Rubber",
-            quantity: 12,
-            unit: "ml",
-            purchasePrice: 2.75,
-            yield: 15,
-            costPerService: 0.1833,
-            stock: 6,
-            minStock: 2,
-            active: true,
-          },
-          {
-            name: "Crema Humectante",
-            quantity: 1000,
-            unit: "kg",
-            purchasePrice: 10.25,
-            yield: 500,
-            costPerService: 0.0205,
-            stock: 3,
-            minStock: 1,
-            active: true,
-          },
-          {
-            name: "Alcohol",
-            quantity: 1,
-            unit: "L",
-            purchasePrice: 3.75,
-            yield: 200,
-            costPerService: 0.0188,
-            stock: 5,
-            minStock: 2,
-            active: true,
-          },
-        ];
+        await inventoryService.addChemicalProduct({
+          name: newChemicalProduct.name,
+          quantity: parseFloat(newChemicalProduct.quantity),
+          unit: newChemicalProduct.unit as "ml" | "L" | "g" | "kg" | "unid",
+          purchasePrice: parseFloat(newChemicalProduct.purchasePrice),
+          yield: parseFloat(newChemicalProduct.yield),
+          costPerService: 0, 
+          stock: 0, 
+          minStock: 0,
+        });
 
-        for (const product of chemicalProductsData) {
-          await addDoc(collection(db, "chemical_products"), {
-            ...product,
-            createdAt: serverTimestamp(),
-          });
-        }
-
-        // Recetas de materiales
-        const materialRecipesData = [
-          {
-            serviceId: "manicura_gel_1_color",
-            serviceName: "Manicura en gel 1 solo color",
-            chemicalIds: [
-              "alcohol",
-              "extra_bond",
-              "base_coat",
-              "color_gel",
-              "top_coat",
-            ],
-            chemicalsCost: 0.35,
-            disposablesCost: 0.33,
-            totalCost: 0.68,
-            category: "manicura",
-            active: true,
-          },
-          {
-            serviceId: "manicura_diseño",
-            serviceName: "Manicura con diseño",
-            chemicalIds: ["base_gel", "diseño_insumos"],
-            chemicalsCost: 1.1,
-            disposablesCost: 0.33,
-            totalCost: 1.43,
-            category: "manicura",
-            active: true,
-          },
-          {
-            serviceId: "rubber_cortas_1_tono",
-            serviceName: "Rubber uñas cortas 1 tono",
-            chemicalIds: [
-              "alcohol",
-              "extra_bond",
-              "base_rubber",
-              "color_gel",
-              "top_coat",
-            ],
-            chemicalsCost: 0.47,
-            disposablesCost: 0.33,
-            totalCost: 0.8,
-            category: "manicura",
-            active: true,
-          },
-          {
-            serviceId: "rubber_largas_1_tono",
-            serviceName: "Rubber uñas largas 1 tono",
-            chemicalIds: [
-              "alcohol",
-              "extra_bond",
-              "base_rubber",
-              "color_gel",
-              "top_coat",
-            ],
-            chemicalsCost: 0.47,
-            disposablesCost: 0.33,
-            totalCost: 0.8,
-            category: "manicura",
-            active: true,
-          },
-          {
-            serviceId: "pedicure_1_tono",
-            serviceName: "Pedicure 1 tono",
-            chemicalIds: [
-              "alcohol",
-              "extra_bond",
-              "base_coat",
-              "color_gel",
-              "top_coat",
-              "crema",
-            ],
-            chemicalsCost: 0.37,
-            disposablesCost: 0.5,
-            totalCost: 0.87,
-            category: "pedicura",
-            active: true,
-          },
-          {
-            serviceId: "pedicure_francesa",
-            serviceName: "Pedicure francesa",
-            chemicalIds: [
-              "alcohol",
-              "extra_bond",
-              "base_coat",
-              "color_gel",
-              "gel_blanco",
-              "top_coat",
-              "crema",
-            ],
-            chemicalsCost: 0.42,
-            disposablesCost: 0.5,
-            totalCost: 0.92,
-            category: "pedicura",
-            active: true,
-          },
-        ];
-
-        for (const recipe of materialRecipesData) {
-          await addDoc(collection(db, "material_recipes"), {
-            ...recipe,
-            createdAt: serverTimestamp(),
-          });
-        }
-
-        showNotification(
-          "✅ Datos inicializados correctamente! (8 productos + 6 recetas)",
-        );
-      } catch (error) {
-        console.error("Error inicializando datos:", error);
-        showNotification("Error al inicializar datos", "error");
+        setNewChemicalProduct({
+          name: "",
+          quantity: "",
+          unit: "ml",
+          purchasePrice: "",
+          yield: "",
+        });
+        showNotification("Producto guardado");
+      } catch (error: any) {
+        console.error("Error agregando producto:", error);
+        showNotification(error.message || "Error al agregar", "error");
       }
     };
 
-    // Funciones para gestionar productos químicos
     const updateChemicalProduct = async (
       id: string,
       updates: Partial<ChemicalProduct>,
     ) => {
       try {
-        // Si se actualizan precio o rendimiento, recalcular costPerService
-        if (
-          updates.purchasePrice !== undefined ||
-          updates.yield !== undefined
-        ) {
-          const product = chemicalProducts.find((p) => p.id === id);
-          if (product) {
-            const newPrice = updates.purchasePrice ?? product.purchasePrice;
-            const newYield = updates.yield ?? product.yield;
-            updates.costPerService = newPrice / newYield;
-          }
-        }
-
-        await updateDoc(doc(db, "chemical_products", id), updates);
+        await inventoryService.updateChemicalProduct(
+          id,
+          updates,
+          chemicalProducts.find((p) => p.id === id)
+        );
         showNotification("Producto actualizado");
       } catch (error) {
         console.error("Error actualizando producto:", error);
@@ -3021,7 +2828,7 @@ const SalonApp = () => {
     const deleteChemicalProduct = async (id: string) => {
       if (!window.confirm("¿Eliminar este producto químico?")) return;
       try {
-        await deleteDoc(doc(db, "chemical_products", id));
+        await inventoryService.deleteChemicalProduct(id);
         showNotification("Producto eliminado");
       } catch (error) {
         console.error("Error eliminando producto:", error);
@@ -3034,7 +2841,7 @@ const SalonApp = () => {
       updated: Partial<CatalogService>,
     ) => {
       try {
-        await updateDoc(doc(db, "catalog_services", id), updated);
+        await inventoryService.updateCatalogService(id, updated);
         setEditingCatalogService(null);
         showNotification("Servicio actualizado");
       } catch (error) {
@@ -3045,7 +2852,7 @@ const SalonApp = () => {
 
     const toggleCatalogService = async (id: string, active: boolean) => {
       try {
-        await updateDoc(doc(db, "catalog_services", id), { active: !active });
+        await inventoryService.updateCatalogService(id, { active: !active });
         showNotification(active ? "Servicio desactivado" : "Servicio activado");
       } catch (error) {
         console.error("Error actualizando servicio:", error);
@@ -3056,7 +2863,7 @@ const SalonApp = () => {
     const deleteCatalogService = async (id: string) => {
       if (!window.confirm("¿Eliminar este servicio del catálogo?")) return;
       try {
-        await deleteDoc(doc(db, "catalog_services", id));
+        await inventoryService.deleteCatalogService(id);
         showNotification("Servicio eliminado");
       } catch (error) {
         console.error("Error eliminando servicio:", error);
@@ -3066,39 +2873,20 @@ const SalonApp = () => {
 
     // Funciones para gestionar extras
     const addExtra = async () => {
-      if (!newExtraName || !newExtraPrice) {
-        showNotification("Completa todos los campos", "error");
-        return;
-      }
-      const price = parseFloat(newExtraPrice);
-      if (!Number.isFinite(price) || price < 0) {
-        showNotification("Precio inválido", "error");
-        return;
-      }
       try {
-        await addDoc(collection(db, "catalog_extras"), {
-          name: newExtraName.trim(),
-          price,
-          priceSuggested: price,
-          active: true,
-          createdAt: serverTimestamp(),
-        });
+        await inventoryService.addExtra(newExtraName, parseFloat(newExtraPrice));
         setNewExtraName("");
         setNewExtraPrice("");
         showNotification("Extra agregado");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error agregando extra:", error);
-        showNotification("Error al agregar", "error");
+        showNotification(error.message || "Error al agregar", "error");
       }
     };
 
     const updateExtra = async (id: string, name: string, price: number) => {
       try {
-        await updateDoc(doc(db, "catalog_extras", id), {
-          name,
-          price,
-          priceSuggested: price,
-        });
+        await inventoryService.updateExtra(id, { name, price, priceSuggested: price });
         setEditingExtraId(null);
         showNotification("Extra actualizado");
       } catch (error) {
@@ -3109,7 +2897,7 @@ const SalonApp = () => {
 
     const toggleExtra = async (id: string, active: boolean) => {
       try {
-        await updateDoc(doc(db, "catalog_extras", id), { active: !active });
+        await inventoryService.updateExtra(id, { active: !active });
         showNotification(active ? "Extra desactivado" : "Extra activado");
       } catch (error) {
         console.error("Error actualizando extra:", error);
@@ -3120,7 +2908,7 @@ const SalonApp = () => {
     const deleteExtra = async (id: string) => {
       if (!window.confirm("¿Eliminar este extra?")) return;
       try {
-        await deleteDoc(doc(db, "catalog_extras", id));
+        await inventoryService.deleteExtra(id);
         showNotification("Extra eliminado");
       } catch (error) {
         console.error("Error eliminando extra:", error);
@@ -3129,39 +2917,13 @@ const SalonApp = () => {
     };
 
     const addConsumable = async () => {
-      if (
-        !newConsumable.name ||
-        !newConsumable.unit ||
-        !newConsumable.unitCost ||
-        !newConsumable.stockQty ||
-        !newConsumable.minStockAlert
-      ) {
-        showNotification("Completa todos los campos", "error");
-        return;
-      }
-
-      const unitCost = parseFloat(newConsumable.unitCost);
-      const stockQty = parseFloat(newConsumable.stockQty);
-      const minStockAlert = parseFloat(newConsumable.minStockAlert);
-
-      if (
-        !Number.isFinite(unitCost) ||
-        !Number.isFinite(stockQty) ||
-        !Number.isFinite(minStockAlert)
-      ) {
-        showNotification("Valores numéricos inválidos", "error");
-        return;
-      }
-
       try {
-        await addDoc(collection(db, "consumables"), {
-          name: newConsumable.name.trim(),
-          unit: newConsumable.unit.trim(),
-          unitCost,
-          stockQty,
-          minStockAlert,
-          active: true,
-          createdAt: serverTimestamp(),
+        await inventoryService.addConsumable({
+          name: newConsumable.name,
+          unit: newConsumable.unit,
+          unitCost: parseFloat(newConsumable.unitCost),
+          stockQty: parseFloat(newConsumable.stockQty),
+          minStockAlert: parseFloat(newConsumable.minStockAlert),
         });
 
         setNewConsumable({
@@ -3172,9 +2934,9 @@ const SalonApp = () => {
           minStockAlert: "",
         });
         showNotification("Consumible agregado");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error agregando consumible:", error);
-        showNotification("Error al agregar", "error");
+        showNotification(error.message || "Error al agregar", "error");
       }
     };
 
@@ -3183,7 +2945,7 @@ const SalonApp = () => {
       updated: Partial<Consumable>,
     ) => {
       try {
-        await updateDoc(doc(db, "consumables", id), updated);
+        await inventoryService.updateConsumable(id, updated);
         setEditingConsumable(null);
         showNotification("Consumible actualizado");
       } catch (error) {
@@ -3195,7 +2957,7 @@ const SalonApp = () => {
     const deleteConsumable = async (id: string) => {
       if (!window.confirm("¿Eliminar este consumible?")) return;
       try {
-        await deleteDoc(doc(db, "consumables", id));
+        await inventoryService.deleteConsumable(id);
         showNotification("Consumible eliminado");
       } catch (error) {
         console.error("Error eliminando consumible:", error);
@@ -4121,7 +3883,7 @@ const SalonApp = () => {
                   químicos y 6 recetas de servicios a Firebase.
                 </p>
                 <button
-                  onClick={initializeMaterialsData}
+                  onClick={inventoryService.initializeMaterialsData}
                   className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-3 rounded-lg hover:shadow-lg transition font-bold text-lg"
                 >
                   ✨ Inicializar Datos de Materiales
@@ -4134,6 +3896,78 @@ const SalonApp = () => {
               <h4 className="text-lg font-semibold text-gray-700 mb-4">
                 Productos Químicos
               </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                <input
+                  type="text"
+                  placeholder="Nombre producto (ej: Alcohol)"
+                  className="border p-2 rounded"
+                  value={newChemicalProduct.name}
+                  onChange={(e) =>
+                    setNewChemicalProduct({ ...newChemicalProduct, name: e.target.value })
+                  }
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="Cant. compra"
+                    className="border p-2 rounded w-full"
+                    value={newChemicalProduct.quantity}
+                    onChange={(e) =>
+                      setNewChemicalProduct({
+                        ...newChemicalProduct,
+                        quantity: e.target.value,
+                      })
+                    }
+                  />
+                  <select
+                    className="border p-2 rounded bg-white"
+                    value={newChemicalProduct.unit}
+                    onChange={(e) =>
+                      setNewChemicalProduct({
+                        ...newChemicalProduct,
+                        unit: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="ml">ml</option>
+                    <option value="L">L</option>
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="unid">unid</option>
+                  </select>
+                </div>
+                <input
+                  type="number"
+                  placeholder="Precio Compra ($)"
+                  className="border p-2 rounded"
+                  value={newChemicalProduct.purchasePrice}
+                  onChange={(e) =>
+                    setNewChemicalProduct({
+                      ...newChemicalProduct,
+                      purchasePrice: e.target.value,
+                    })
+                  }
+                />
+                <input
+                  type="number"
+                  placeholder="Rendimiento est. (servicios)"
+                  className="border p-2 rounded"
+                  value={newChemicalProduct.yield}
+                  onChange={(e) =>
+                    setNewChemicalProduct({
+                      ...newChemicalProduct,
+                      yield: e.target.value,
+                    })
+                  }
+                />
+                <button
+                  onClick={addChemicalProduct}
+                  className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 font-bold"
+                >
+                  Guardar
+                </button>
+              </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">

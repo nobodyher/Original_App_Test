@@ -17,6 +17,7 @@ import type {
   Service,
   MaterialRecipe,
 } from "../types";
+import { deductConsumables, calculateTotalReplenishmentCost } from "./inventoryService";
 
 export interface NewServiceState {
   date: string;
@@ -27,84 +28,9 @@ export interface NewServiceState {
   category?: "manicura" | "pedicura";
 }
 
-// ====== Helper Functions (Exported but logically part of the service) ======
+// ====== Helper Functions (Imported from inventoryService) ======
+// deductConsumables and calculateTotalReplenishmentCost are now imported
 
-export const deductConsumables = async (serviceCategory: string): Promise<void> => {
-  try {
-    // Mapeo de consumibles a descontar por categoría
-    const consumablesToDeduct: { [key: string]: number } = {};
-
-    if (serviceCategory === "manicura") {
-      // Manicura: costo total $0.33
-      consumablesToDeduct["Guantes (par)"] = 1;
-      consumablesToDeduct["Mascarilla"] = 1;
-      consumablesToDeduct["Palillo naranja"] = 1;
-      consumablesToDeduct["Bastoncillos"] = 1;
-      consumablesToDeduct["Wipes"] = 1;
-      consumablesToDeduct["Toalla desechable"] = 1;
-      consumablesToDeduct["Gorro"] = 1;
-      consumablesToDeduct["Campo quirúrgico"] = 1;
-    } else if (serviceCategory === "pedicura") {
-      // Pedicura: costo total ~$0.50
-      consumablesToDeduct["Campo quirúrgico"] = 1;
-      consumablesToDeduct["Algodón"] = 5;
-      consumablesToDeduct["Guantes (par)"] = 1;
-      consumablesToDeduct["Mascarilla"] = 1;
-      consumablesToDeduct["Palillo naranja"] = 1;
-      consumablesToDeduct["Wipes"] = 1;
-      consumablesToDeduct["Gorro"] = 1;
-      consumablesToDeduct["Bastoncillos"] = 1;
-    }
-
-    // Actualizar cada consumible
-    for (const [consumableName, quantity] of Object.entries(consumablesToDeduct)) {
-      const consumableRef = doc(db, "consumables", consumableName);
-      const consumableSnap = await getDoc(consumableRef);
-
-      if (consumableSnap.exists()) {
-        const currentStock = consumableSnap.data().quantity || 0;
-        await updateDoc(consumableRef, {
-          quantity: Math.max(0, currentStock - quantity),
-          lastDeducted: new Date().toISOString(),
-        });
-      }
-    }
-  } catch (error) {
-    console.log("Error descargando consumibles (no critico):", error);
-  }
-};
-
-export const calculateTotalReplenishmentCost = (
-  services: ServiceItem[],
-  materialRecipes: MaterialRecipe[],
-): number => {
-  let totalCost = 0;
-
-  for (const service of services) {
-    // Buscar la receta del servicio en materialRecipes
-    const recipe = materialRecipes.find(
-      (r) => r.serviceName.toLowerCase() === service.serviceName.toLowerCase(),
-    );
-
-    if (recipe) {
-      // Si encontramos la receta, usar su costo total
-      totalCost += recipe.totalCost;
-    } else {
-      // Si no hay receta, usar el costo de desechables por defecto según categoría
-      const serviceName = service.serviceName.toLowerCase();
-      if (
-        serviceName.includes("pedicure") ||
-        serviceName.includes("pedicura")
-      ) {
-        totalCost += 0.5; // Costo de desechables para pedicura
-      } else {
-        totalCost += 0.33; // Costo de desechables para manicura
-      }
-    }
-  }
-
-  return totalCost;
-};
 
 // ====== Main Service Functions ======
 

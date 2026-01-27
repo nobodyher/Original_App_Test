@@ -114,7 +114,7 @@ export type ChemicalProduct = {
   id: string;
   name: string;
   quantity: number;
-  unit: "ml" | "kg" | "L";
+  unit: "ml" | "kg" | "L" | "g" | "unid";
   purchasePrice: number;
   yield: number;
   costPerService: number;
