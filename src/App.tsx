@@ -1,21 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  Users,
   LogOut,
   Plus,
   Trash2,
-  Eye,
-  EyeOff,
   Download,
   Edit2,
   Save,
   X,
   Search,
-  Lock,
-  Crown,
-  User,
   DollarSign,
-  TrendingUp,
   Percent,
   Wallet,
   CreditCard,
@@ -24,28 +17,12 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Scissors,
   Check,
 } from "lucide-react";
 
-import {
-  runTransaction,
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-  addDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
-  deleteDoc,
-  getDoc,
-  getDocs,
-  where,
-} from "firebase/firestore";
 
 
-import { db } from "./firebase";
+
 
 // ====== TIPOS ======
 import type {
@@ -53,20 +30,16 @@ import type {
   PaymentMethod,
   ServiceItem,
   ExtraItem,
-  Service,
-  Expense,
   Toast,
   OwnerFilters,
   Filters,
+  Service,
   CatalogService,
   Consumable,
-  ServiceRecipe,
-  CatalogExtra,
   ChemicalProduct,
-  MaterialRecipe,
 } from "./types";
 
-import { EXTRAS_CATALOG } from "./constants/catalog";
+// EXTRAS_CATALOG imported from ./constants/catalog
 import { clamp, getRecipeCost, exportToCSV } from "./utils/helpers";
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
@@ -75,6 +48,8 @@ import * as inventoryService from "./services/inventoryService";
 import * as expenseService from "./services/expenseService";
 
 import { useAuth } from "./hooks/useAuth"; 
+import { useSalonData } from "./hooks/useSalonData"; 
+import LoginScreen from "./features/auth/LoginScreen"; 
 
 // ✅ NUEVO: Catálogo de extras con precios por uña
 // ✅ NUEVO: Catálogo de extras con precios por uña
@@ -96,9 +71,18 @@ if (typeof document !== "undefined") {
 const SalonApp = () => {
   // ====== Estado ======
   const { currentUser, setCurrentUser, users, loading, initialized } = useAuth();
-  const [services, setServices] = useState<Service[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [showPin, setShowPin] = useState<Record<string, boolean>>({});
+  const {
+    services,
+    expenses,
+    catalogServices,
+    consumables,
+    serviceRecipes,
+    catalogExtras,
+    chemicalProducts,
+    materialRecipes,
+  } = useSalonData(initialized);
+
+
   const [notification, setNotification] = useState<Toast | null>(null);
   const [editingService, setEditingService] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({
@@ -106,16 +90,6 @@ const SalonApp = () => {
     dateFrom: "",
     dateTo: "",
   });
-  // const [loading, setLoading] = useState(true); // Moved to useAuth
-  // const [initialized, setInitialized] = useState(false); // Moved to useAuth
-  const [catalogServices, setCatalogServices] = useState<CatalogService[]>([]);
-  const [consumables, setConsumables] = useState<Consumable[]>([]);
-  const [serviceRecipes, setServiceRecipes] = useState<ServiceRecipe[]>([]);
-  const [catalogExtras, setCatalogExtras] = useState<CatalogExtra[]>([]);
-  const [chemicalProducts, setChemicalProducts] = useState<ChemicalProduct[]>(
-    [],
-  );
-  const [materialRecipes, setMaterialRecipes] = useState<MaterialRecipe[]>([]);
   const [catalogTab, setCatalogTab] = useState<
     "personal" | "services" | "consumables" | "extras" | "materials"
   >("services");
@@ -182,311 +156,21 @@ const SalonApp = () => {
 
 
 
-  // ====== Inicializar catálogo (solo una vez) ======
-  const initializeCatalog = async () => {
-    try {
-      await runTransaction(db, async (tx) => {
-        const metaRef = doc(db, "meta", "catalog");
-        const metaSnap = await tx.get(metaRef);
-
-        if (metaSnap.exists() && metaSnap.data()?.seeded) return;
-
-        // Servicios base
-        const defaultServices = [
-          {
-            name: "Manicura en gel 1 solo color",
-            category: "manicura",
-            basePrice: 12,
-          },
-          { name: "Manicura con diseño", category: "manicura", basePrice: 15 },
-          {
-            name: "Uñas acrílicas (base)",
-            category: "manicura",
-            basePrice: 25,
-          },
-          { name: "Uñas poligel (base)", category: "manicura", basePrice: 25 },
-          { name: "Pedicure 1 tono", category: "pedicura", basePrice: 15 },
-          { name: "Pedicure francesa", category: "pedicura", basePrice: 18 },
-          { name: "Pedicura limpieza", category: "pedicura", basePrice: 10 },
-          { name: "Manicura limpieza", category: "manicura", basePrice: 7 },
-          {
-            name: "Rubber uñas cortas 1 tono",
-            category: "manicura",
-            basePrice: 20,
-          },
-          {
-            name: "Rubber uñas largas 1 tono",
-            category: "manicura",
-            basePrice: 25,
-          },
-          { name: "Gel builder 1 tono", category: "manicura", basePrice: 25 },
-          {
-            name: "Gel builder alargamiento",
-            category: "manicura",
-            basePrice: 30,
-          },
-          {
-            name: "Pedicure spa velo terapia 1 tono",
-            category: "pedicura",
-            basePrice: 30,
-          },
-          { name: "Jelly spa 1 tono", category: "pedicura", basePrice: 40 },
-        ];
-
-        defaultServices.forEach((s) => {
-          const newRef = doc(collection(db, "catalog_services"));
-          tx.set(newRef, { ...s, active: true, createdAt: serverTimestamp() });
-        });
-
-        // Consumibles actualizados
-        const defaultConsumables = [
-          {
-            name: "Algodón",
-            unit: "gramo",
-            unitCost: 0.02,
-            stockQty: 500,
-            minStockAlert: 150,
-          },
-          {
-            name: "Bastoncillos",
-            unit: "unidad",
-            unitCost: 0.01,
-            stockQty: 100,
-            minStockAlert: 10,
-          },
-          {
-            name: "Campo quirúrgico",
-            unit: "unidad",
-            unitCost: 0.06,
-            stockQty: 100,
-            minStockAlert: 10,
-          },
-          {
-            name: "Gorro",
-            unit: "unidad",
-            unitCost: 0.03,
-            stockQty: 100,
-            minStockAlert: 10,
-          },
-          {
-            name: "Guantes (par)",
-            unit: "par",
-            unitCost: 0.13,
-            stockQty: 50,
-            minStockAlert: 10,
-          },
-          {
-            name: "Mascarillas",
-            unit: "unidad",
-            unitCost: 0.02,
-            stockQty: 100,
-            minStockAlert: 10,
-          },
-          {
-            name: "Moldes esculpir",
-            unit: "unidad",
-            unitCost: 0.02,
-            stockQty: 300,
-            minStockAlert: 50,
-          },
-          {
-            name: "Palillo naranja",
-            unit: "unidad",
-            unitCost: 0.01,
-            stockQty: 100,
-            minStockAlert: 10,
-          },
-          {
-            name: "Papel film",
-            unit: "metro",
-            unitCost: 0.0247,
-            stockQty: 150,
-            minStockAlert: 30,
-          },
-          {
-            name: "Toalla desechable",
-            unit: "metro",
-            unitCost: 0.025,
-            stockQty: 50,
-            minStockAlert: 10,
-          },
-          {
-            name: "Wipes",
-            unit: "unidad",
-            unitCost: 0.01,
-            stockQty: 400,
-            minStockAlert: 50,
-          },
-        ];
-
-        defaultConsumables.forEach((c) => {
-          const newRef = doc(collection(db, "consumables"));
-          tx.set(newRef, { ...c, active: true, createdAt: serverTimestamp() });
-        });
-
-        tx.set(
-          metaRef,
-          { seeded: true, seededAt: serverTimestamp() },
-          { merge: true },
-        );
-      });
-
-      showNotification("Catálogo inicializado");
-    } catch (error) {
-      console.error("Error inicializando catálogo:", error);
-      showNotification("Error al inicializar catálogo", "error");
-    }
-  };
-
-
-
   useEffect(() => {
-    initializeCatalog();
+    // Inicializar catálogo usando el servicio
+    inventoryService.initializeCatalog()
+      .then((seeded) => {
+        if (seeded) showNotification("Catálogo inicializado");
+      })
+      .catch((error) => {
+        console.error("Error al inicializar catálogo", error);
+        showNotification("Error al inicializar catálogo", "error");
+      });
   }, []);
 
 
 
-  useEffect(() => {
-    if (!initialized) return;
 
-    const q = query(collection(db, "services"), orderBy("timestamp", "desc"));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const data = snap.docs.map(
-          (d) => ({ id: d.id, ...d.data() }) as Service,
-        );
-        setServices(data);
-      },
-      (error) => {
-        console.error("Error cargando servicios:", error);
-        showNotification("Error cargando servicios", "error");
-      },
-    );
-
-    return () => unsub();
-  }, [initialized]);
-
-  useEffect(() => {
-    if (!initialized) return;
-
-    const q = query(collection(db, "expenses"), orderBy("timestamp", "desc"));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const data = snap.docs.map(
-          (d) => ({ id: d.id, ...d.data() }) as Expense,
-        );
-        setExpenses(data);
-      },
-      (error) => {
-        console.error("Error cargando gastos:", error);
-        showNotification("Error cargando gastos", "error");
-      },
-    );
-
-    return () => unsub();
-  }, [initialized]);
-
-  // Cargar catálogo de servicios
-  useEffect(() => {
-    if (!initialized) return;
-    const q = query(collection(db, "catalog_services"), orderBy("name", "asc"));
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as CatalogService,
-      );
-      setCatalogServices(data);
-    });
-    return () => unsub();
-  }, [initialized]);
-
-  // Cargar consumibles
-  useEffect(() => {
-    if (!initialized) return;
-    const q = query(collection(db, "consumables"), orderBy("name", "asc"));
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Consumable,
-      );
-      setConsumables(data);
-    });
-    return () => unsub();
-  }, [initialized]);
-
-  // Cargar recetas
-  useEffect(() => {
-    if (!initialized) return;
-    const unsub = onSnapshot(collection(db, "service_recipes"), (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as ServiceRecipe,
-      );
-      setServiceRecipes(data);
-    });
-    return () => unsub();
-  }, [initialized]);
-
-  // Cargar extras
-  useEffect(() => {
-    if (!initialized) return;
-    const q = query(collection(db, "catalog_extras"), orderBy("name", "asc"));
-    const unsub = onSnapshot(q, async (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as CatalogExtra,
-      );
-      setCatalogExtras(data);
-
-      // Sincronizar precios automáticamente desde EXTRAS_CATALOG
-      for (const extra of data) {
-        const catalogExtra = EXTRAS_CATALOG.find((e) => e.id === extra.id);
-        const currentPrice = (extra as any).price || extra.priceSuggested || 0;
-
-        if (catalogExtra && (!currentPrice || currentPrice === 0)) {
-          try {
-            await updateDoc(doc(db, "catalog_extras", extra.id), {
-              price: catalogExtra.priceSuggested,
-              priceSuggested: catalogExtra.priceSuggested,
-            });
-            console.log(
-              `✅ Sincronizado: ${extra.name} - $${catalogExtra.priceSuggested}`,
-            );
-          } catch (error) {
-            console.error(`❌ Error sincronizando ${extra.name}:`, error);
-          }
-        }
-      }
-    });
-    return () => unsub();
-  }, [initialized]);
-
-  // Cargar productos químicos
-  useEffect(() => {
-    if (!initialized) return;
-    const q = query(
-      collection(db, "chemical_products"),
-      orderBy("name", "asc"),
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as ChemicalProduct,
-      );
-      setChemicalProducts(data);
-    });
-    return () => unsub();
-  }, [initialized]);
-
-  // Cargar recetas de materiales
-  useEffect(() => {
-    if (!initialized) return;
-    const q = query(collection(db, "material_recipes"));
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as MaterialRecipe,
-      );
-      setMaterialRecipes(data);
-    });
-    return () => unsub();
-  }, [initialized]);
 
   // ====== Notificaciones ======
   const showNotification = (
@@ -501,147 +185,7 @@ const SalonApp = () => {
 
 
 
-  // ====== Login ======
-  const LoginScreen = () => {
-    const [pins, setPins] = useState<Record<string, string>>({});
 
-    const handlePinChange = (userId: string, value: string) => {
-      const numericValue = value.replace(/\D/g, "").slice(0, 4);
-      setPins({ ...pins, [userId]: numericValue });
-    };
-
-    const handleLogin = (userId: string) => {
-      const user = users.find((u) => u.id === userId);
-      if (user && pins[userId] === user.pin) {
-        setCurrentUser(user);
-        setPins({});
-        showNotification(`¡Bienvenida ${user.name}!`);
-      } else {
-        showNotification("PIN incorrecto", "error");
-        setPins({ ...pins, [userId]: "" });
-      }
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent, userId: string) => {
-      if (e.key === "Enter" && (pins[userId] || "").length === 4)
-        handleLogin(userId);
-    };
-
-    const activeUsers = users.filter((u) => u.active);
-
-    if (loading) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-3xl shadow-2xl mb-6 animate-pulse">
-              <TrendingUp className="text-white" size={56} />
-            </div>
-            <p className="text-gray-600 text-lg font-medium">Cargando...</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
-        <NotificationToast notification={notification} />
-        <div className="w-full max-w-5xl">
-          <div className="text-center mb-12">
-            <div className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-3xl shadow-2xl mb-6">
-              <TrendingUp className="text-white" size={56} />
-            </div>
-            <h1 className="text-5xl font-black text-gray-800 mb-3 tracking-tight">
-              Blossom Nails
-            </h1>
-            <p className="text-gray-500 text-lg font-medium">
-              Sistema de Gestión
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {activeUsers.map((user) => (
-              <div
-                key={user.id}
-                className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-gray-100"
-              >
-                <div className="text-center mb-6">
-                  <div
-                    className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br ${user.color} shadow-lg mb-4`}
-                  >
-                    {user.icon === "crown" ? (
-                      <Crown className="text-white" size={40} />
-                    ) : (
-                      <User className="text-white" size={40} />
-                    )}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-1">
-                    {user.name}
-                  </h3>
-                  {user.role === "owner" && (
-                    <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase">
-                      Administradora
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 ml-1 uppercase tracking-wider">
-                      Ingresa tu PIN
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPin[user.id] ? "text" : "password"}
-                        value={pins[user.id] || ""}
-                        onChange={(e) =>
-                          handlePinChange(user.id, e.target.value)
-                        }
-                        onKeyPress={(e) => handleKeyPress(e, user.id)}
-                        maxLength={4}
-                        placeholder="••••"
-                        className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:bg-white focus:outline-none text-3xl text-center tracking-[0.5em] transition-all font-bold"
-                      />
-                      <button
-                        onClick={() =>
-                          setShowPin({
-                            ...showPin,
-                            [user.id]: !showPin[user.id],
-                          })
-                        }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-500 transition-colors"
-                      >
-                        {showPin[user.id] ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleLogin(user.id)}
-                    disabled={!pins[user.id] || pins[user.id].length < 4}
-                    className={`w-full bg-gradient-to-r ${user.color} text-white py-4 rounded-2xl font-bold text-lg hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
-                  >
-                    <Lock size={20} />
-                    Entrar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-8 text-gray-400 text-sm">
-            <p className="flex items-center justify-center gap-2">
-              <Lock size={16} />
-              Sistema seguro con autenticación por PIN personal
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ====== Staff ======
   const StaffScreen = () => {
@@ -1512,50 +1056,13 @@ const SalonApp = () => {
 
     // ✅ NUEVO: Agregar gasto
     const addExpense = async () => {
-      if (
-        !newExpense.description ||
-        !newExpense.category ||
-        !newExpense.amount
-      ) {
-        showNotification("Completa todos los campos", "error");
-        return;
-      }
-
-      // Validar que si es Comisiones, se seleccione un usuario
-      if (newExpense.category === "Comisiones" && !newExpense.userId) {
-        showNotification("Selecciona un personal para las comisiones", "error");
-        return;
-      }
-
-      const amount = parseFloat(newExpense.amount);
-      if (!Number.isFinite(amount) || amount <= 0) {
-        showNotification("Monto inválido", "error");
-        return;
-      }
-
       try {
-        const expenseData: any = {
+        await expenseService.addExpense({
           date: newExpense.date,
-          description: newExpense.description.trim(),
-          category: newExpense.category.trim(),
-          amount,
-          deleted: false,
-          timestamp: serverTimestamp(),
-        };
-
-        // Agregar userId si es comisiones
-        if (newExpense.category === "Comisiones" && newExpense.userId) {
-          expenseData.userId = newExpense.userId;
-        }
-
-        const result = await addDoc(collection(db, "expenses"), expenseData);
-
-        // Log para confirmar que el gasto se guardó con la categoría correcta
-        console.log("Gasto guardado:", {
-          categoria: newExpense.category,
-          monto: amount,
-          userId: newExpense.userId || "N/A",
-          docId: result.id,
+          description: newExpense.description,
+          category: newExpense.category,
+          amount: parseFloat(newExpense.amount),
+          userId: newExpense.userId,
         });
 
         setNewExpense({
@@ -1566,9 +1073,9 @@ const SalonApp = () => {
           userId: "",
         });
         showNotification("Gasto agregado");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error agregando gasto:", error);
-        showNotification("Error al agregar gasto", "error");
+        showNotification(error.message || "Error al agregar gasto", "error");
       }
     };
 
@@ -1576,7 +1083,7 @@ const SalonApp = () => {
     const deleteExpense = async (id: string) => {
       if (!window.confirm("¿Eliminar este gasto?")) return;
       try {
-        await deleteDoc(doc(db, "expenses", id));
+        await expenseService.deleteExpense(id);
         showNotification("Gasto eliminado");
       } catch (error) {
         console.error("Error eliminando gasto:", error);
@@ -2586,59 +2093,7 @@ const SalonApp = () => {
 
 
 
-    // Descargar catálogo de servicios
-    const descargarCatalogoFaltante = async () => {
-      const nombreColeccion = "catalog_services"; // El nombre exacto que me diste
 
-      try {
-        console.log("⏳ Conectando a la base de datos real...");
-        const querySnapshot = await getDocs(collection(db, nombreColeccion));
-
-        if (querySnapshot.empty) {
-          alert(
-            `⚠️ La colección '${nombreColeccion}' está vacía o no existe en este proyecto.`,
-          );
-          return;
-        }
-
-        // Extraemos los datos guardando el ID original como "_id"
-        // Esto es vital para que al subirlo, las recetas no se rompan.
-        const listaServicios = querySnapshot.docs.map((doc: any) => ({
-          _id: doc.id,
-          ...doc.data(),
-        }));
-
-        // Preparamos el objeto final
-        const backupJson = {
-          catalog_services: listaServicios,
-        };
-
-        // Generamos la descarga del archivo
-        const blob = new Blob([JSON.stringify(backupJson, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "solo_catalogo.json";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        alert(
-          `✅ ¡Éxito! Se han descargado ${listaServicios.length} servicios en 'solo_catalogo.json'.`,
-        );
-        showNotification(
-          `Catálogo descargado: ${listaServicios.length} servicios`,
-        );
-      } catch (error) {
-        console.error("Error al descargar:", error);
-        alert(
-          "❌ Error. ¿Estás seguro de que tienes las credenciales del proyecto REAL?",
-        );
-        showNotification("Error al descargar catálogo", "error");
-      }
-    };
 
     // Crear nuevo usuario
     const createNewUser = async () => {
@@ -2710,31 +2165,18 @@ const SalonApp = () => {
     };
 
     const addCatalogService = async () => {
-      if (!newCatalogService.name || !newCatalogService.basePrice) {
-        showNotification("Completa todos los campos", "error");
-        return;
-      }
-
-      const basePrice = parseFloat(newCatalogService.basePrice);
-      if (!Number.isFinite(basePrice) || basePrice <= 0) {
-        showNotification("Precio inválido", "error");
-        return;
-      }
-
       try {
-        await addDoc(collection(db, "catalog_services"), {
-          name: newCatalogService.name.trim(),
-          category: newCatalogService.category,
-          basePrice,
-          active: true,
-          createdAt: serverTimestamp(),
-        });
+        await inventoryService.addCatalogService(
+          newCatalogService.name,
+          newCatalogService.category,
+          parseFloat(newCatalogService.basePrice)
+        );
 
         setNewCatalogService({ name: "", category: "manicura", basePrice: "" });
         showNotification("Servicio agregado al catálogo");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error agregando servicio:", error);
-        showNotification("Error al agregar", "error");
+        showNotification(error.message || "Error al agregar", "error");
       }
     };
 
@@ -4177,7 +3619,15 @@ const SalonApp = () => {
   };
 
   // ====== Render ======
-  if (!currentUser) return <LoginScreen />;
+  if (!currentUser) return (
+    <LoginScreen 
+      users={users} 
+      loading={loading} 
+      onLogin={setCurrentUser} 
+      showNotification={showNotification} 
+      notification={notification}
+    />
+  );
   if (currentUser.role === "owner") return <OwnerScreen />;
   return <StaffScreen />;
 };

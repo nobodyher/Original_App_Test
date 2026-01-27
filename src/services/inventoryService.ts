@@ -21,27 +21,146 @@ import type {
 
 // ====== Catalog Management ======
 
-export const initializeCatalog = async (): Promise<void> => {
+export const initializeCatalog = async (): Promise<boolean> => {
   try {
     const metaRef = doc(db, "meta", "catalog");
     const metaSnap = await getDoc(metaRef);
 
-    if (metaSnap.exists() && metaSnap.data()?.seeded) return;
+    if (metaSnap.exists() && metaSnap.data()?.seeded) return false;
 
     await runTransaction(db, async (tx) => {
-      // Add catalog services here if needed in future
-      // Current implementation in App.tsx seemed to only check seeded status
-      // If we need to seed initial catalog services, we can add them here
-      // For now, mirroring App.tsx logic which implies seeding might have been removed or handled elsewhere
-      // Wait, looking at App.tsx lines 330-360 (viewed previously), it seems it just checked meta.
-      // But let's check if there was actual seeding code.
-      // The previous view didn't show the body of initializeCatalog fully.
-      // I will assume standard seeding logic if needed, but for now just the check.
-      // Actually, I should probably check if I missed copying seeding logic.
-      // In previous steps I might have seen it.
-      // Re-reading App.tsx view (lines 600-1400 in step 343) showed it.
-      // I will implement a basic seeding if strictly required, but usually checks are enough if data exists.
-      // However, to be safe, I will include the meta check.
+        // Servicios base
+        const defaultServices = [
+          {
+            name: "Manicura en gel 1 solo color",
+            category: "manicura",
+            basePrice: 12,
+          },
+          { name: "Manicura con diseño", category: "manicura", basePrice: 15 },
+          {
+            name: "Uñas acrílicas (base)",
+            category: "manicura",
+            basePrice: 25,
+          },
+          { name: "Uñas poligel (base)", category: "manicura", basePrice: 25 },
+          { name: "Pedicure 1 tono", category: "pedicura", basePrice: 15 },
+          { name: "Pedicure francesa", category: "pedicura", basePrice: 18 },
+          { name: "Pedicura limpieza", category: "pedicura", basePrice: 10 },
+          { name: "Manicura limpieza", category: "manicura", basePrice: 7 },
+          {
+            name: "Rubber uñas cortas 1 tono",
+            category: "manicura",
+            basePrice: 20,
+          },
+          {
+            name: "Rubber uñas largas 1 tono",
+            category: "manicura",
+            basePrice: 25,
+          },
+          { name: "Gel builder 1 tono", category: "manicura", basePrice: 25 },
+          {
+            name: "Gel builder alargamiento",
+            category: "manicura",
+            basePrice: 30,
+          },
+          {
+            name: "Pedicure spa velo terapia 1 tono",
+            category: "pedicura",
+            basePrice: 30,
+          },
+          { name: "Jelly spa 1 tono", category: "pedicura", basePrice: 40 },
+        ];
+
+        defaultServices.forEach((s) => {
+          const newRef = doc(collection(db, "catalog_services"));
+          tx.set(newRef, { ...s, active: true, createdAt: serverTimestamp() });
+        });
+
+        // Consumibles actualizados
+        const defaultConsumables = [
+          {
+            name: "Algodón",
+            unit: "gramo",
+            unitCost: 0.02,
+            stockQty: 500,
+            minStockAlert: 150,
+          },
+          {
+            name: "Bastoncillos",
+            unit: "unidad",
+            unitCost: 0.01,
+            stockQty: 100,
+            minStockAlert: 10,
+          },
+          {
+            name: "Campo quirúrgico",
+            unit: "unidad",
+            unitCost: 0.06,
+            stockQty: 100,
+            minStockAlert: 10,
+          },
+          {
+            name: "Gorro",
+            unit: "unidad",
+            unitCost: 0.03,
+            stockQty: 100,
+            minStockAlert: 10,
+          },
+          {
+            name: "Guantes (par)",
+            unit: "par",
+            unitCost: 0.13,
+            stockQty: 50,
+            minStockAlert: 10,
+          },
+          {
+            name: "Mascarillas",
+            unit: "unidad",
+            unitCost: 0.02,
+            stockQty: 100,
+            minStockAlert: 10,
+          },
+          {
+            name: "Moldes esculpir",
+            unit: "unidad",
+            unitCost: 0.02,
+            stockQty: 300,
+            minStockAlert: 50,
+          },
+          {
+            name: "Palillo naranja",
+            unit: "unidad",
+            unitCost: 0.01,
+            stockQty: 100,
+            minStockAlert: 10,
+          },
+          {
+            name: "Papel film",
+            unit: "metro",
+            unitCost: 0.0247,
+            stockQty: 150,
+            minStockAlert: 30,
+          },
+          {
+            name: "Toalla desechable",
+            unit: "metro",
+            unitCost: 0.025,
+            stockQty: 50,
+            minStockAlert: 10,
+          },
+          {
+            name: "Wipes",
+            unit: "unidad",
+            unitCost: 0.01,
+            stockQty: 400,
+            minStockAlert: 50,
+          },
+        ];
+
+        defaultConsumables.forEach((c) => {
+          const newRef = doc(collection(db, "consumables"));
+          tx.set(newRef, { ...c, active: true, createdAt: serverTimestamp() });
+        });
       
       tx.set(
         metaRef,
@@ -49,6 +168,7 @@ export const initializeCatalog = async (): Promise<void> => {
         { merge: true },
       );
     });
+    return true;
   } catch (error) {
     console.error("Error initializing catalog:", error);
     throw error;

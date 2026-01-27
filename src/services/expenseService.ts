@@ -28,7 +28,7 @@ export const addExpense = async (
     category,
     amount: numAmount,
     userId: userId || null,
-    createdAt: serverTimestamp(),
+    timestamp: serverTimestamp(),
   });
 };
 
