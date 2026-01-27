@@ -67,12 +67,14 @@ import type {
 } from "./types";
 
 import { EXTRAS_CATALOG } from "./constants/catalog";
-import { clamp, normalizeUser, getRecipeCost, exportToCSV } from "./utils/helpers";
+import { clamp, getRecipeCost, exportToCSV } from "./utils/helpers";
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
 import * as salonService from "./services/salonService";
 import * as inventoryService from "./services/inventoryService";
 import * as expenseService from "./services/expenseService";
+
+import { useAuth } from "./hooks/useAuth"; 
 
 // ✅ NUEVO: Catálogo de extras con precios por uña
 // ✅ NUEVO: Catálogo de extras con precios por uña
@@ -93,8 +95,7 @@ if (typeof document !== "undefined") {
 
 const SalonApp = () => {
   // ====== Estado ======
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
-  const [users, setUsers] = useState<AppUser[]>([]);
+  const { currentUser, setCurrentUser, users, loading, initialized } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showPin, setShowPin] = useState<Record<string, boolean>>({});
@@ -105,8 +106,8 @@ const SalonApp = () => {
     dateFrom: "",
     dateTo: "",
   });
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  // const [loading, setLoading] = useState(true); // Moved to useAuth
+  // const [initialized, setInitialized] = useState(false); // Moved to useAuth
   const [catalogServices, setCatalogServices] = useState<CatalogService[]>([]);
   const [consumables, setConsumables] = useState<Consumable[]>([]);
   const [serviceRecipes, setServiceRecipes] = useState<ServiceRecipe[]>([]);
@@ -179,17 +180,7 @@ const SalonApp = () => {
     return totalCost;
   };
 
-  // ====== Inicializar usuarios base (solo una vez) ======
-  const initializeDefaultUsers = async () => {
-    try {
-      await userService.initializeDefaultUsers();
-      setInitialized(true);
-    } catch (error) {
-      console.error("Error inicializando usuarios:", error);
-      showNotification("Error al inicializar", "error");
-      setInitialized(true);
-    }
-  };
+
 
   // ====== Inicializar catálogo (solo una vez) ======
   const initializeCatalog = async () => {
@@ -347,45 +338,13 @@ const SalonApp = () => {
     }
   };
 
-  // ====== Cargar datos en tiempo real ======
-  useEffect(() => {
-    initializeDefaultUsers();
-  }, []);
+
 
   useEffect(() => {
     initializeCatalog();
   }, []);
 
-  useEffect(() => {
-    if (!initialized) return;
 
-    const q = query(collection(db, "users"), orderBy("name", "asc"));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const data = snap.docs.map((d) =>
-          normalizeUser({ id: d.id, ...d.data() }),
-        );
-
-        // Sort users: "Principal" first, then others alphabetically
-        const sortedData = data.sort((a, b) => {
-          if (a.name === "Principal") return -1;
-          if (b.name === "Principal") return 1;
-          return a.name.localeCompare(b.name);
-        });
-
-        setUsers(sortedData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error cargando usuarios:", error);
-        showNotification("Error cargando usuarios", "error");
-        setLoading(false);
-      },
-    );
-
-    return () => unsub();
-  }, [initialized]);
 
   useEffect(() => {
     if (!initialized) return;
