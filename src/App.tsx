@@ -18,6 +18,7 @@ import {
   CheckCircle,
   XCircle,
   Check,
+  Users,
 } from "lucide-react";
 
 
@@ -28,24 +29,21 @@ import {
 import type {
   AppUser,
   PaymentMethod,
-  ServiceItem,
-  ExtraItem,
   Toast,
   OwnerFilters,
-  Filters,
   Service,
   CatalogService,
   Consumable,
   ChemicalProduct,
 } from "./types";
 
-// EXTRAS_CATALOG imported from ./constants/catalog
-import { clamp, getRecipeCost, exportToCSV } from "./utils/helpers";
+import { getRecipeCost } from "./utils/helpers";
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
 import * as salonService from "./services/salonService";
 import * as inventoryService from "./services/inventoryService";
 import * as expenseService from "./services/expenseService";
+import StaffScreen from "./features/staff/StaffScreen";
 
 import { useAuth } from "./hooks/useAuth"; 
 import { useSalonData } from "./hooks/useSalonData"; 
@@ -84,12 +82,7 @@ const SalonApp = () => {
 
 
   const [notification, setNotification] = useState<Toast | null>(null);
-  const [editingService, setEditingService] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Filters>({
-    search: "",
-    dateFrom: "",
-    dateTo: "",
-  });
+
   const [catalogTab, setCatalogTab] = useState<
     "personal" | "services" | "consumables" | "extras" | "materials"
   >("services");
@@ -119,40 +112,7 @@ const SalonApp = () => {
   const getUserById = (id: string): AppUser | undefined =>
     users.find((u) => u.id === id);
 
-  const getCommissionPctForService = (s: Service): number => {
-    if (typeof s.commissionPct === "number")
-      return clamp(s.commissionPct, 0, 100);
-    const u = getUserById(s.userId);
-    return clamp(u?.commissionPct ?? 0, 0, 100);
-  };
 
-  const calcCommissionAmount = (s: Service): number => {
-    const pct = getCommissionPctForService(s);
-    const cost = Number(s.cost) || 0;
-    return (cost * pct) / 100;
-  };
-
-
-
-  // ✅ NUEVO: Función para obtener el costo de materiales de una receta por serviceId
-  const getRecipeCostByServiceId = (serviceId?: string): number => {
-    if (!serviceId) return 0;
-
-    // Buscar la receta del servicio
-    const recipe = serviceRecipes.find((r) => r.id === serviceId);
-    if (!recipe) return 0;
-
-    // Calcular el costo total multiplicando qty × unitCost de cada consumible
-    let totalCost = 0;
-    recipe.items.forEach((item: any) => {
-      const consumable = consumables.find((c) => c.id === item.consumableId);
-      if (consumable) {
-        totalCost += item.qty * (consumable.unitCost || 0);
-      }
-    });
-
-    return totalCost;
-  };
 
 
 
@@ -187,705 +147,7 @@ const SalonApp = () => {
 
 
 
-  // ====== Staff ======
-  const StaffScreen = () => {
-    const [newService, setNewService] = useState({
-      date: new Date().toISOString().split("T")[0],
-      client: "",
-      services: [] as ServiceItem[],
-      extras: [] as ExtraItem[],
-      service: "", // Para compatibilidad
-      cost: "",
-      paymentMethod: "cash" as PaymentMethod,
-      catalogServiceId: "",
-      category: undefined as "manicura" | "pedicura" | undefined,
-    });
 
-    const [showCatalogSelector, setShowCatalogSelector] = useState(false);
-    const [showExtrasSelector, setShowExtrasSelector] = useState(false);
-    const [selectedServiceId, setSelectedServiceId] = useState("");
-
-    // Filter services for current staff user
-    // Staff users can only see today's services (auto-resets at midnight)
-    const today = new Date().toISOString().split("T")[0];
-    const userServices = services.filter((s) => {
-      // Filter by user ID and exclude deleted
-      if (s.userId !== currentUser?.id || s.deleted) return false;
-
-      // Only show today's services for staff users
-      return s.date === today;
-    });
-
-    const filteredServices = userServices.filter((s) => {
-      const matchSearch =
-        !filters.search ||
-        s.client.toLowerCase().includes(filters.search.toLowerCase()) ||
-        s.service?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        false ||
-        s.services?.some((srv) =>
-          srv.serviceName.toLowerCase().includes(filters.search.toLowerCase()),
-        ) ||
-        false;
-      const matchDateFrom = !filters.dateFrom || s.date >= filters.dateFrom;
-      const matchDateTo = !filters.dateTo || s.date <= filters.dateTo;
-      return matchSearch && matchDateFrom && matchDateTo;
-    });
-
-    const activeServices = catalogServices.filter((s) => s.active);
-
-    // ✅ NUEVO: Calcular costo total automáticamente
-    const calculateTotalCost = (
-      servicesList: ServiceItem[],
-      extrasList: ExtraItem[],
-    ): number => {
-      const servicesTotal = servicesList.reduce(
-        (sum, s) => sum + s.servicePrice,
-        0,
-      );
-      const extrasTotal = extrasList.reduce((sum, e) => sum + e.totalPrice, 0);
-      return servicesTotal + extrasTotal;
-    };
-
-    // ✅ NUEVO: Al seleccionar del catálogo, agregar a lista de servicios
-    const selectCatalogService = (cs: CatalogService) => {
-      console.log("Seleccionando servicio:", cs);
-      const newServiceItem: ServiceItem = {
-        serviceId: cs.id,
-        serviceName: cs.name,
-        servicePrice: cs.basePrice,
-      };
-      setNewService((prev) => {
-        const updated = {
-          ...prev,
-          services: [...prev.services, newServiceItem],
-          category: (cs.category as "manicura" | "pedicura") || undefined,
-        };
-        console.log("Nuevo estado de servicio:", updated);
-        return updated;
-      });
-    };
-
-    // ✅ NUEVO: Actualizar cantidad de uñas por extra desde la lista
-    const updateExtraNailsCount = (extraId: string, nailsCount: number) => {
-      const extra = catalogExtras.find((e) => e.id === extraId);
-      if (!extra) return;
-
-      if (!Number.isFinite(nailsCount) || nailsCount < 0) {
-        showNotification("Ingresa un número de uñas válido", "error");
-        return;
-      }
-
-      setNewService((prev) => {
-        const filtered = prev.extras.filter((e) => e.extraId !== extraId);
-        if (nailsCount === 0) {
-          return { ...prev, extras: filtered };
-        }
-        // Use price or priceSuggested from Firebase extra
-        const pricePerNail = (extra as any).price || extra.priceSuggested || 0;
-        const newExtraItem: ExtraItem = {
-          extraId: extra.id,
-          extraName: extra.name,
-          pricePerNail,
-          nailsCount,
-          totalPrice: pricePerNail * nailsCount,
-        };
-
-        return { ...prev, extras: [...filtered, newExtraItem] };
-      });
-    };
-
-    // ✅ NUEVO: Eliminar servicio de la lista
-    const removeServiceFromList = (index: number) => {
-      setNewService((prev) => ({
-        ...prev,
-        services: prev.services.filter((_, i) => i !== index),
-      }));
-    };
-
-    // ✅ NUEVO: Eliminar extra de la lista
-    const removeExtraFromList = (index: number) => {
-      setNewService((prev) => ({
-        ...prev,
-        extras: prev.extras.filter((_, i) => i !== index),
-      }));
-    };
-
-    const totalCost = calculateTotalCost(
-      newService.services,
-      newService.extras,
-    );
-
-    // ✅ NUEVO: Calcular costo total de reposición basado en recetas de materiales
-    // Lógica movida a salonService.calculateTotalReplenishmentCost
-
-    const addService = async () => {
-      console.log("Presionado botón guardar");
-      
-      if (!currentUser) return;
-
-      try {
-        await salonService.addService(
-          currentUser,
-          newService,
-          materialRecipes,
-          totalCost
-        );
-
-        setNewService({
-          date: new Date().toISOString().split("T")[0],
-          client: "",
-          services: [],
-          extras: [],
-          service: "",
-          cost: "",
-          paymentMethod: "cash",
-          catalogServiceId: "",
-          category: undefined,
-        });
-        showNotification("Servicio agregado exitosamente");
-      } catch (error: any) {
-        console.error("Error completo:", error);
-        const errorMessage =
-          error?.message || error?.code || "Error desconocido";
-        showNotification(`Error: ${errorMessage}`, "error");
-      }
-    };
-
-    const updateService = async (id: string, updated: Partial<Service>) => {
-      try {
-        await salonService.updateService(id, updated);
-        setEditingService(null);
-        showNotification("Servicio actualizado");
-      } catch (error) {
-        console.error("Error actualizando servicio:", error);
-        showNotification("Error al actualizar", "error");
-      }
-    };
-
-    const softDeleteService = async (id: string) => {
-      if (
-        !window.confirm("¿Eliminar este servicio? (Se guardará como historial)")
-      )
-        return;
-      try {
-        await salonService.softDeleteService(id, currentUser?.id);
-        showNotification("Servicio eliminado (historial)");
-      } catch (error) {
-        console.error("Error eliminando servicio:", error);
-        showNotification("Error al eliminar", "error");
-      }
-    };
-
-    const totalToday = userServices
-      .filter((s) => s.date === new Date().toISOString().split("T")[0])
-      .reduce((sum, s) => sum + s.cost, 0);
-
-    const totalCommissionToday = userServices
-      .filter((s) => s.date === new Date().toISOString().split("T")[0])
-      .reduce((sum, s) => sum + calcCommissionAmount(s), 0);
-
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <NotificationToast notification={notification} />
-        <div
-          className={`bg-gradient-to-r ${currentUser?.color} text-white p-6 shadow-lg`}
-        >
-          <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Hola, {currentUser?.name}</h1>
-              <p className="text-white/80">Registra tus servicios</p>
-            </div>
-            <button
-              onClick={() => {
-                setCurrentUser(null);
-                showNotification("Sesión cerrada");
-              }}
-              className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-lg hover:bg-white/30 transition shadow-md border border-white/30"
-            >
-              <LogOut size={20} />
-              Salir
-            </button>
-          </div>
-        </div>
-
-        <div className="max-w-6xl mx-auto p-6">
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Plus size={24} className="text-pink-500" />
-              Agregar Nuevo Servicio
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-              <input
-                type="date"
-                value={newService.date}
-                onChange={(e) =>
-                  setNewService({ ...newService, date: e.target.value })
-                }
-                className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Nombre del cliente"
-                value={newService.client}
-                onChange={(e) =>
-                  setNewService({ ...newService, client: e.target.value })
-                }
-                className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-              />
-              <select
-                value={selectedServiceId}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    const selected = activeServices.find(
-                      (cs) => cs.id === e.target.value,
-                    );
-                    if (selected) {
-                      selectCatalogService(selected);
-                      setSelectedServiceId("");
-                    }
-                  }
-                }}
-                className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-              >
-                <option value="">Servicio</option>
-                {activeServices.map((cs) => (
-                  <option key={cs.id} value={cs.id}>
-                    {cs.name} - ${cs.basePrice}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={newService.paymentMethod}
-                onChange={(e) =>
-                  setNewService({
-                    ...newService,
-                    paymentMethod: e.target.value as PaymentMethod,
-                  })
-                }
-                className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-              >
-                <option value="cash">Efectivo</option>
-                <option value="transfer">Transferencia</option>
-              </select>
-              <select
-                value={newService.category || ""}
-                onChange={(e) =>
-                  setNewService({
-                    ...newService,
-                    category:
-                      (e.target.value as "manicura" | "pedicura") || undefined,
-                  })
-                }
-                className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-              >
-                <option value="">Categoría (opcional)</option>
-                <option value="manicura">Manicura completa</option>
-                <option value="pedicura">Pedicura completa</option>
-              </select>
-            </div>
-
-            {/* ✅ NUEVO: Lista de servicios agregados */}
-            {newService.services.length > 0 && (
-              <div className="mb-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
-                <p className="font-bold text-green-800 mb-3">
-                  Servicios seleccionados:
-                </p>
-                <div className="space-y-2">
-                  {newService.services.map((s, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center bg-white p-3 rounded-lg border border-green-200"
-                    >
-                      <div>
-                        <p className="font-semibold text-gray-800">
-                          {s.serviceName}
-                        </p>
-                        <p className="text-sm text-green-700">
-                          ${s.servicePrice.toFixed(2)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeServiceFromList(idx)}
-                        className="text-red-600 hover:text-red-800 transition"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ✅ NUEVO: Selector de extras en dropdown */}
-            <div className="bg-blue-50 rounded-lg border-2 border-blue-200 p-4 mb-4">
-              <button
-                onClick={() => setShowExtrasSelector(!showExtrasSelector)}
-                className="w-full flex justify-between items-center font-bold text-blue-800 hover:text-blue-900 transition"
-              >
-                <span>Extras (elige varios y coloca las uñas)</span>
-                <span
-                  className={`transform transition-transform ${
-                    showExtrasSelector ? "rotate-180" : ""
-                  }`}
-                >
-                  ▼
-                </span>
-              </button>
-              <p className="text-xs text-blue-700 mt-1 mb-3">
-                Ejemplo: Extra efecto ojo de gato — Uñas: 2. Deja en 0 si no
-                aplica.
-              </p>
-              {showExtrasSelector && (
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                  {catalogExtras
-                    .filter((e) => e.active)
-                    .map((extra) => {
-                      const current = newService.extras.find(
-                        (e) => e.extraId === extra.id,
-                      );
-                      return (
-                        <div
-                          key={extra.id}
-                          className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-100"
-                        >
-                          <div>
-                            <p className="font-semibold text-gray-800">
-                              {extra.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              $
-                              {(
-                                (extra as any).price ||
-                                extra.priceSuggested ||
-                                0
-                              ).toFixed(2)}{" "}
-                              por uña
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-xs text-gray-500">
-                              Uñas
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={10}
-                              value={current?.nailsCount ?? 0}
-                              onChange={(e) =>
-                                updateExtraNailsCount(
-                                  extra.id,
-                                  parseInt(e.target.value || "0", 10),
-                                )
-                              }
-                              className="w-20 px-3 py-2 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-
-            {/* ✅ NUEVO: Lista de extras agregados */}
-            {newService.extras.length > 0 && (
-              <div className="mb-4 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-                <p className="font-bold text-orange-800 mb-3">
-                  Extras seleccionados:
-                </p>
-                <div className="space-y-2">
-                  {newService.extras.map((e, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center bg-white p-3 rounded-lg border border-orange-200"
-                    >
-                      <div>
-                        <p className="font-semibold text-gray-800">
-                          {e.extraName}
-                        </p>
-                        <p className="text-sm text-orange-700">
-                          ${e.pricePerNail.toFixed(2)}/uña × {e.nailsCount} uñas
-                          = ${e.totalPrice.toFixed(2)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeExtraFromList(idx)}
-                        className="text-red-600 hover:text-red-800 transition"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ✅ NUEVO: Resumen de costo total */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border-2 border-pink-200 p-4 mb-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-600 font-semibold">
-                    COSTO TOTAL:
-                  </p>
-                  <p className="text-3xl font-bold text-pink-600">
-                    ${totalCost.toFixed(2)}
-                  </p>
-                </div>
-                <button
-                  onClick={addService}
-                  disabled={
-                    newService.client === "" || newService.services.length === 0
-                  }
-                  className={`text-white px-8 py-3 rounded-lg hover:shadow-lg transition font-bold flex items-center gap-2 ${
-                    newService.client === "" || newService.services.length === 0
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
-                  }`}
-                >
-                  <Check size={20} />
-                  Guardar Servicio
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-400 to-green-600 text-white rounded-xl shadow-lg p-6 mb-6">
-            <h3 className="text-sm font-semibold mb-2 opacity-90">
-              Servicios Hoy
-            </h3>
-            <p className="text-3xl font-bold">
-              {
-                userServices.filter(
-                  (s) => s.date === new Date().toISOString().split("T")[0],
-                ).length
-              }
-            </p>
-            <p className="text-green-100 text-sm mt-1">servicios completados</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="p-6 bg-gray-50 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Mis Servicios</h2>
-              <button
-                onClick={() => {
-                  const success = exportToCSV(filteredServices, "mis_servicios");
-                  if (success) {
-                    showNotification("Reporte descargado");
-                  } else {
-                    showNotification("No hay datos para exportar", "error");
-                  }
-                }}
-                className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-sm"
-              >
-                <Download size={18} />
-                Exportar CSV
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                      Fecha
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                      Cliente
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                      Servicio
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                      Pago
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                      Costo
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredServices.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
-                        No hay servicios
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredServices
-                      .slice()
-                      .reverse()
-                      .map((service) => {
-                        const isEditing = editingService === service.id;
-                        let editedService = { ...service };
-
-                        return (
-                          <tr
-                            key={service.id}
-                            className="border-b hover:bg-gray-50 transition"
-                          >
-                            {isEditing ? (
-                              <>
-                                <td className="px-6 py-4">
-                                  <input
-                                    type="date"
-                                    defaultValue={service.date}
-                                    onChange={(e) =>
-                                      (editedService.date = e.target.value)
-                                    }
-                                    className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-6 py-4">
-                                  <input
-                                    type="text"
-                                    defaultValue={service.client}
-                                    onChange={(e) =>
-                                      (editedService.client = e.target.value)
-                                    }
-                                    className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none w-full"
-                                  />
-                                </td>
-                                <td className="px-6 py-4">
-                                  <input
-                                    type="text"
-                                    defaultValue={
-                                      service.service ||
-                                      "Servicios personalizados"
-                                    }
-                                    onChange={(e) =>
-                                      (editedService.service = e.target.value)
-                                    }
-                                    className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none w-full"
-                                  />
-                                </td>
-                                <td className="px-6 py-4">
-                                  <select
-                                    defaultValue={
-                                      service.paymentMethod || "cash"
-                                    }
-                                    onChange={(e) =>
-                                      (editedService.paymentMethod = e.target
-                                        .value as PaymentMethod)
-                                    }
-                                    className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-                                  >
-                                    <option value="cash">Efectivo</option>
-                                    <option value="transfer">
-                                      Transferencia
-                                    </option>
-                                  </select>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <input
-                                    type="number"
-                                    defaultValue={service.cost}
-                                    onChange={(e) =>
-                                      (editedService.cost = parseFloat(
-                                        e.target.value,
-                                      ))
-                                    }
-                                    className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-6 py-4 flex gap-2">
-                                  <button
-                                    onClick={() =>
-                                      updateService(service.id, editedService)
-                                    }
-                                    className="text-green-600 hover:text-green-800"
-                                  >
-                                    <Save size={18} />
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingService(null)}
-                                    className="text-gray-500 hover:text-gray-700"
-                                  >
-                                    <X size={18} />
-                                  </button>
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="px-6 py-4 text-sm">
-                                  {service.date}
-                                </td>
-                                <td className="px-6 py-4 text-sm font-medium">
-                                  {service.client}
-                                </td>
-                                <td className="px-6 py-4 text-sm">
-                                  <div>
-                                    <p className="font-medium text-gray-800">
-                                      {service.service ||
-                                        "Servicios personalizados"}
-                                    </p>
-                                    {service.services &&
-                                      service.services.length > 0 && (
-                                        <div className="text-xs text-gray-600 mt-1">
-                                          {service.services.map((s, i) => (
-                                            <div key={i}>{s.serviceName}</div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    {service.extras &&
-                                      service.extras.length > 0 && (
-                                        <div className="text-xs text-gray-500 mt-1 border-t pt-1">
-                                          {service.extras.map((e, i) => (
-                                            <div key={i}>
-                                              + {e.extraName} ({e.nailsCount}{" "}
-                                              uñas)
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm">
-                                  {service.paymentMethod === "transfer"
-                                    ? "Transferencia"
-                                    : "Efectivo"}
-                                </td>
-                                <td className="px-6 py-4 text-sm font-bold text-green-600">
-                                  ${Number(service.cost).toFixed(2)}
-                                </td>
-                                <td className="px-6 py-4 flex gap-2">
-                                  <button
-                                    onClick={() =>
-                                      setEditingService(service.id)
-                                    }
-                                    className="text-blue-600 hover:text-blue-800 transition"
-                                  >
-                                    <Edit2 size={18} />
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      softDeleteService(service.id)
-                                    }
-                                    className="text-red-600 hover:text-red-800 transition"
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        );
-                      })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ====== // ====== Owner Dashboard ======
   const OwnerDashboard = () => {
@@ -993,7 +255,7 @@ const SalonApp = () => {
 
     // Calcular comisiones desde servicios (SIN restar gastos de comisiones pagadas)
     const totalCommissions = filteredServices.reduce(
-      (sum, s) => sum + calcCommissionAmount(s),
+      (sum, s) => sum + salonService.calcCommissionAmount(s, users),
       0,
     );
 
@@ -1038,7 +300,7 @@ const SalonApp = () => {
           };
         }
         stats[s.userId].revenue += s.cost;
-        stats[s.userId].commission += calcCommissionAmount(s);
+        stats[s.userId].commission += salonService.calcCommissionAmount(s, users);
         stats[s.userId].services++;
       });
 
@@ -1516,10 +778,10 @@ const SalonApp = () => {
                               onChange={(e) =>
                                 setEditingServiceCost(e.target.value)
                               }
-                              className="w-24 px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-green-500 focus:outline-none"
+              className="w-24 px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-green-500 focus:outline-none"
                             />
                             <button
-                              onClick={() =>
+                              onClick={async () =>
                                 updateServiceCost(
                                   service.id,
                                   parseFloat(editingServiceCost),
@@ -1554,7 +816,7 @@ const SalonApp = () => {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm font-bold text-blue-600">
-                        ${calcCommissionAmount(service).toFixed(2)}
+                        ${salonService.calcCommissionAmount(service, users).toFixed(2)}
                       </td>
                       <td className="px-4 py-3 text-sm font-bold text-orange-600">
                         $
@@ -3629,7 +2891,22 @@ const SalonApp = () => {
     />
   );
   if (currentUser.role === "owner") return <OwnerScreen />;
-  return <StaffScreen />;
+  return (
+    <StaffScreen
+      currentUser={currentUser}
+      services={services}
+      catalogServices={catalogServices}
+      catalogExtras={catalogExtras}
+      materialRecipes={materialRecipes}
+      consumables={consumables}
+      notification={notification}
+      showNotification={showNotification}
+      onLogout={() => setCurrentUser(null)}
+      addService={salonService.addService}
+      updateService={salonService.updateService}
+      softDeleteService={salonService.softDeleteService}
+    />
+  );
 };
 
 export default SalonApp;

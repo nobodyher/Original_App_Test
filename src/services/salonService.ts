@@ -27,6 +27,26 @@ export interface NewServiceState {
   paymentMethod: PaymentMethod;
   category?: "manicura" | "pedicura";
 }
+// ====== Commission Helpers ======
+
+export const getCommissionPctForService = (
+  s: Service,
+  users: AppUser[]
+): number => {
+  if (typeof s.commissionPct === "number")
+    return clamp(s.commissionPct, 0, 100);
+  const u = users.find((user) => user.id === s.userId);
+  return clamp(u?.commissionPct ?? 0, 0, 100);
+};
+
+export const calcCommissionAmount = (
+  s: Service,
+  users: AppUser[]
+): number => {
+  const pct = getCommissionPctForService(s, users);
+  const cost = Number(s.cost) || 0;
+  return (cost * pct) / 100;
+};
 
 // ====== Helper Functions (Imported from inventoryService) ======
 // deductConsumables and calculateTotalReplenishmentCost are now imported
