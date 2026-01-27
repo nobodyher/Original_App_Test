@@ -70,6 +70,7 @@ import { EXTRAS_CATALOG } from "./constants/catalog";
 import { clamp, normalizeUser, getRecipeCost, exportToCSV } from "./utils/helpers";
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
+import * as salonService from "./services/salonService";
 
 // ✅ NUEVO: Catálogo de extras con precios por uña
 // ✅ NUEVO: Catálogo de extras con precios por uña
@@ -809,154 +810,21 @@ const SalonApp = () => {
       newService.extras,
     );
 
-    // Descuento de consumibles por servicio
-    const deductConsumables = async (serviceCategory: string) => {
-      try {
-        // Mapeo de consumibles a descontar por categoría
-        const consumablesToDeduct: { [key: string]: number } = {};
-
-        if (serviceCategory === "manicura") {
-          // Manicura: costo total $0.33
-          consumablesToDeduct["Guantes (par)"] = 1;
-          consumablesToDeduct["Mascarilla"] = 1;
-          consumablesToDeduct["Palillo naranja"] = 1;
-          consumablesToDeduct["Bastoncillos"] = 1;
-          consumablesToDeduct["Wipes"] = 1;
-          consumablesToDeduct["Toalla desechable"] = 1;
-          consumablesToDeduct["Gorro"] = 1;
-          consumablesToDeduct["Campo quirúrgico"] = 1;
-
-        } else if (serviceCategory === "pedicura") {
-          // Pedicura: costo total ~$0.50
-          consumablesToDeduct["Campo quirúrgico"] = 1;
-          consumablesToDeduct["Algodón"] = 5;
-          consumablesToDeduct["Guantes (par)"] = 1;
-          consumablesToDeduct["Mascarilla"] = 1;
-          consumablesToDeduct["Palillo naranja"] = 1;
-          consumablesToDeduct["Wipes"] = 1;
-          consumablesToDeduct["Gorro"] = 1;
-          consumablesToDeduct["Bastoncillos"] = 1;
-        }
-
-        // Actualizar cada consumible
-        for (const [consumableName, quantity] of Object.entries(
-          consumablesToDeduct,
-        )) {
-          const consumableRef = doc(db, "consumables", consumableName);
-          const consumableSnap = await getDoc(consumableRef);
-
-          if (consumableSnap.exists()) {
-            const currentStock = consumableSnap.data().quantity || 0;
-            await updateDoc(consumableRef, {
-              quantity: Math.max(0, currentStock - quantity),
-              lastDeducted: new Date().toISOString(),
-            });
-          }
-        }
-      } catch (error) {
-        console.log("Error descargando consumibles (no critico):", error);
-      }
-    };
-
     // ✅ NUEVO: Calcular costo total de reposición basado en recetas de materiales
-    const calculateTotalReplenishmentCost = (
-      services: ServiceItem[],
-    ): number => {
-      let totalCost = 0;
-
-      for (const service of services) {
-        // Buscar la receta del servicio en materialRecipes
-        const recipe = materialRecipes.find(
-          (r) =>
-            r.serviceName.toLowerCase() === service.serviceName.toLowerCase(),
-        );
-
-        if (recipe) {
-          // Si encontramos la receta, usar su costo total
-          totalCost += recipe.totalCost;
-        } else {
-          // Si no hay receta, usar el costo de desechables por defecto según categoría
-          // Intentar determinar la categoría del servicio
-          const serviceName = service.serviceName.toLowerCase();
-          if (
-            serviceName.includes("pedicure") ||
-            serviceName.includes("pedicura")
-          ) {
-            totalCost += 0.5; // Costo de desechables para pedicura
-          } else {
-            totalCost += 0.33; // Costo de desechables para manicura
-          }
-        }
-      }
-
-      return totalCost;
-    };
+    // Lógica movida a salonService.calculateTotalReplenishmentCost
 
     const addService = async () => {
       console.log("Presionado botón guardar");
-      if (!newService.client || newService.services.length === 0) {
-        showNotification("Completa cliente y al menos un servicio", "error");
-        return;
-      }
-
-      const cost = totalCost;
-
-      if (cost <= 0) {
-        showNotification("Costo inválido", "error");
-        return;
-      }
-
-      const commissionPct = clamp(
-        Number(currentUser?.commissionPct || 0),
-        0,
-        100,
-      );
-
-      // ✅ NUEVO: Calcular el costo total de reposición sumando todos los servicios
-      const totalReposicion = calculateTotalReplenishmentCost(
-        newService.services,
-      );
+      
+      if (!currentUser) return;
 
       try {
-        const serviceData: any = {
-          userId: currentUser?.id,
-          userName: currentUser?.name,
-          date: newService.date,
-          client: newService.client.trim(),
-          service:
-            newService.services.map((s) => s.serviceName).join(", ") ||
-            "Servicios personalizados",
-          cost: parseFloat(cost.toFixed(2)),
-          commissionPct,
-          paymentMethod: newService.paymentMethod,
-          reposicion: parseFloat(totalReposicion.toFixed(2)), // ✅ NUEVO: Guardar costo total de reposición
-          deleted: false,
-          timestamp: serverTimestamp(),
-        };
-
-        // Solo agregar servicios si hay
-        if (newService.services.length > 0) {
-          serviceData.services = newService.services;
-        }
-
-        // Solo agregar extras si hay
-        if (newService.extras.length > 0) {
-          serviceData.extras = newService.extras;
-        }
-
-        // Solo agregar categoría si hay
-        if (newService.category) {
-          serviceData.category = newService.category;
-        }
-
-        console.log("Guardando con datos:", serviceData);
-        const docRef = await addDoc(collection(db, "services"), serviceData);
-        console.log("Guardado exitosamente:", docRef.id);
-
-        // Descontar consumibles si hay categoría
-        if (newService.category) {
-          await deductConsumables(newService.category);
-        }
+        await salonService.addService(
+          currentUser,
+          newService,
+          materialRecipes,
+          totalCost
+        );
 
         setNewService({
           date: new Date().toISOString().split("T")[0],
@@ -980,7 +848,7 @@ const SalonApp = () => {
 
     const updateService = async (id: string, updated: Partial<Service>) => {
       try {
-        await updateDoc(doc(db, "services", id), updated);
+        await salonService.updateService(id, updated);
         setEditingService(null);
         showNotification("Servicio actualizado");
       } catch (error) {
@@ -995,11 +863,7 @@ const SalonApp = () => {
       )
         return;
       try {
-        await updateDoc(doc(db, "services", id), {
-          deleted: true,
-          deletedAt: serverTimestamp(),
-          deletedBy: currentUser?.id,
-        });
+        await salonService.softDeleteService(id, currentUser?.id);
         showNotification("Servicio eliminado (historial)");
       } catch (error) {
         console.error("Error eliminando servicio:", error);
@@ -1537,20 +1401,13 @@ const SalonApp = () => {
 
     // ✅ NUEVO: Funciones para editar y eliminar servicios
     const updateServiceCost = async (serviceId: string, newCost: number) => {
-      if (!Number.isFinite(newCost) || newCost <= 0) {
-        showNotification("Costo inválido", "error");
-        return;
-      }
-
       try {
-        await updateDoc(doc(db, "services", serviceId), {
-          cost: newCost,
-        });
+        await salonService.updateServiceCost(serviceId, newCost);
         setEditingServiceId(null);
         showNotification("Costo actualizado");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error actualizando costo:", error);
-        showNotification("Error al actualizar", "error");
+        showNotification(error.message || "Error al actualizar", "error");
       }
     };
 
@@ -1563,11 +1420,7 @@ const SalonApp = () => {
         return;
 
       try {
-        await updateDoc(doc(db, "services", serviceId), {
-          deleted: true,
-          deletedAt: serverTimestamp(),
-          deletedBy: currentUser?.id,
-        });
+        await salonService.softDeleteServiceAdmin(serviceId, currentUser?.id);
         showNotification("Servicio eliminado temporalmente");
       } catch (error) {
         console.error("Error eliminando servicio:", error);
@@ -1584,7 +1437,7 @@ const SalonApp = () => {
         return;
 
       try {
-        await deleteDoc(doc(db, "services", serviceId));
+        await salonService.permanentlyDeleteService(serviceId);
         showNotification("Servicio eliminado permanentemente");
       } catch (error) {
         console.error("Error eliminando servicio:", error);
@@ -1594,11 +1447,7 @@ const SalonApp = () => {
 
     const restoreDeletedService = async (serviceId: string) => {
       try {
-        await updateDoc(doc(db, "services", serviceId), {
-          deleted: false,
-          deletedAt: null,
-          deletedBy: null,
-        });
+        await salonService.restoreDeletedService(serviceId);
         showNotification("Servicio restaurado");
       } catch (error) {
         console.error("Error restaurando servicio:", error);
@@ -1645,7 +1494,7 @@ const SalonApp = () => {
 
     let totalReplenishmentCost = filteredServices.reduce((sum, s) => {
       // ✅ NUEVO: Usar el valor guardado de reposición, o calcular basado en categoría para compatibilidad
-      return sum + (s.reposicion || getRecipeCost(s.category));
+      return sum + (s.reposicion || salonService.calculateTotalReplenishmentCost(s.services || [], materialRecipes));
     }, 0);
     // Restar gastos de reposición
     const reposicionExpenses = filteredExpenses.reduce((sum, e) => {
