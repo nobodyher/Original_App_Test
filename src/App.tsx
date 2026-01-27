@@ -44,239 +44,41 @@ import {
   where,
 } from "firebase/firestore";
 
-import type { DocumentData } from "firebase/firestore";
+
 import { db } from "./firebase";
 
 // ====== TIPOS ======
-type Role = "owner" | "staff";
+import type {
+  AppUser,
+  PaymentMethod,
+  ServiceItem,
+  ExtraItem,
+  Service,
+  Expense,
+  Toast,
+  OwnerFilters,
+  Filters,
+  CatalogService,
+  Consumable,
+  ServiceRecipe,
+  CatalogExtra,
+  ChemicalProduct,
+  MaterialRecipe,
+} from "./types";
 
-type User = {
-  id: string;
-  name: string;
-  pin: string;
-  role: Role;
-  color: string;
-  ow: string;
-  icon: "crown" | "user";
-  commissionPct: number;
-  active: boolean;
-};
-
-type PaymentMethod = "cash" | "transfer";
-
-type ServiceItem = {
-  serviceId: string;
-  serviceName: string;
-  servicePrice: number;
-};
-
-type ExtraItem = {
-  extraId: string;
-  extraName: string;
-  pricePerNail: number;
-  nailsCount: number;
-  totalPrice: number;
-};
-
-type Service = {
-  id: string;
-  date: string;
-  client: string;
-  services?: ServiceItem[]; // ✅ NUEVO: Lista de servicios
-  extras?: ExtraItem[]; // ✅ NUEVO: Lista de extras
-  service?: string; // Para compatibilidad con datos antiguos
-  cost: number;
-  userId: string;
-  userName: string;
-  paymentMethod: PaymentMethod;
-  commissionPct: number;
-  category?: "manicura" | "pedicura"; // ✅ NUEVO
-  reposicion?: number; // ✅ NUEVO: Costo total de reposición de materiales
-  deleted?: boolean;
-};
-
-type Expense = {
-  id: string;
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
-  userId?: string;
-  deleted?: boolean;
-};
-
-type Toast = { type: "success" | "error" | "info"; message: string };
-
-type OwnerFilters = {
-  dateFrom: string;
-  dateTo: string;
-  paymentMethod: "all" | PaymentMethod;
-  includeDeleted: boolean;
-  search: string;
-};
-
-type Filters = {
-  search: string;
-  dateFrom: string;
-  dateTo: string;
-};
-
-// ====== TIPOS CATÁLOGO ======
-type CatalogService = {
-  id: string;
-  name: string;
-  category: "manicura" | "pedicura";
-  basePrice: number;
-  active: boolean;
-};
-
-type Consumable = {
-  id: string;
-  name: string;
-  unit: string;
-  unitCost: number;
-  stockQty: number;
-  minStockAlert: number;
-  active: boolean;
-};
-
-type RecipeItem = {
-  consumableId: string;
-  qty: number;
-};
-
-type ServiceRecipe = {
-  id: string;
-  serviceId: string;
-  items: RecipeItem[];
-};
-
-type CatalogExtra = {
-  id: string;
-  name: string;
-  priceSuggested: number;
-  appliesToCategories: string[];
-  active: boolean;
-};
-
-// ====== TIPOS INVENTARIO DE MATERIALES ======
-type ChemicalProduct = {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: "ml" | "kg" | "L";
-  purchasePrice: number;
-  yield: number;
-  costPerService: number;
-  stock: number;
-  minStock: number;
-  active: boolean;
-};
-
-type MaterialRecipe = {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  chemicalIds: string[];
-  chemicalsCost: number;
-  disposablesCost: number;
-  totalCost: number;
-  category: "manicura" | "pedicura";
-  active: boolean;
-};
+import { EXTRAS_CATALOG } from "./constants/catalog";
+import { clamp, normalizeUser, getRecipeCost, exportToCSV } from "./utils/helpers";
+import NotificationToast from "./components/ui/NotificationToast";
 
 // ✅ NUEVO: Catálogo de extras con precios por uña
-const EXTRAS_CATALOG: CatalogExtra[] = [
-  {
-    id: "aurora_glaseado",
-    name: "Efecto Aurora/ glaseado",
-    priceSuggested: 0.3,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "espejo_diseño",
-    name: "Efecto espejo diseño",
-    priceSuggested: 0.3,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "espejo_complete",
-    name: "Efecto espejo complete",
-    priceSuggested: 0.3,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "relieve_1",
-    name: "Relieve 1",
-    priceSuggested: 0.3,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "relieve_2",
-    name: "Relieve 2",
-    priceSuggested: 0.5,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "flor_3d",
-    name: "Flor 3D",
-    priceSuggested: 0.5,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "mano_alzada",
-    name: "Mano alzada",
-    priceSuggested: 0.5,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "aurora",
-    name: "Efecto Aurora",
-    priceSuggested: 0.5,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "blooming",
-    name: "Blooming",
-    priceSuggested: 0.5,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "esponja",
-    name: "Esponja",
-    priceSuggested: 0.5,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-  {
-    id: "reconstruccion",
-    name: "Reconstrucción",
-    priceSuggested: 2.5,
-    appliesToCategories: ["manicura", "pedicura"],
-    active: true,
-  },
-];
+// ✅ NUEVO: Catálogo de extras con precios por uña
+// EXTRAS_CATALOG imported from ./constants/catalog
 
 // ✅ NUEVO: Costos fijos de recetas por categoría
-const RECIPE_COSTS = {
-  manicura: 0.33,
-  pedicura: 0.5,
-  "Manicura completa": 0.33,
-  "Pedicura completa": 0.5,
-};
+// ✅ NUEVO: Costos fijos de recetas por categoría
+// RECIPE_COSTS imported from ./constants/catalog
 
-// ====== HELPER ======
-const clamp = (n: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, n));
+
 
 // Inject Tailwind CSS
 if (typeof document !== "undefined") {
@@ -287,8 +89,8 @@ if (typeof document !== "undefined") {
 
 const SalonApp = () => {
   // ====== Estado ======
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showPin, setShowPin] = useState<Record<string, boolean>>({});
@@ -333,30 +135,9 @@ const SalonApp = () => {
   );
 
   // ====== Helpers ======
-  const normalizeUser = (u: DocumentData & { id: string }): User => {
-    const commissionPct =
-      typeof u.commissionPct === "number"
-        ? clamp(u.commissionPct, 0, 100)
-        : u.commissionPct != null
-          ? clamp(parseFloat(u.commissionPct) || 0, 0, 100)
-          : u.role === "owner"
-            ? 0
-            : 35;
 
-    return {
-      id: u.id,
-      name: u.name ?? "Sin nombre",
-      pin: String(u.pin ?? ""),
-      role: u.role ?? "staff",
-      color: u.color ?? "from-teal-500 to-emerald-600",
-      ow: u.ow ?? "",
-      icon: u.icon ?? "user",
-      commissionPct,
-      active: u.active !== false,
-    };
-  };
 
-  const getUserById = (id: string): User | undefined =>
+  const getUserById = (id: string): AppUser | undefined =>
     users.find((u) => u.id === id);
 
   const getCommissionPctForService = (s: Service): number => {
@@ -372,11 +153,7 @@ const SalonApp = () => {
     return (cost * pct) / 100;
   };
 
-  // ✅ NUEVO: Función para obtener el costo de receta según categoría
-  const getRecipeCost = (category?: string): number => {
-    if (!category) return 0;
-    return (RECIPE_COSTS as Record<string, number>)[category] || 0;
-  };
+
 
   // ✅ NUEVO: Función para obtener el costo de materiales de una receta por serviceId
   const getRecipeCostByServiceId = (serviceId?: string): number => {
@@ -807,48 +584,9 @@ const SalonApp = () => {
     setTimeout(() => setNotification(null), 2800);
   };
 
-  const Notification = () => {
-    if (!notification) return null;
-    const bg =
-      notification.type === "success"
-        ? "bg-green-500"
-        : notification.type === "error"
-          ? "bg-red-500"
-          : "bg-blue-500";
-    const Icon =
-      notification.type === "success"
-        ? CheckCircle
-        : notification.type === "error"
-          ? XCircle
-          : AlertTriangle;
 
-    return (
-      <div
-        className={`fixed top-4 right-4 ${bg} text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce`}
-      >
-        <Icon size={24} />
-        <span className="font-semibold">{notification.message}</span>
-      </div>
-    );
-  };
 
-  // ====== CSV ======
-  const exportToCSV = (data: any[], filename: string) => {
-    if (!data || data.length === 0) {
-      showNotification("No hay datos para exportar", "error");
-      return;
-    }
-    const headers = Object.keys(data[0]).join(",");
-    const rows = data.map((row) => Object.values(row).join(",")).join("\n");
-    const csv = `${headers}\n${rows}`;
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${filename}_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    showNotification("Reporte descargado");
-  };
+
 
   // ====== Login ======
   const LoginScreen = () => {
@@ -893,6 +631,7 @@ const SalonApp = () => {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
+        <NotificationToast notification={notification} />
         <div className="w-full max-w-5xl">
           <div className="text-center mb-12">
             <div className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-3xl shadow-2xl mb-6">
@@ -1327,6 +1066,7 @@ const SalonApp = () => {
 
     return (
       <div className="min-h-screen bg-gray-50">
+        <NotificationToast notification={notification} />
         <div
           className={`bg-gradient-to-r ${currentUser?.color} text-white p-6 shadow-lg`}
         >
@@ -1608,7 +1348,14 @@ const SalonApp = () => {
             <div className="p-6 bg-gray-50 border-b flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-800">Mis Servicios</h2>
               <button
-                onClick={() => exportToCSV(filteredServices, "mis_servicios")}
+                onClick={() => {
+                  const success = exportToCSV(filteredServices, "mis_servicios");
+                  if (success) {
+                    showNotification("Reporte descargado");
+                  } else {
+                    showNotification("No hay datos para exportar", "error");
+                  }
+                }}
                 className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-sm"
               >
                 <Download size={18} />
@@ -4807,6 +4554,7 @@ const SalonApp = () => {
   const OwnerScreen = () => {
     return (
       <div className="min-h-screen bg-gray-50">
+        <NotificationToast notification={notification} />
         <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 shadow-lg">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <div>
