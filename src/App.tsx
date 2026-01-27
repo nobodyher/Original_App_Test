@@ -69,6 +69,7 @@ import type {
 import { EXTRAS_CATALOG } from "./constants/catalog";
 import { clamp, normalizeUser, getRecipeCost, exportToCSV } from "./utils/helpers";
 import NotificationToast from "./components/ui/NotificationToast";
+import * as userService from "./services/userService";
 
 // ✅ NUEVO: Catálogo de extras con precios por uña
 // ✅ NUEVO: Catálogo de extras con precios por uña
@@ -178,57 +179,7 @@ const SalonApp = () => {
   // ====== Inicializar usuarios base (solo una vez) ======
   const initializeDefaultUsers = async () => {
     try {
-      await runTransaction(db, async (tx) => {
-        const metaRef = doc(db, "meta", "app");
-        const metaSnap = await tx.get(metaRef);
-
-        if (metaSnap.exists() && metaSnap.data()?.seeded) return;
-
-        const defaultUsers = [
-          {
-            name: "Principal",
-            pin: "2773",
-            role: "owner",
-            color: "from-purple-500 to-indigo-600",
-            icon: "crown",
-            commissionPct: 0,
-            active: true,
-            createdAt: serverTimestamp(),
-          },
-          {
-            name: "Emily",
-            pin: "6578",
-            role: "staff",
-            color: "from-pink-500 to-rose-600",
-            icon: "user",
-            commissionPct: 35,
-            active: true,
-            createdAt: serverTimestamp(),
-          },
-          {
-            name: "Damaris",
-            pin: "2831",
-            role: "staff",
-            color: "from-blue-500 to-cyan-600",
-            icon: "user",
-            commissionPct: 35,
-            active: true,
-            createdAt: serverTimestamp(),
-          },
-        ];
-
-        defaultUsers.forEach((u) => {
-          const newRef = doc(collection(db, "users"));
-          tx.set(newRef, u);
-        });
-
-        tx.set(
-          metaRef,
-          { seeded: true, seededAt: serverTimestamp() },
-          { merge: true },
-        );
-      });
-
+      await userService.initializeDefaultUsers();
       setInitialized(true);
     } catch (error) {
       console.error("Error inicializando usuarios:", error);
@@ -2873,32 +2824,12 @@ const SalonApp = () => {
 
     // Crear nuevo usuario
     const createNewUser = async () => {
-      if (!newUser.name || !newUser.pin || !newUser.commissionPct) {
-        showNotification("Completa todos los campos", "error");
-        return;
-      }
-
-      const commPct = parseFloat(newUser.commissionPct);
-      if (!Number.isFinite(commPct) || commPct < 0 || commPct > 100) {
-        showNotification("Porcentaje de comisión inválido (0-100)", "error");
-        return;
-      }
-
-      if (newUser.pin.length < 4) {
-        showNotification("PIN debe tener al menos 4 dígitos", "error");
-        return;
-      }
-
       try {
-        await addDoc(collection(db, "users"), {
-          name: newUser.name.trim(),
-          pin: newUser.pin.trim(),
-          role: "staff",
+        await userService.createNewUser({
+          name: newUser.name,
+          pin: newUser.pin,
+          commissionPct: newUser.commissionPct,
           color: newUser.color,
-          icon: "user",
-          commissionPct: commPct,
-          active: true,
-          createdAt: serverTimestamp(),
         });
 
         setNewUser({
@@ -2908,9 +2839,9 @@ const SalonApp = () => {
           color: "from-blue-500 to-blue-600",
         });
         showNotification("Usuario creado exitosamente");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error creando usuario:", error);
-        showNotification("Error al crear usuario", "error");
+        showNotification(error.message || "Error al crear usuario", "error");
       }
     };
 
@@ -2919,24 +2850,13 @@ const SalonApp = () => {
       userId: string,
       newCommission: number,
     ) => {
-      if (
-        !Number.isFinite(newCommission) ||
-        newCommission < 0 ||
-        newCommission > 100
-      ) {
-        showNotification("Porcentaje inválido (0-100)", "error");
-        return;
-      }
-
       try {
-        await updateDoc(doc(db, "users", userId), {
-          commissionPct: newCommission,
-        });
+        await userService.updateUserCommission(userId, newCommission);
         setEditingUserCommission(null);
         showNotification("Comisión actualizada");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error actualizando comisión:", error);
-        showNotification("Error al actualizar", "error");
+        showNotification(error.message || "Error al actualizar", "error");
       }
     };
 
@@ -2945,11 +2865,9 @@ const SalonApp = () => {
       if (!window.confirm("¿Desactivar este usuario?")) return;
 
       try {
-        await updateDoc(doc(db, "users", userId), {
-          active: false,
-        });
+        await userService.deactivateUser(userId);
         showNotification("Usuario desactivado");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error desactivando usuario:", error);
         showNotification("Error al desactivar", "error");
       }
@@ -2965,9 +2883,9 @@ const SalonApp = () => {
         return;
 
       try {
-        await deleteDoc(doc(db, "users", userId));
+        await userService.deleteUserPermanently(userId);
         showNotification("Usuario eliminado permanentemente");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error eliminando usuario:", error);
         showNotification("Error al eliminar", "error");
       }
