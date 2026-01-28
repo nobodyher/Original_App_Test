@@ -1,29 +1,18 @@
 import { useEffect, useState } from "react";
-import {
-// Unused icons removed
-} from "lucide-react";
-
-// ====== TIPOS ======
-import type {
-  AppUser,
-  Toast,
-  Service,
-  CatalogService,
-  Consumable,
-  ChemicalProduct,
-} from "./types";
+import type { Toast } from "./types";
 
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
 import * as salonService from "./services/salonService";
 import * as inventoryService from "./services/inventoryService";
 import * as expenseService from "./services/expenseService";
+
 import StaffScreen from "./features/staff/StaffScreen";
 import OwnerScreen from "./features/admin/OwnerScreen";
+import LoginScreen from "./features/auth/LoginScreen";
 
 import { useAuth } from "./hooks/useAuth"; 
 import { useSalonData } from "./hooks/useSalonData"; 
-import LoginScreen from "./features/auth/LoginScreen"; 
 
 // Tailwind injected in main.tsx
 
@@ -40,7 +29,6 @@ const SalonApp = () => {
     materialRecipes,
   } = useSalonData(initialized);
 
-
   const [notification, setNotification] = useState<Toast | null>(null);
 
   // ====== Notificaciones ======
@@ -51,9 +39,6 @@ const SalonApp = () => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 2800);
   };
-
-
-
 
   useEffect(() => {
     // Inicializar catálogo usando el servicio
@@ -66,7 +51,6 @@ const SalonApp = () => {
         showNotification("Error al inicializar catálogo", "error");
       });
   }, []);
-
 
   // ====== Render ======
   if (!currentUser) return (
@@ -90,7 +74,7 @@ const SalonApp = () => {
         catalogExtras={catalogExtras}
         materialRecipes={materialRecipes}
         consumables={consumables}
-        chemicalProducts={chemicalProducts} // Note: This variable was removed from destructuring? Wait.
+        chemicalProducts={chemicalProducts}
         showNotification={showNotification}
         addExpense={expenseService.addExpense}
         deleteExpense={expenseService.deleteExpense}
