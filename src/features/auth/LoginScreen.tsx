@@ -126,7 +126,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               return (
               <div
                 key={user.id}
-                className="group relative flex flex-col w-full max-w-[380px] bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden"
+                tabIndex={0}
+                onKeyDown={(e) => handleKeyDown(e, user.id)}
+                className="group relative flex flex-col w-full max-w-[380px] bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden outline-none focus:ring-4 focus:ring-purple-400/50 cursor-pointer"
+                onClick={(e) => {
+                  // Ensure focus on click
+                  e.currentTarget.focus();
+                }}
               >
                 {/* User Header / Avatar */}
                 <div className="relative p-8 pb-4 flex flex-col items-center z-10">
@@ -168,8 +174,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                             <button
                                 key={num}
-                                onClick={() => handlePinEntry(user.id, num.toString())}
-                                className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-gray-700 hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent re-focusing parent if clicking button? 
+                                  // Actually, we WANT parent to stay focused so typing continues working.
+                                  // But clicking a button might steal focus if we aren't careful.
+                                  // Let's explicitly keep focus on the card if possible or just rely on the card wrapper capturing keys if focused.
+                                  // If button is clicked, it gets focus. Keydown on button propagates to parent? 
+                                  // Yes, event bubbling. So if a button inside is focused, and we type, it should bubble up.
+                                  handlePinEntry(user.id, num.toString())
+                                }}
+                                tabIndex={-1} // Prevent tabbing to individual number buttons to keep Tab navigation clean (user card -> next user card)
+                                className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-gray-700 hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none focus:bg-white/80"
                             >
                                 {num}
                             </button>
@@ -177,21 +192,24 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                         {/* Empty spacer or 0 */}
                         <div /> 
                         <button
-                             onClick={() => handlePinEntry(user.id, "0")}
-                             className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-gray-700 hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center"
+                             onClick={(e) => { e.stopPropagation(); handlePinEntry(user.id, "0"); }}
+                             tabIndex={-1}
+                             className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-gray-700 hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none"
                         >
                             0
                         </button>
                         <button
-                             onClick={() => handleBackspace(user.id)}
-                             className="h-16 rounded-2xl bg-white/30 border border-white/40 shadow-sm text-gray-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center"
+                             onClick={(e) => { e.stopPropagation(); handleBackspace(user.id); }}
+                             tabIndex={-1}
+                             className="h-16 rounded-2xl bg-white/30 border border-white/40 shadow-sm text-gray-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none"
                         >
                            <span className="text-xl">⌫</span>
                         </button>
                     </div>
 
                     <button
-                        onClick={() => handleLogin(user.id)}
+                        onClick={(e) => { e.stopPropagation(); handleLogin(user.id); }}
+                        tabIndex={-1}
                         disabled={currentPin.length < 4}
                          className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all duration-300 ${
                             currentPin.length === 4 
@@ -203,14 +221,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                         Acceder
                     </button>
                 </div>
-                
-                {/* Hidden input for keyboard focus/support */}
-                <input
-                    type="password"
-                    className="absolute opacity-0 w-0 h-0"
-                    autoFocus={true} 
-                    onKeyDown={(e) => handleKeyDown(e, user.id)}
-                />
               </div>
           )})}
         </div>

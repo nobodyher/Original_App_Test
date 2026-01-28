@@ -3,13 +3,14 @@ import {
   Plus,
   Trash2,
   Edit2,
-  Save,
   X,
-  Download,
   Check,
   LogOut,
   ChevronDown,
   Search,
+  TrendingUp,
+  User,
+  Crown,
 } from "lucide-react";
 import NotificationToast from "../../components/ui/NotificationToast";
 import type {
@@ -25,7 +26,6 @@ import type {
   Toast,
   Filters,
 } from "../../types";
-import { exportToCSV } from "../../utils/helpers";
 import { calcCommissionAmount } from "../../services/salonService";
 import type { NewServiceState } from "../../services/salonService";
 
@@ -236,402 +236,415 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
     return sum + calcCommissionAmount(s, [currentUser]);
   }, 0);
 
+  // ... Logic remains essentially the same, just UI changes ...
+
   if (!currentUser) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/50 pb-20">
       <NotificationToast notification={notification} />
-      <div className={`bg-gradient-to-r ${currentUser.color} text-white p-6 shadow-lg`}>
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Hola, {currentUser.name}</h1>
-            <p className="text-white/80">Registra tus servicios</p>
-          </div>
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-lg hover:bg-white/30 transition shadow-md border border-white/30"
-          >
-            <LogOut size={20} />
-            Salir
-          </button>
-        </div>
+      
+      {/* Header with Glassmorphism */}
+      <div className={`relative overflow-hidden bg-gradient-to-r ${currentUser.color} pb-12 pt-8 px-6 shadow-xl`}>
+         <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]" />
+         <div className="relative max-w-5xl mx-auto flex justify-between items-end">
+            <div>
+              <p className="text-white/80 font-medium mb-1 uppercase tracking-wider text-xs">Panel de Staff</p>
+              <h1 className="text-3xl font-black text-white tracking-tight">Hola, {currentUser.name}</h1>
+            </div>
+            
+            <button
+               onClick={onLogout}
+               className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl transition-all border border-white/20 text-sm font-bold shadow-lg"
+            >
+               <LogOut size={18} />
+               <span className="hidden sm:inline">Salir</span>
+            </button>
+         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Form Section */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Plus size={24} className="text-pink-500" />
-            Agregar Nuevo Servicio
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-            <input
-              type="date"
-              value={newService.date}
-              onChange={(e) => setNewService({ ...newService, date: e.target.value })}
-              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-            />
-            <input
-              type="text"
-              placeholder="Nombre del cliente"
-              value={newService.client}
-              onChange={(e) => setNewService({ ...newService, client: e.target.value })}
-              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-            />
-            <select
-              value={selectedServiceId}
-              onChange={(e) => {
-                const selected = activeServices.find((cs) => cs.id === e.target.value);
-                if (selected) {
-                  selectCatalogService(selected);
-                  setSelectedServiceId("");
-                }
-              }}
-              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-            >
-              <option value="">Servicio</option>
-              {activeServices.map((cs) => (
-                <option key={cs.id} value={cs.id}>
-                  {cs.name} - ${cs.basePrice}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newService.paymentMethod}
-              onChange={(e) => setNewService({ ...newService, paymentMethod: e.target.value as PaymentMethod })}
-              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-            >
-              <option value="cash">Efectivo</option>
-              <option value="transfer">Transferencia</option>
-            </select>
-            <select
-              value={newService.category || ""}
-              onChange={(e) => setNewService({ ...newService, category: (e.target.value as "manicura" | "pedicura") || undefined })}
-              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-            >
-              <option value="">Categoría (opcional)</option>
-              <option value="manicura">Manicura completa</option>
-              <option value="pedicura">Pedicura completa</option>
-            </select>
-          </div>
-
-          {/* Added Services List */}
-          {newService.services.length > 0 && (
-            <div className="mb-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
-              <p className="font-bold text-green-800 mb-3">Servicios seleccionados:</p>
-              <div className="space-y-2">
-                {newService.services.map((s, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-lg border border-green-200">
-                    <div>
-                      <p className="font-semibold text-gray-800">{s.serviceName}</p>
-                      <p className="text-sm text-green-700">${s.servicePrice.toFixed(2)}</p>
-                    </div>
-                    <button onClick={() => removeServiceFromList(idx)} className="text-red-600 hover:text-red-800 transition">
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+      {/* Main Content using Negative Margin for overlapping effect */}
+      <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-10 space-y-6">
+         
+         {/* Stats Row */}
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl shadow-lg p-5 border border-purple-50 flex flex-col justify-between h-28 relative overflow-hidden group">
+               <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                  <Check size={64} className="text-purple-600" />
+               </div>
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Servicios Hoy</p>
+               <p className="text-4xl font-black text-gray-800">{userServices.length}</p>
             </div>
-          )}
+            <div className="bg-white rounded-2xl shadow-lg p-5 border border-green-50 flex flex-col justify-between h-28 relative overflow-hidden group">
+               <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                  <TrendingUp size={64} className="text-green-600" />
+               </div>
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Ventas Totales</p>
+               <p className="text-4xl font-black text-green-600">${totalToday.toFixed(2)}</p>
+            </div>
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg p-5 flex flex-col justify-between h-28 relative overflow-hidden text-white">
+               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Tu Comisión Est.</p>
+               <p className="text-4xl font-black text-yellow-400">${finalTotalCommission.toFixed(2)}</p>
+            </div>
+         </div>
 
-          {/* Extras Selector */}
-          <div className="bg-blue-50 rounded-lg border-2 border-blue-200 p-4 mb-4">
-            <button
-              onClick={() => setShowExtrasSelector(!showExtrasSelector)}
-              className="w-full flex justify-between items-center font-bold text-blue-800 hover:text-blue-900 transition"
-            >
-              <span>Extras (elige varios y coloca las uñas)</span>
-              <span className={`transform transition-transform ${showExtrasSelector ? "rotate-180" : ""}`}>
-                <ChevronDown size={20} />
-              </span>
-            </button>
-            <p className="text-xs text-blue-700 mt-1 mb-3">Ejemplo: Extra efecto ojo de gato — Uñas: 2. Deja en 0 si no aplica.</p>
-            {showExtrasSelector && (
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {catalogExtras.filter((e) => e.active).map((extra) => {
-                  const current = newService.extras.find((e) => e.extraId === extra.id);
-                  return (
-                    <div key={extra.id} className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-100">
-                      <div>
-                        <p className="font-semibold text-gray-800">{extra.name}</p>
-                        <p className="text-xs text-gray-500">
-                          ${((extra as any).price || extra.priceSuggested || 0).toFixed(2)} por uña
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-gray-500">Uñas</label>
+         {/* NEW SERVICE FORM - Split into Cards */}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left Column: Form Inputs */}
+            <div className="lg:col-span-2 space-y-6">
+               
+               {/* 1. Client & Basics Card */}
+               <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                     <span className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">
+                        <User size={16} />
+                     </span>
+                     Datos del Cliente
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase ml-2">Fecha</label>
                         <input
-                          type="number"
-                          min={0}
-                          max={10}
-                          value={current?.nailsCount ?? 0}
-                          onChange={(e) => updateExtraNailsCount(extra.id, parseInt(e.target.value || "0", 10))}
-                          className="w-20 px-3 py-2 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-blue-500 focus:outline-none"
+                           type="date"
+                           value={newService.date}
+                           onChange={(e) => setNewService({ ...newService, date: e.target.value })}
+                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-100 transition-all outline-none font-medium text-gray-700"
                         />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Added Extras List */}
-          {newService.extras.length > 0 && (
-            <div className="mb-4 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-              <p className="font-bold text-orange-800 mb-3">Extras seleccionados:</p>
-              <div className="space-y-2">
-                {newService.extras.map((e, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-lg border border-orange-200">
-                    <div>
-                      <p className="font-semibold text-gray-800">{e.extraName}</p>
-                      <p className="text-sm text-orange-700">
-                        ${e.pricePerNail.toFixed(2)}/uña × {e.nailsCount} uñas = ${e.totalPrice.toFixed(2)}
-                      </p>
-                    </div>
-                    <button onClick={() => removeExtraFromList(idx)} className="text-red-600 hover:text-red-800 transition">
-                      <Trash2 size={18} />
-                    </button>
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase ml-2">Cliente</label>
+                        <input
+                           type="text"
+                           placeholder="Nombre del cliente"
+                           value={newService.client}
+                           onChange={(e) => setNewService({ ...newService, client: e.target.value })}
+                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-100 transition-all outline-none font-medium text-gray-700 placeholder-gray-400"
+                        />
+                     </div>
                   </div>
-                ))}
-              </div>
+               </div>
+
+               {/* 2. Service Selection Card */}
+               <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                     <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                        <Plus size={16} />
+                     </span>
+                     Seleccionar Servicios
+                  </h3>
+                  
+                  {/* Category Buttons (Mobile Friendly) */}
+                  <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                    {["manicura", "pedicura"].map((cat) => (
+                       <button
+                          key={cat}
+                          onClick={() => setNewService({ ...newService, category: cat as any })}
+                          className={`flex-shrink-0 px-6 py-3 rounded-xl border-2 font-bold transition-all ${
+                             newService.category === cat
+                                ? "border-purple-500 bg-purple-50 text-purple-700 shadow-md"
+                                : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                          }`}
+                       >
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                       </button>
+                    ))}
+                  </div>
+
+                  {/* Service Dropdown */}
+                  <div className="relative mb-6">
+                     <select
+                        value={selectedServiceId}
+                        onChange={(e) => {
+                           const selected = activeServices.find((cs) => cs.id === e.target.value);
+                           if (selected) {
+                              selectCatalogService(selected);
+                              setSelectedServiceId("");
+                           }
+                        }}
+                        className="w-full h-14 pl-4 pr-10 rounded-xl bg-gray-50 border-2 border-gray-100 text-gray-700 font-medium appearance-none focus:border-purple-500 focus:bg-white focus:outline-none transition-colors cursor-pointer"
+                     >
+                        <option value="">+ Añadir servicio al carrito...</option>
+                        {activeServices.map((cs) => (
+                           <option key={cs.id} value={cs.id}>
+                              {cs.name} — ${cs.basePrice}
+                           </option>
+                        ))}
+                     </select>
+                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <ChevronDown size={20} />
+                     </div>
+                  </div>
+
+                  {/* Selected Services List */}
+                  {newService.services.length > 0 && (
+                     <div className="space-y-3">
+                        {newService.services.map((s, idx) => (
+                           <div key={idx} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 group hover:border-purple-200 transition-colors">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-2 h-10 rounded-full bg-purple-500"></div>
+                                 <p className="font-bold text-gray-700">{s.serviceName}</p>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                 <span className="font-bold text-gray-800">${s.servicePrice}</span>
+                                 <button 
+                                    onClick={() => removeServiceFromList(idx)} 
+                                    className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                                 >
+                                    <Trash2 size={16} />
+                                 </button>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  )}
+               </div>
+               
+               {/* 3. Extras Card */}
+               <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+                 <button
+                    onClick={() => setShowExtrasSelector(!showExtrasSelector)}
+                    className="w-full flex justify-between items-center"
+                 > 
+                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                            <Crown size={16} />
+                        </span>
+                        Extras & Decoración
+                    </h3>
+                    <ChevronDown size={20} className={`text-gray-400 transition-transform ${showExtrasSelector ? "rotate-180" : ""}`} />
+                 </button>
+
+                 {(showExtrasSelector || newService.extras.length > 0) && (
+                    <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                       {/* Selector Area */}
+                        {showExtrasSelector && (
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                              {catalogExtras.filter((e) => e.active).map((extra) => {
+                                 const current = newService.extras.find((e) => e.extraId === extra.id);
+                                 const isActive = !!current;
+                                 return (
+                                    <div 
+                                       key={extra.id} 
+                                       className={`p-3 rounded-xl border-2 transition-all cursor-pointer ${isActive ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-white hover:border-orange-200'}`}
+                                    >
+                                       <div className="flex justify-between items-start mb-2">
+                                          <p className={`font-bold text-sm leading-tight ${isActive ? 'text-orange-900' : 'text-gray-700'}`}>{extra.name}</p>
+                                          <span className="text-xs font-semibold bg-white px-2 py-0.5 rounded border border-gray-100">
+                                             ${((extra as any).price || extra.priceSuggested || 0)}
+                                          </span>
+                                       </div>
+                                       
+                                       <div className="flex items-center justify-between mt-2 bg-white/50 rounded-lg p-1">
+                                          <span className="text-[10px] uppercase font-bold text-gray-400 pl-1">Uñas:</span>
+                                          <input
+                                             type="number"
+                                             min={0}
+                                             max={10}
+                                             value={current?.nailsCount ?? 0}
+                                             onClick={(e) => e.stopPropagation()}
+                                             onChange={(e) => updateExtraNailsCount(extra.id, parseInt(e.target.value || "0", 10))}
+                                             className="w-12 text-center font-bold bg-transparent border-b-2 border-orange-200 focus:border-orange-500 focus:outline-none p-1"
+                                          />
+                                       </div>
+                                    </div>
+                                 );
+                              })}
+                           </div>
+                        )}
+
+                        {/* Selected Extras List */}
+                        {newService.extras.length > 0 && (
+                           <div className="space-y-2">
+                              {newService.extras.map((e, idx) => (
+                                 <div key={idx} className="flex justify-between items-center text-sm p-3 bg-orange-50/50 rounded-lg border border-orange-100">
+                                    <div className="flex flex-col">
+                                       <span className="font-bold text-gray-700">{e.extraName}</span>
+                                       <span className="text-orange-600 text-xs font-medium">{e.nailsCount} uñas × ${e.pricePerNail}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                       <span className="font-bold text-gray-800">${e.totalPrice.toFixed(2)}</span>
+                                       <button onClick={() => removeExtraFromList(idx)} className="text-gray-400 hover:text-red-500">
+                                          <X size={16} />
+                                       </button>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        )}
+                    </div>
+                 )}
+               </div>
+
             </div>
-          )}
 
-          {/* Total Cost */}
-          <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border-2 border-pink-200 p-4 mb-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-gray-600 font-semibold">COSTO TOTAL:</p>
-                <p className="text-3xl font-bold text-pink-600">${totalCost.toFixed(2)}</p>
-              </div>
-              <button
-                onClick={handleAddService}
-                disabled={newService.client === "" || newService.services.length === 0}
-                className={`text-white px-8 py-3 rounded-lg hover:shadow-lg transition font-bold flex items-center gap-2 ${
-                  newService.client === "" || newService.services.length === 0
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
-                }`}
-              >
-                <Check size={20} />
-                Guardar Servicio
-              </button>
+            {/* Right Column: Total & Pay */}
+            <div className="lg:col-span-1">
+               <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-6 sticky top-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-6">Resumen</h3>
+                  
+                  <div className="space-y-4 mb-8">
+                     <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Servicios ({newService.services.length})</span>
+                        <span className="font-medium">${newService.services.reduce((acc, s) => acc + s.servicePrice, 0).toFixed(2)}</span>
+                     </div>
+                     <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Extras ({newService.extras.length})</span>
+                        <span className="font-medium">${newService.extras.reduce((acc, e) => acc + e.totalPrice, 0).toFixed(2)}</span>
+                     </div>
+                     <div className="h-px bg-gray-100 my-2" />
+                     <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-800">Total</span>
+                        <span className="text-3xl font-black text-gray-900">${totalCost.toFixed(2)}</span>
+                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                     <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Método de Pago</label>
+                        <div className="grid grid-cols-2 gap-2">
+                           <button
+                              onClick={() => setNewService({ ...newService, paymentMethod: "cash" })}
+                              className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                                 newService.paymentMethod === "cash"
+                                    ? "border-green-500 bg-green-50 text-green-700"
+                                    : "border-gray-100 text-gray-400 hover:border-gray-200"
+                              }`}
+                           >
+                              Efectivo
+                           </button>
+                           <button
+                              onClick={() => setNewService({ ...newService, paymentMethod: "transfer" })}
+                              className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                                 newService.paymentMethod === "transfer"
+                                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                                    : "border-gray-100 text-gray-400 hover:border-gray-200"
+                              }`}
+                           >
+                              Transferencia
+                           </button>
+                        </div>
+                     </div>
+
+                     <button
+                        onClick={handleAddService}
+                        disabled={newService.client === "" || newService.services.length === 0}
+                        className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 ${
+                           newService.client === "" || newService.services.length === 0
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-black text-white hover:bg-gray-900"
+                        }`}
+                     >
+                        <Check size={20} />
+                        Confirmar Cobro
+                     </button>
+                  </div>
+               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="bg-gradient-to-br from-green-400 to-green-600 text-white rounded-xl shadow-lg p-6 mb-6">
-          <h3 className="text-sm font-semibold mb-2 opacity-90">Servicios Hoy</h3>
-          <div className="flex gap-8">
-             <div>
-                <p className="text-3xl font-bold">{userServices.length}</p>
-                <p className="text-green-100 text-sm mt-1">servicios completados</p>
-             </div>
-             <div>
-                <p className="text-3xl font-bold">${totalToday.toFixed(2)}</p>
-                <p className="text-green-100 text-sm mt-1">ventas totales</p>
-             </div>
-             <div>
-                <p className="text-3xl font-bold text-yellow-200">${finalTotalCommission.toFixed(2)}</p>
-                <p className="text-green-100 text-sm mt-1">comisión estimada</p>
-             </div>
-          </div>
-        </div>
-
-        {/* Services List Table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="p-6 bg-gray-50 border-b flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-800">Mis Servicios</h2>
-            <button
-              onClick={() => {
-                const success = exportToCSV(filteredServices, "mis_servicios");
-                if (success) showNotification("Reporte descargado");
-                else showNotification("No hay datos para exportar", "error");
-              }}
-              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-sm"
-            >
-              <Download size={18} />
-              Exportar CSV
-            </button>
-          </div>
-
-          {/* Filter UI */}
-          <div className="p-4 bg-gray-50 border-b flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-300 shadow-sm focus-within:border-pink-500 focus-within:ring-2 focus-within:ring-pink-200">
-               <Search size={18} className="text-gray-400" />
-               <input 
-                  type="text" 
-                  placeholder="Buscar..." 
-                  value={filters.search} 
-                  onChange={e => setFilters({...filters, search: e.target.value})}
-                  className="bg-transparent border-none focus:outline-none text-sm text-gray-700 w-48"
-               />
+         </div>
+         
+         {/* Services List - Modern Card View */}
+         <div className="pt-10">
+            <div className="flex justify-between items-end mb-6">
+               <h2 className="text-2xl font-black text-gray-800">Mis Servicios</h2>
+               
+               {/* Search / Filters Condensed */}
+               <div className="flex gap-2">
+                  <div className="relative group">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-pink-500" size={16} />
+                     <input 
+                        type="text" 
+                        placeholder="Buscar..."
+                        value={filters.search}
+                        onChange={e => setFilters({...filters, search: e.target.value})}
+                        className="pl-9 pr-4 py-2 rounded-xl bg-white border border-gray-200 focus:border-pink-500 focus:ring-4 focus:ring-pink-100 outline-none shadow-sm transition-all w-32 focus:w-48"
+                     />
+                  </div>
+               </div>
             </div>
-            <div className="flex gap-2 items-center">
-               <input 
-                  type="date" 
-                  value={filters.dateFrom} 
-                  onChange={e => setFilters({...filters, dateFrom: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-pink-500"
-               />
-               <span className="text-gray-400">a</span>
-               <input 
-                  type="date" 
-                  value={filters.dateTo} 
-                  onChange={e => setFilters({...filters, dateTo: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-pink-500"
-               />
-            </div>
-            {(filters.search || filters.dateFrom || filters.dateTo) && (
-               <button 
-                  onClick={() => setFilters({search: "", dateFrom: "", dateTo: ""})}
-                  className="text-sm text-red-500 hover:text-red-700 underline"
-               >
-                  Limpiar filtros
-               </button>
-            )}
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Fecha</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Cliente</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Servicio</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Pago</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Costo</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredServices.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No hay servicios</td>
-                  </tr>
-                ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+               {filteredServices.length === 0 ? (
+                  <div className="col-span-full py-20 text-center text-gray-400">
+                     No hay servicios registrados con estos filtros.
+                  </div>
+               ) : (
                   filteredServices.slice().reverse().map((service) => {
-                    const isEditing = editingServiceId === service.id;
+                     const isEditing = editingServiceId === service.id;
+                     
+                     if (isEditing) {
+                        return (
+                           <div key={service.id} className="bg-white p-6 rounded-[2rem] shadow-xl ring-2 ring-blue-400 animate-pulse-once">
+                              {/* Edit Mode Custom Form needed here or just keep simple inputs */}
+                              <div className="space-y-3">
+                                 <p className="font-bold text-blue-600">Editando servicio...</p>
+                                 <input value={editForm.client} onChange={e => setEditForm({...editForm, client: e.target.value})} className="w-full p-2 border rounded" placeholder="Cliente" />
+                                 <input value={editForm.cost} type="number" onChange={e => setEditForm({...editForm, cost: parseFloat(e.target.value)})} className="w-full p-2 border rounded" placeholder="Costo" />
+                                 <div className="flex gap-2 pt-2">
+                                     <button onClick={() => handleUpdateService(service.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex-1">Guardar</button>
+                                     <button onClick={() => setEditingServiceId(null)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold">Cancelar</button>
+                                 </div>
+                              </div>
+                           </div>
+                        )
+                     }
 
-                    return (
-                      <tr key={service.id} className="border-b hover:bg-gray-50 transition">
-                         {isEditing ? (
-                            <>
-                              <td className="px-6 py-4">
-                                <input
-                                  type="date"
-                                  value={editForm.date || ""}
-                                  onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                                  className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-                                />
-                              </td>
-                              <td className="px-6 py-4">
-                                <input
-                                  type="text"
-                                  value={editForm.client || ""}
-                                  onChange={(e) => setEditForm({...editForm, client: e.target.value})}
-                                  className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none w-full"
-                                />
-                              </td>
-                              <td className="px-6 py-4">
-                                <input
-                                  type="text"
-                                  value={editForm.service || ""}
-                                  onChange={(e) => setEditForm({...editForm, service: e.target.value})}
-                                  className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none w-full"
-                                />
-                              </td>
-                              <td className="px-6 py-4">
-                                <select
-                                  value={editForm.paymentMethod || "cash"}
-                                  onChange={(e) => setEditForm({...editForm, paymentMethod: e.target.value as PaymentMethod})}
-                                  className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-                                >
-                                  <option value="cash">Efectivo</option>
-                                  <option value="transfer">Transferencia</option>
-                                </select>
-                              </td>
-                              <td className="px-6 py-4">
-                                <input
-                                  type="number"
-                                  value={editForm.cost || 0}
-                                  onChange={(e) => setEditForm({...editForm, cost: parseFloat(e.target.value)})}
-                                  className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-pink-500 focus:outline-none"
-                                />
-                              </td>
-                              <td className="px-6 py-4 flex gap-2">
-                                <button
-                                  onClick={() => handleUpdateService(service.id)}
-                                  className="text-green-600 hover:text-green-800"
-                                >
-                                  <Save size={18} />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingServiceId(null);
-                                    setEditForm({});
-                                  }}
-                                  className="text-gray-500 hover:text-gray-700"
-                                >
-                                  <X size={18} />
-                                </button>
-                              </td>
-                            </>
-                         ) : (
-                            <>
-                              <td className="px-6 py-4 text-sm">{service.date}</td>
-                              <td className="px-6 py-4 text-sm font-medium">{service.client}</td>
-                              <td className="px-6 py-4 text-sm">
-                                <div>
-                                  <p className="font-medium text-gray-800">{service.service || "Servicios personalizados"}</p>
-                                  {service.services && service.services.length > 0 && (
-                                    <div className="text-xs text-gray-600 mt-1">
-                                      {service.services.map((s, i) => (
-                                        <div key={i}>{s.serviceName}</div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {service.extras && service.extras.length > 0 && (
-                                    <div className="text-xs text-gray-500 mt-1 border-t pt-1">
-                                      {service.extras.map((e, i) => (
-                                        <div key={i}>+ {e.extraName} ({e.nailsCount} uñas)</div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-sm">
-                                {service.paymentMethod === "transfer" ? "Transferencia" : "Efectivo"}
-                              </td>
-                              <td className="px-6 py-4 text-sm font-bold text-green-600">${Number(service.cost).toFixed(2)}</td>
-                              <td className="px-6 py-4 flex gap-2">
-                                <button
-                                  onClick={() => handleEditClick(service)}
-                                  className="text-blue-600 hover:text-blue-800 transition"
-                                >
-                                  <Edit2 size={18} />
-                                </button>
-                                <button
-                                  onClick={() => handleSoftDeleteService(service.id)}
-                                  className="text-red-600 hover:text-red-800 transition"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                              </td>
-                            </>
-                         )}
-                      </tr>
-                    );
+                     return (
+                        <div 
+                           key={service.id} 
+                           className={`group bg-white rounded-[2rem] shadow-sm border p-5 relative overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 ${
+                              service.paymentMethod === 'cash' ? 'border-l-[6px] border-l-green-400' : 'border-l-[6px] border-l-blue-400'
+                           }`}
+                        >
+                           <div className="flex justify-between items-start mb-3">
+                              <div>
+                                 <h4 className="font-bold text-gray-800 text-lg">{service.client}</h4>
+                                 <p className="text-gray-400 text-xs font-medium">{service.date}</p>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-2xl font-black text-gray-900">${Number(service.cost).toFixed(2)}</p>
+                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                    service.paymentMethod === 'cash' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                 }`}>
+                                    {service.paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo'}
+                                 </span>
+                              </div>
+                           </div>
+
+                           <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                              {service.services?.map((s, i) => (
+                                 <div key={i} className="flex justify-between items-center text-sm mb-1 last:mb-0">
+                                    <span className="text-gray-600 font-medium">{s.serviceName}</span>
+                                 </div>
+                              ))}
+                              {service.extras && service.extras.length > 0 && (
+                                 <div className="mt-2 text-xs border-t border-gray-200 pt-2 space-y-1">
+                                    {service.extras.map((e, i) => (
+                                       <div key={i} className="flex justify-between text-gray-500">
+                                          <span>+ {e.extraName}</span>
+                                          <span>({e.nailsCount})</span>
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
+                           </div>
+
+                           <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => handleEditClick(service)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100">
+                                 <Edit2 size={14} />
+                              </button>
+                              <button onClick={() => handleSoftDeleteService(service.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100">
+                                 <Trash2 size={14} />
+                              </button>
+                           </div>
+                        </div>
+                     )
                   })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+               )}
+            </div>
+         </div>
+         
+         <div className="h-10"/> {/* Spacer */}
       </div>
     </div>
   );
