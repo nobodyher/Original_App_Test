@@ -10,9 +10,7 @@ import {
   Download,
   Check,
   X,
-  Edit2,
   CheckCircle,
-  XCircle,
 } from "lucide-react";
 import type {
   AppUser,
@@ -23,7 +21,7 @@ import type {
   PaymentMethod,
   Toast,
 } from "../../../types";
-import { exportToCSV, getRecipeCost } from "../../../utils/helpers";
+import { exportToCSV } from "../../../utils/helpers";
 import * as salonService from "../../../services/salonService";
 import * as inventoryService from "../../../services/inventoryService";
 
@@ -75,8 +73,6 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editingServiceCost, setEditingServiceCost] = useState("");
-
-  const getUserById = (id: string) => users.find((u) => u.id === id);
 
   // Local wrappers for actions with UI feedback
   const handleUpdateServiceCost = async (serviceId: string, newCost: number) => {
@@ -255,7 +251,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
     filteredServices.forEach((s) => {
       if (!stats[s.userId]) {
-        const user = getUserById(s.userId);
+        const user = users.find((u) => u.id === s.userId);
         stats[s.userId] = {
           name: s.userName,
           revenue: 0,
@@ -282,507 +278,438 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   }, [filteredServices, filteredExpenses, users]);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <Search size={24} className="text-purple-500" />
-          Filtros
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <input
-            type="date"
-            value={ownerFilters.dateFrom}
-            onChange={(e) =>
-              setOwnerFilters({ ...ownerFilters, dateFrom: e.target.value })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
-          />
-          <input
-            type="date"
-            value={ownerFilters.dateTo}
-            onChange={(e) =>
-              setOwnerFilters({ ...ownerFilters, dateTo: e.target.value })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
-          />
-          <select
-            value={ownerFilters.paymentMethod}
-            onChange={(e) =>
-              setOwnerFilters({
-                ...ownerFilters,
-                paymentMethod: e.target.value as "all" | PaymentMethod,
-              })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
-          >
-            <option value="all">Todos los pagos</option>
-            <option value="cash">Efectivo</option>
-            <option value="transfer">Transferencia</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            value={ownerFilters.search}
-            onChange={(e) =>
-              setOwnerFilters({ ...ownerFilters, search: e.target.value })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
-          />
-          <button
-            onClick={() =>
-              setOwnerFilters({
-                dateFrom: "",
-                dateTo: "",
-                paymentMethod: "all",
-                includeDeleted: false,
-                search: "",
-              })
-            }
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
-          >
-            Limpiar
-          </button>
-        </div>
-        <div className="mt-4">
-          <label className="flex items-center gap-2 text-gray-700">
-            <input
-              type="checkbox"
-              checked={ownerFilters.includeDeleted}
-              onChange={(e) =>
-                setOwnerFilters({
-                  ...ownerFilters,
-                  includeDeleted: e.target.checked,
-                })
-              }
-              className="w-4 h-4"
-            />
-            Incluir servicios eliminados
-          </label>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-green-400 to-green-600 text-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <DollarSign size={32} />
-            <h3 className="text-sm font-semibold opacity-90">Ingresos Totales</h3>
+    <div className="space-y-8 pb-20">
+      
+      {/* Header & Filters Section */}
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-50 pointer-events-none"></div>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Panel Financiero</h2>
+            <p className="text-gray-500 font-medium">Resumen de operaciones y rendimiento</p>
           </div>
-          <p className="text-3xl font-bold">${totalRevenue.toFixed(2)}</p>
-          <p className="text-green-100 text-sm mt-1">
-            {filteredServices.length} servicios
-          </p>
-        </div>
 
-        <div className="bg-gradient-to-br from-red-400 to-red-600 text-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <CreditCard size={32} />
-            <h3 className="text-sm font-semibold opacity-90">Gastos</h3>
+          <div className="flex flex-wrap items-center gap-3 bg-gray-50/80 p-2 rounded-2xl border border-gray-200/60 backdrop-blur-sm">
+             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-purple-100 transition-all">
+                <Search size={18} className="text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={ownerFilters.search}
+                  onChange={(e) => setOwnerFilters({ ...ownerFilters, search: e.target.value })}
+                  className="bg-transparent text-sm w-32 focus:outline-none text-gray-700 font-medium placeholder-gray-400"
+                />
+             </div>
+             
+             <div className="h-8 w-px bg-gray-300 mx-1 hidden md:block"></div>
+
+             <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={ownerFilters.dateFrom}
+                  onChange={(e) => setOwnerFilters({ ...ownerFilters, dateFrom: e.target.value })}
+                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-100 shadow-sm"
+                />
+                <span className="text-gray-400 font-bold">-</span>
+                <input
+                  type="date"
+                  value={ownerFilters.dateTo}
+                  onChange={(e) => setOwnerFilters({ ...ownerFilters, dateTo: e.target.value })}
+                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-100 shadow-sm"
+                />
+             </div>
+
+             <div className="h-8 w-px bg-gray-300 mx-1 hidden md:block"></div>
+
+             <select
+                value={ownerFilters.paymentMethod}
+                onChange={(e) => setOwnerFilters({ ...ownerFilters, paymentMethod: e.target.value as "all" | PaymentMethod })}
+                className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-100 shadow-sm cursor-pointer"
+             >
+                <option value="all">Todos</option>
+                <option value="cash">Efectivo</option>
+                <option value="transfer">Transferencia</option>
+             </select>
+
+             {(ownerFilters.dateFrom || ownerFilters.dateTo || ownerFilters.search || ownerFilters.paymentMethod !== 'all') && (
+                <button
+                  onClick={() => setOwnerFilters({ dateFrom: "", dateTo: "", paymentMethod: "all", includeDeleted: false, search: "" })}
+                  className="ml-2 w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                  title="Limpiar filtros"
+                >
+                  <X size={16} />
+                </button>
+             )}
           </div>
-          <p className="text-3xl font-bold">${totalExpenses.toFixed(2)}</p>
-          <p className="text-red-100 text-sm mt-1">
-            {filteredExpenses.length} registros
-          </p>
         </div>
-
-        <div className="bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Package size={32} />
-            <h3 className="text-sm font-semibold opacity-90">Reposición</h3>
-          </div>
-          <p className="text-3xl font-bold">${totalReplenishmentCost.toFixed(2)}</p>
-          <p className="text-orange-100 text-sm mt-1">consumibles</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Wallet size={32} />
-            <h3 className="text-sm font-semibold opacity-90">Ganancia Neta</h3>
-          </div>
-          <p className="text-3xl font-bold">${netProfit.toFixed(2)}</p>
-          <p className="text-purple-100 text-sm mt-1">después de costos</p>
-        </div>
-      </div>
-
-      {/* Comisiones por Personal */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <Percent size={24} className="text-blue-500" />
-          Comisiones por Personal
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {userStats.length === 0 ? (
-            <div className="col-span-full text-center text-gray-500 py-8">
-              No hay datos disponibles
-            </div>
-          ) : (
-            userStats.map((stat) => (
-              <div
-                key={stat.name}
-                className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-bold text-gray-800 text-lg">{stat.name}</h4>
-                  <span className="text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-                    {stat.services} servicios
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-white p-3 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">
-                      Ingresos Generados
-                    </p>
-                    <p className="text-2xl font-bold text-green-600">
-                      ${stat.revenue.toFixed(2)}
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-3 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">Comisión Ganada</p>
-                    <p
-                      className={`text-2xl font-bold ${
-                        stat.commission - stat.commissionPaid < 0
-                          ? "text-red-600"
-                          : "text-blue-600"
-                      }`}
-                    >
-                      {stat.commission - stat.commissionPaid < 0 ? "-" : ""}$
-                      {Math.abs(stat.commission - stat.commissionPaid).toFixed(2)}
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-3 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">Comisión Pagada</p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      ${stat.commissionPaid.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
+        
+        <div className="mt-4 flex items-center gap-2">
+            <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700 transition-colors">
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${ownerFilters.includeDeleted ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
+                  {ownerFilters.includeDeleted && <Check size={12} className="text-white" />}
               </div>
-            ))
-          )}
+              <input
+                type="checkbox"
+                checked={ownerFilters.includeDeleted}
+                onChange={(e) => setOwnerFilters({ ...ownerFilters, includeDeleted: e.target.checked })}
+                className="hidden"
+              />
+              Ver eliminados
+            </label>
         </div>
       </div>
 
-      {/* Gestión de Gastos */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <CreditCard size={24} className="text-red-500" />
-          Gestión de Gastos
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 p-4 bg-red-50 rounded-lg">
-          <input
-            type="date"
-            value={newExpense.date}
-            onChange={(e) =>
-              setNewExpense({ ...newExpense, date: e.target.value })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none text-gray-900 bg-white"
-          />
-          <input
-            type="text"
-            placeholder="Concepto"
-            value={newExpense.description}
-            onChange={(e) =>
-              setNewExpense({ ...newExpense, description: e.target.value })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none text-gray-900 bg-white"
-          />
-          <select
-            value={newExpense.category}
-            onChange={(e) =>
-              setNewExpense({
-                ...newExpense,
-                category: e.target.value,
-                userId: "",
-              })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none text-gray-900 bg-white"
-          >
-            <option value="Agua">Agua</option>
-            <option value="Luz">Luz</option>
-            <option value="Renta">Renta</option>
-            <option value="Reposicion">Reposicion</option>
-            <option value="Comisiones">Comisiones</option>
-          </select>
-          {newExpense.category === "Comisiones" && (
-            <select
-              value={newExpense.userId}
-              onChange={(e) =>
-                setNewExpense({ ...newExpense, userId: e.target.value })
-              }
-              className="px-4 py-2 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white font-semibold"
-            >
-              <option value="">Seleccionar Personal</option>
-              {users
-                .filter((u) => u.role === "staff")
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-            </select>
-          )}
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Monto $"
-            value={newExpense.amount}
-            onChange={(e) =>
-              setNewExpense({ ...newExpense, amount: e.target.value })
-            }
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none text-gray-900 bg-white"
-          />
-          <button
-            onClick={handleAddExpense}
-            className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
-          >
-            Agregar Gasto
-          </button>
+      {/* Premium Stats Cards - Banking Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Revenue Card - Emerald Premium */}
+        <div className="bg-gradient-to-br from-[#064e3b] to-[#059669] rounded-[2rem] p-6 text-white shadow-2xl shadow-green-900/20 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+             <DollarSign size={120} />
+          </div>
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                   <DollarSign size={20} />
+                </div>
+                <span className="font-medium text-emerald-100 text-sm uppercase tracking-wider">Ingresos Brutos</span>
+             </div>
+             <div>
+                <h3 className="text-4xl font-black tracking-tight mb-1">${totalRevenue.toFixed(2)}</h3>
+                <div className="flex items-center gap-2 text-emerald-200 text-xs font-medium bg-emerald-900/30 w-fit px-3 py-1 rounded-full">
+                   <span>{filteredServices.length} transacciones</span>
+                </div>
+             </div>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                  Concepto
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                  Categoría
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredExpenses.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    No hay gastos registrados
-                  </td>
-                </tr>
-              ) : (
-                filteredExpenses.slice().reverse().map((expense) => (
-                  <tr
-                    key={expense.id}
-                    className="border-b hover:bg-gray-50 transition"
-                  >
-                    <td className="px-6 py-4 text-sm">{expense.date}</td>
-                    <td className="px-6 py-4 text-sm font-medium">
-                      {expense.description}
-                    </td>
-                    <td className="px-6 py-4 text-sm">{expense.category}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-red-600">
-                      ${expense.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleDeleteExpense(expense.id)}
-                        className="text-red-600 hover:text-red-800 transition"
-                        title="Eliminar gasto"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Expenses Card - Rose Premium */}
+        <div className="bg-gradient-to-br from-[#881337] to-[#e11d48] rounded-[2rem] p-6 text-white shadow-2xl shadow-rose-900/20 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+             <CreditCard size={120} />
+          </div>
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                   <CreditCard size={20} />
+                </div>
+                <span className="font-medium text-rose-100 text-sm uppercase tracking-wider">Gastos Totales</span>
+             </div>
+             <div>
+                <h3 className="text-4xl font-black tracking-tight mb-1">${totalExpenses.toFixed(2)}</h3>
+                <div className="flex items-center gap-2 text-rose-200 text-xs font-medium bg-rose-900/30 w-fit px-3 py-1 rounded-full">
+                   <span>{filteredExpenses.length} movimientos</span>
+                </div>
+             </div>
+          </div>
+        </div>
+
+         {/* Replenishment Card - Amber Premium */}
+         <div className="bg-gradient-to-br from-[#7c2d12] to-[#d97706] rounded-[2rem] p-6 text-white shadow-2xl shadow-orange-900/20 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+             <Package size={120} />
+          </div>
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                   <Package size={20} />
+                </div>
+                <span className="font-medium text-orange-100 text-sm uppercase tracking-wider">Reposición</span>
+             </div>
+             <div>
+                <h3 className="text-4xl font-black tracking-tight mb-1">${totalReplenishmentCost.toFixed(2)}</h3>
+                <div className="flex items-center gap-2 text-orange-200 text-xs font-medium bg-orange-900/30 w-fit px-3 py-1 rounded-full">
+                   <span>Costo materiales</span>
+                </div>
+             </div>
+          </div>
+        </div>
+
+        {/* Net Profit Card - Violet Premium (Highlighted) */}
+        <div className="bg-gray-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-gray-900/30 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 ring-4 ring-gray-900/5">
+           <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-purple-900/40"></div>
+           <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
+             <Wallet size={120} />
+          </div>
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center shadow-lg shadow-violet-500/40">
+                   <Wallet size={20} className="text-white" />
+                </div>
+                <span className="font-bold text-violet-200 text-sm uppercase tracking-wider">Ganancia Neta</span>
+             </div>
+             <div>
+                <h3 className="text-4xl font-black tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                   ${netProfit.toFixed(2)}
+                </h3>
+                <div className="flex items-center gap-2 text-violet-300 text-xs font-medium">
+                   <span>Después de comisiones y costos</span>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 
-      {/* Todos los Servicios */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="p-6 bg-gray-50 border-b flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-800">Todos los Servicios</h3>
-          <button
-            onClick={() => exportToCSV(filteredServices, "todos_los_servicios")}
-            className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-sm"
-          >
-            <Download size={18} />
-            Exportar CSV
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Fecha
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Empleada
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Cliente
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Servicio
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Pago
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Costo
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Comisión
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Reposición
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredServices.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                    No hay servicios
-                  </td>
-                </tr>
-              ) : (
-                filteredServices.map((service) => (
-                  <tr
-                    key={service.id}
-                    className={`border-b hover:bg-gray-50 transition ${
-                      service.deleted ? "opacity-50 bg-red-50" : ""
-                    }`}
+      {/* Main Content Areas Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+         
+         {/* Left Column: Transactions & Financial Details (2 cols wide) */}
+         <div className="xl:col-span-2 space-y-8">
+            
+            {/* Recent Services Table Container */}
+            <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
+               <div className="px-8 py-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center bg-gray-50/50 backdrop-blur-xl">
+                  <div>
+                     <h3 className="text-xl font-bold text-gray-900">Transacciones Recientes</h3>
+                     <p className="text-gray-400 text-xs font-medium mt-1">Historial de servicios y pagos</p>
+                  </div>
+                  <button
+                     onClick={() => exportToCSV(filteredServices, "todos_los_servicios")}
+                     className="mt-4 md:mt-0 flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-gray-800 transition shadow-lg shadow-gray-900/10 text-sm font-bold"
                   >
-                    <td className="px-4 py-3 text-sm">{service.date}</td>
-                    <td className="px-4 py-3 text-sm font-medium">
-                      {service.userName}
-                    </td>
-                    <td className="px-4 py-3 text-sm">{service.client}</td>
-                    <td className="px-4 py-3 text-sm">{service.service}</td>
-                    <td className="px-4 py-3 text-sm">
-                      {service.paymentMethod === "transfer"
-                        ? "Transferencia"
-                        : "Efectivo"}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {editingServiceId === service.id ? (
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editingServiceCost}
-                            onChange={(e) =>
-                              setEditingServiceCost(e.target.value)
-                            }
-                            className="w-24 px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-green-500 focus:outline-none"
-                          />
-                          <button
-                            onClick={() =>
-                              handleUpdateServiceCost(
-                                service.id,
-                                parseFloat(editingServiceCost)
-                              )
-                            }
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            <Check size={18} />
-                          </button>
-                          <button
-                            onClick={() => setEditingServiceId(null)}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-green-600">
-                            ${Number(service.cost).toFixed(2)}
-                          </span>
-                          <button
-                            onClick={() => {
-                              setEditingServiceId(service.id);
-                              setEditingServiceCost(service.cost.toString());
-                            }}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-bold text-blue-600">
-                      ${salonService.calcCommissionAmount(service, users).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-bold text-orange-600">
-                      $
-                      {(
-                        service.reposicion || getRecipeCost(service.category)
-                      ).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex gap-2">
-                        {service.deleted ? (
-                          <>
-                            <button
-                              onClick={() =>
-                                handleRestoreDeletedService(service.id)
-                              }
-                              className="text-green-600 hover:text-green-800"
-                              title="Restaurar"
-                            >
-                              <CheckCircle size={18} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handlePermanentlyDeleteService(service.id)
-                              }
-                              className="text-red-600 hover:text-red-800"
-                              title="Eliminar permanentemente"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </>
+                     <Download size={16} />
+                     Exportar Reporte
+                  </button>
+               </div>
+
+               <div className="overflow-x-auto">
+                  <table className="w-full">
+                     <thead>
+                        <tr className="bg-gray-50/50 border-b border-gray-100">
+                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider pl-8">Fecha & Staff</th>
+                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Cliente / Servicio</th>
+                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Método</th>
+                           <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Monto</th>
+                           <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider pr-8">Acciones</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-gray-50">
+                        {filteredServices.length === 0 ? (
+                           <tr>
+                              <td colSpan={5} className="px-8 py-12 text-center text-gray-400 font-medium">No se encontraron servicios.</td>
+                           </tr>
                         ) : (
-                          <>
-                            <button
-                              onClick={() => handleSoftDeleteService(service.id)}
-                              className="text-orange-600 hover:text-orange-800"
-                              title="Eliminar temporalmente"
-                            >
-                              <XCircle size={18} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handlePermanentlyDeleteService(service.id)
-                              }
-                              className="text-red-600 hover:text-red-800"
-                              title="Eliminar permanentemente"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </>
+                           filteredServices.slice().reverse().map((service) => (
+                              <tr key={service.id} className={`group transition-colors hover:bg-gray-50/80 ${service.deleted ? 'bg-red-50/50' : ''}`}>
+                                 <td className="px-6 py-5 pl-8">
+                                    <div className="flex flex-col">
+                                       <span className="font-bold text-gray-800 text-sm">{service.date}</span>
+                                       <span className="text-xs font-semibold text-gray-400">{service.userName}</span>
+                                    </div>
+                                 </td>
+                                 <td className="px-6 py-5">
+                                    <div className="flex flex-col">
+                                       <span className="font-bold text-gray-800 text-sm">{service.client}</span>
+                                       <span className="text-xs text-gray-500 truncate max-w-[150px]">{service.service}</span>
+                                    </div>
+                                 </td>
+                                 <td className="px-6 py-5">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
+                                       service.paymentMethod === 'cash' 
+                                          ? 'bg-green-50 text-green-700 border-green-200' 
+                                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                                    }`}>
+                                       {service.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}
+                                    </span>
+                                 </td>
+                                 <td className="px-6 py-5 text-right">
+                                    {editingServiceId === service.id ? (
+                                       <div className="flex justify-end gap-2">
+                                          <input
+                                             type="number"
+                                             value={editingServiceCost}
+                                             onChange={(e) => setEditingServiceCost(e.target.value)}
+                                             className="w-20 text-right px-2 py-1 border rounded text-sm font-bold text-gray-900"
+                                             autoFocus
+                                          />
+                                          <button onClick={() => handleUpdateServiceCost(service.id, parseFloat(editingServiceCost))} className="text-green-600 hover:scale-110 transition"><Check size={16}/></button>
+                                          <button onClick={() => setEditingServiceId(null)} className="text-gray-400 hover:text-gray-600 hover:scale-110 transition"><X size={16}/></button>
+                                       </div>
+                                    ) : (
+                                       <div className="flex flex-col items-end">
+                                          <span className="font-black text-gray-900 text-base group-hover:text-purple-600 transition-colors cursor-pointer flex items-center gap-2" onClick={() => { setEditingServiceId(service.id); setEditingServiceCost(service.cost.toString()); }}>
+                                             ${Number(service.cost).toFixed(2)}
+                                          </span>
+                                          <span className="text-[10px] font-bold text-gray-400">Comisión: ${salonService.calcCommissionAmount(service, users).toFixed(2)}</span>
+                                       </div>
+                                    )}
+                                 </td>
+                                 <td className="px-6 py-5 text-right pr-8">
+                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                       {service.deleted ? (
+                                          <>
+                                             <button onClick={() => handleRestoreDeletedService(service.id)} className="p-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition" title="Restaurar"><CheckCircle size={16}/></button>
+                                             <button onClick={() => handlePermanentlyDeleteService(service.id)} className="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition" title="Borrar Permanente"><Trash2 size={16}/></button>
+                                          </>
+                                       ) : (
+                                          <button onClick={() => handleSoftDeleteService(service.id)} className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 transition" title="Eliminar"><Trash2 size={16}/></button>
+                                       )}
+                                    </div>
+                                 </td>
+                              </tr>
+                           ))
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+
+            {/* Commissions Section */}
+            <div>
+               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <Percent size={20} className="text-blue-500" />
+                  Rendimiento del Equipo
+               </h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userStats.length === 0 ? (
+                     <div className="py-8 text-center text-gray-500 italic bg-white rounded-2xl border border-gray-100">Sin datos de rendimiento.</div>
+                  ) : (
+                     userStats.map((stat) => (
+                        <div key={stat.name} className="bg-white rounded-[2rem] p-6 shadow-lg border border-gray-100 relative overflow-hidden">
+                           <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${stat.color}`}></div>
+                           <div className="flex justify-between items-start mb-4">
+                              <div>
+                                 <h4 className="font-bold text-gray-900 text-lg">{stat.name}</h4>
+                                 <p className="text-gray-400 text-xs font-medium">{stat.services} servicios realizados</p>
+                              </div>
+                              <div className="bg-gray-50 px-3 py-1 rounded-lg">
+                                 <p className="text-xs text-gray-500 font-bold uppercase">Generado</p>
+                                 <p className="text-sm font-black text-gray-800">${stat.revenue.toFixed(2)}</p>
+                              </div>
+                           </div>
+                           
+                           <div className="space-y-3">
+                              <div className="flex justify-between items-center p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+                                 <span className="text-xs font-bold text-blue-700 uppercase">Comisión Total</span>
+                                 <span className="font-bold text-blue-700">${stat.commission.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center p-3 rounded-xl bg-orange-50/50 border border-orange-100">
+                                 <span className="text-xs font-bold text-orange-700 uppercase">Pagado</span>
+                                 <span className="font-bold text-orange-700">${stat.commissionPaid.toFixed(2)}</span>
+                              </div>
+                              
+                              <div className="pt-2 border-t border-gray-100 flex justify-between items-end">
+                                 <span className="text-xs font-semibold text-gray-400">Por pagar</span>
+                                 <span className={`text-xl font-black ${stat.commission - stat.commissionPaid < 0 ? 'text-red-500' : 'text-gray-900'}`}>
+                                    ${(stat.commission - stat.commissionPaid).toFixed(2)}
+                                 </span>
+                              </div>
+                           </div>
+                        </div>
+                     ))
+                  )}
+               </div>
+            </div>
+         </div>
+
+         {/* Right Column: Expenses Management */}
+         <div className="xl:col-span-1">
+            <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-6 sticky top-6">
+               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                     <CreditCard size={16} />
+                  </div>
+                  Registrar Gasto
+               </h3>
+
+               <div className="space-y-4 mb-8">
+                  <div className="space-y-2">
+                     <label className="text-xs font-bold text-gray-400 uppercase ml-2">Concepto</label>
+                     <input
+                        type="text"
+                        placeholder="Ej. Recibo de Luz"
+                        value={newExpense.description}
+                        onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                        className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all outline-none font-medium text-gray-700"
+                     />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase ml-2">Monto</label>
+                        <input
+                           type="number"
+                           placeholder="$0.00"
+                           value={newExpense.amount}
+                           onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all outline-none font-medium text-gray-700"
+                        />
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase ml-2">Categoría</label>
+                        <select
+                           value={newExpense.category}
+                           onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value, userId: "" })}
+                           className="w-full h-12 px-2 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:outline-none font-medium text-gray-700 text-sm"
+                        >
+                           <option value="Agua">Agua</option>
+                           <option value="Luz">Luz</option>
+                           <option value="Renta">Renta</option>
+                           <option value="Reposicion">Reposición</option>
+                           <option value="Comisiones">Comisiones</option>
+                        </select>
+                     </div>
+                  </div>
+
+                  {newExpense.category === "Comisiones" && (
+                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase ml-2">Personal</label>
+                        <select
+                           value={newExpense.userId}
+                           onChange={(e) => setNewExpense({ ...newExpense, userId: e.target.value })}
+                           className="w-full h-12 px-4 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-bold focus:outline-none"
+                        >
+                           <option value="">Seleccionar personal...</option>
+                           {users.filter((u) => u.role === "staff").map((u) => (
+                              <option key={u.id} value={u.id}>{u.name}</option>
+                           ))}
+                        </select>
+                     </div>
+                  )}
+
+                  <div className="pt-2">
+                     <button
+                        onClick={handleAddExpense}
+                        className="w-full h-14 rounded-xl bg-gray-900 text-white font-bold text-lg hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-gray-900/20 flex items-center justify-center gap-2"
+                     >
+                        <DollarSign size={20} />
+                        Agregar Gasto
+                     </button>
+                  </div>
+               </div>
+
+               <div className="border-t border-gray-100 pt-6">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider">Últimos Gastos</h4>
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                     {filteredExpenses.length === 0 ? (
+                        <p className="text-sm text-gray-400 italic text-center py-4">No hay gastos recientes.</p>
+                     ) : (
+                        filteredExpenses.slice().reverse().map((expense) => (
+                           <div key={expense.id} className="group flex justify-between items-center p-3 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100 transition-all">
+                              <div className="flex flex-col">
+                                 <span className="font-bold text-gray-700 text-sm">{expense.description}</span>
+                                 <div className="flex gap-2 text-xs">
+                                    <span className="text-gray-400">{expense.category}</span>
+                                    <span className="text-gray-300">•</span>
+                                    <span className="text-gray-400 font-medium">{expense.date}</span>
+                                 </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                 <span className="font-bold text-rose-600 block text-right">${expense.amount.toFixed(2)}</span>
+                                 <button
+                                    onClick={() => handleDeleteExpense(expense.id)}
+                                    className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                 >
+                                    <Trash2 size={14} />
+                                 </button>
+                              </div>
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </div>
+            </div>
+         </div>
       </div>
     </div>
   );
