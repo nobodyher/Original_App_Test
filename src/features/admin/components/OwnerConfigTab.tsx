@@ -12,9 +12,7 @@ import {
   XCircle,
   Save,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-  Layers,
+  Beaker,
 } from "lucide-react";
 import type {
   AppUser,
@@ -87,16 +85,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   deleteChemicalProduct,
   initializeMaterialsData,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    personal: true,
-  });
+  const [activeTab, setActiveTab] = useState<
+    "services" | "consumables" | "personal" | "extras" | "materials"
+  >("services");
 
-  const toggleSection = (section: string) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
+  const tabs = [
+    { id: "services", label: "Catálogo", icon: ShoppingCart, color: "text-purple-600" },
+    { id: "consumables", label: "Consumibles", icon: Package, color: "text-blue-600" },
+    { id: "personal", label: "Personal", icon: Users, color: "text-pink-600" },
+    { id: "extras", label: "Extras", icon: Plus, color: "text-orange-600" },
+    { id: "materials", label: "Químicos", icon: Beaker, color: "text-green-600" }, // Using Beaker imported or ensuring it is imported
+  ];
 
   const [newCatalogService, setNewCatalogService] = useState({
     name: "",
@@ -427,20 +426,43 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
 
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
-        <button
-          onClick={() => toggleSection("services")}
-          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
-        >
-          <div className="flex items-center gap-4">
-            <ShoppingCart size={24} className="text-purple-600" />
-            <span className="text-lg font-bold text-gray-800">Catálogo de Servicios</span>
-          </div>
-          {expandedSections["services"] ? <ChevronUp /> : <ChevronDown />}
-        </button>
+      {/* Main Tab Layout */}
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar Navigation */}
+        <nav className="lg:w-64 flex-shrink-0 space-y-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-left ${
+                  isActive
+                    ? "bg-white shadow-md text-gray-900 border-l-4 border-purple-600 scale-105"
+                    : "text-gray-500 hover:bg-white/60 hover:text-purple-600"
+                }`}
+              >
+                <Icon
+                  size={20}
+                  className={isActive ? tab.color : "text-gray-400"}
+                />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-        {expandedSections["services"] && (
-        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
+        {/* Content Area */}
+        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[600px] relative">
+
+          {/* Services Tab */}
+          {activeTab === "services" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <ShoppingCart className="text-purple-600" />
+                Catálogo de Servicios
+              </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-purple-50 rounded-lg">
             <input
               type="text"
@@ -662,22 +684,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
         )}
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
-        <button
-          onClick={() => toggleSection("consumables")}
-          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
-        >
-          <div className="flex items-center gap-4">
-            <Package size={24} className="text-purple-600" />
-            <span className="text-lg font-bold text-gray-800">Inventario de Consumibles</span>
-          </div>
-          {expandedSections["consumables"] ? <ChevronUp /> : <ChevronDown />}
-        </button>
-
-        {expandedSections["consumables"] && (
-        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
+          {activeTab === "consumables" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Package className="text-blue-600" />
+                Inventario de Consumibles
+              </h3>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 bg-purple-50 rounded-lg">
             <input
               type="text"
@@ -917,22 +930,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
         )}
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
-        <button
-          onClick={() => toggleSection("personal")}
-          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
-        >
-          <div className="flex items-center gap-4">
-            <Users size={24} className="text-purple-600" />
-            <span className="text-lg font-bold text-gray-800">Gestionar Personal</span>
-          </div>
-          {expandedSections["personal"] ? <ChevronUp /> : <ChevronDown />}
-        </button>
-
-        {expandedSections["personal"] && (
-        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
+          {activeTab === "personal" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Users className="text-pink-600" />
+                Gestionar Personal
+              </h3>
           {/* Crear nuevo usuario */}
           <div className="mb-8 p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
             <h4 className="text-lg font-bold text-blue-900 mb-4">
@@ -1113,22 +1117,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
         )}
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
-        <button
-          onClick={() => toggleSection("extras")}
-          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
-        >
-          <div className="flex items-center gap-4">
-            <Plus size={24} className="text-purple-600" />
-            <span className="text-lg font-bold text-gray-800">Gestión de Extras</span>
-          </div>
-          {expandedSections["extras"] ? <ChevronUp /> : <ChevronDown />}
-        </button>
-
-        {expandedSections["extras"] && (
-        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
+          {activeTab === "extras" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Plus className="text-orange-600" />
+                Gestión de Extras
+              </h3>
           {/* Form agregar extra */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
             <h4 className="font-semibold text-gray-700 mb-3">
@@ -1298,22 +1293,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           )}
         </div>
         )}
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
-        <button
-          onClick={() => toggleSection("materials")}
-          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
-        >
-          <div className="flex items-center gap-4">
-            <Layers size={24} className="text-purple-600" />
-            <span className="text-lg font-bold text-gray-800">Inventario de Materiales Químicos</span>
-          </div>
-          {expandedSections["materials"] ? <ChevronUp /> : <ChevronDown />}
-        </button>
-
-        {expandedSections["materials"] && (
-        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
+          {activeTab === "materials" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Beaker className="text-green-600" />
+                Inventario de Materiales Químicos
+              </h3>
           {/* Botón de inicialización (solo si no hay datos) */}
           {chemicalProducts.length === 0 && (
             <div className="mb-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
@@ -1590,6 +1576,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         </div>
         )}
       </div>
+    </div>
     </div>
   );
 };
