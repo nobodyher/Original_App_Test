@@ -27,6 +27,7 @@ const SalonApp = () => {
     catalogExtras,
     chemicalProducts,
     materialRecipes,
+    serviceRecipes,
   } = useSalonData(initialized);
 
   const [notification, setNotification] = useState<Toast | null>(null);
@@ -73,6 +74,7 @@ const SalonApp = () => {
         catalogServices={catalogServices}
         catalogExtras={catalogExtras}
         materialRecipes={materialRecipes}
+        serviceRecipes={serviceRecipes}
         consumables={consumables}
         chemicalProducts={chemicalProducts}
         showNotification={showNotification}

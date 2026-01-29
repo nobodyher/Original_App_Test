@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   DollarSign,
@@ -11,6 +11,8 @@ import {
   Check,
   X,
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type {
   AppUser,
@@ -70,6 +72,16 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     amount: "",
     userId: "",
   });
+
+  // Pagination State
+  const [servicesPage, setServicesPage] = useState(1);
+  const [expensesPage, setExpensesPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  useEffect(() => {
+    setServicesPage(1);
+    setExpensesPage(1);
+  }, [ownerFilters]);
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editingServiceCost, setEditingServiceCost] = useState("");
@@ -277,6 +289,18 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     return Object.values(stats).sort((a, b) => b.revenue - a.revenue);
   }, [filteredServices, filteredExpenses, users]);
 
+  const sortedServices = useMemo(() => [...filteredServices].reverse(), [filteredServices]);
+  const paginatedServices = useMemo(() => {
+    const start = (servicesPage - 1) * ITEMS_PER_PAGE;
+    return sortedServices.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedServices, servicesPage]);
+
+  const sortedExpenses = useMemo(() => [...filteredExpenses].reverse(), [filteredExpenses]);
+  const paginatedExpenses = useMemo(() => {
+    const start = (expensesPage - 1) * ITEMS_PER_PAGE;
+    return sortedExpenses.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedExpenses, expensesPage]);
+
   return (
     <div className="space-y-8 pb-20">
       
@@ -483,13 +507,13 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                            <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider pr-8">Acciones</th>
                         </tr>
                      </thead>
-                     <tbody className="divide-y divide-gray-50">
-                        {filteredServices.length === 0 ? (
+                  <tbody className="divide-y divide-gray-50">
+                        {paginatedServices.length === 0 ? (
                            <tr>
                               <td colSpan={5} className="px-8 py-12 text-center text-gray-400 font-medium">No se encontraron servicios.</td>
                            </tr>
                         ) : (
-                           filteredServices.slice().reverse().map((service) => (
+                           paginatedServices.map((service) => (
                               <tr key={service.id} className={`group transition-colors hover:bg-gray-50/80 ${service.deleted ? 'bg-red-50/50' : ''}`}>
                                  <td className="px-6 py-5 pl-8">
                                     <div className="flex flex-col">
@@ -552,6 +576,34 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                      </tbody>
                   </table>
                </div>
+               
+               {/* Services Pagination */}
+               {sortedServices.length > ITEMS_PER_PAGE && (
+                 <div className="px-8 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <span className="text-xs font-semibold text-gray-400">
+                      Mostrando {Math.min((servicesPage - 1) * ITEMS_PER_PAGE + 1, sortedServices.length)} - {Math.min(servicesPage * ITEMS_PER_PAGE, sortedServices.length)} de {sortedServices.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setServicesPage(p => Math.max(1, p - 1))}
+                        disabled={servicesPage === 1}
+                        className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all text-gray-600"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="text-sm font-bold text-gray-700 px-2">
+                        {servicesPage}
+                      </span>
+                      <button
+                        onClick={() => setServicesPage(p => (p * ITEMS_PER_PAGE < sortedServices.length ? p + 1 : p))}
+                        disabled={servicesPage * ITEMS_PER_PAGE >= sortedServices.length}
+                        className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all text-gray-600"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                 </div>
+               )}
             </div>
 
             {/* Commissions Section */}
@@ -680,11 +732,11 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
                <div className="border-t border-gray-100 pt-6">
                   <h4 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider">Últimos Gastos</h4>
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                     {filteredExpenses.length === 0 ? (
+                  <div className="space-y-3">
+                     {paginatedExpenses.length === 0 ? (
                         <p className="text-sm text-gray-400 italic text-center py-4">No hay gastos recientes.</p>
                      ) : (
-                        filteredExpenses.slice().reverse().map((expense) => (
+                        paginatedExpenses.map((expense) => (
                            <div key={expense.id} className="group flex justify-between items-center p-3 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100 transition-all">
                               <div className="flex flex-col">
                                  <span className="font-bold text-gray-700 text-sm">{expense.description}</span>
@@ -707,6 +759,31 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                         ))
                      )}
                   </div>
+
+                  {/* Expenses Pagination */}
+                  {sortedExpenses.length > ITEMS_PER_PAGE && (
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                       <span className="text-[10px] font-semibold text-gray-400">
+                         {Math.min((expensesPage - 1) * ITEMS_PER_PAGE + 1, sortedExpenses.length)}-{Math.min(expensesPage * ITEMS_PER_PAGE, sortedExpenses.length)} de {sortedExpenses.length}
+                       </span>
+                       <div className="flex items-center gap-1">
+                         <button
+                           onClick={() => setExpensesPage(p => Math.max(1, p - 1))}
+                           disabled={expensesPage === 1}
+                           className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-gray-500"
+                         >
+                           <ChevronLeft size={14} />
+                         </button>
+                         <button
+                           onClick={() => setExpensesPage(p => (p * ITEMS_PER_PAGE < sortedExpenses.length ? p + 1 : p))}
+                           disabled={expensesPage * ITEMS_PER_PAGE >= sortedExpenses.length}
+                           className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-gray-500"
+                         >
+                           <ChevronRight size={14} />
+                         </button>
+                       </div>
+                    </div>
+                  )}
                </div>
             </div>
          </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Users,
   ShoppingCart,
@@ -13,12 +13,15 @@ import {
   Save,
   AlertTriangle,
   Beaker,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type {
   AppUser,
   CatalogService,
   CatalogExtra,
   MaterialRecipe,
+  ServiceRecipe,
   Consumable,
   ChemicalProduct,
   Toast,
@@ -29,6 +32,7 @@ interface OwnerConfigTabProps {
   catalogServices: CatalogService[];
   catalogExtras: CatalogExtra[];
   materialRecipes: MaterialRecipe[];
+  serviceRecipes: ServiceRecipe[];
   consumables: Consumable[];
   chemicalProducts: ChemicalProduct[];
   showNotification: (message: string, type?: Toast["type"]) => void;
@@ -64,6 +68,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   catalogServices,
   catalogExtras,
   materialRecipes,
+  serviceRecipes,
   consumables,
   chemicalProducts,
   showNotification,
@@ -135,6 +140,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
   const [editingCatalogService, setEditingCatalogService] = useState<string | null>(null);
   const [editingConsumable, setEditingConsumable] = useState<string | null>(null);
+
+  // Chemicals Pagination
+  const [chemicalsPage, setChemicalsPage] = useState(1);
+  const CHEMICALS_PER_PAGE = 5;
+
+  const paginatedChemicals = useMemo(() => {
+    const start = (chemicalsPage - 1) * CHEMICALS_PER_PAGE;
+    return chemicalProducts.slice(start, start + CHEMICALS_PER_PAGE);
+  }, [chemicalProducts, chemicalsPage]);
 
   // Wrappers
   const handleCreateNewUser = async () => {
@@ -510,38 +524,40 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="w-10 px-4 py-3"></th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Categoría
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Precio
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Precio Base
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100 bg-white">
                 {catalogServices.map((cs) => {
                   const isEditing = editingCatalogService === cs.id;
 
                   return (
                     <tr
                       key={cs.id}
-                      className={`border-b hover:bg-gray-50 transition ${
-                        !cs.active ? "opacity-60" : ""
+                      className={`hover:bg-purple-50/50 transition duration-200 ${
+                        !cs.active ? "opacity-60 bg-gray-50" : ""
                       }`}
                     >
+                      <td className="w-4"></td> {/* Spacer instead of chevron */}
                       {isEditing ? (
                         <>
                           <td className="px-4 py-3">
@@ -549,14 +565,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               type="text"
                               defaultValue={cs.name}
                               id={`edit-service-name-${cs.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none w-full"
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none w-full"
                             />
                           </td>
                           <td className="px-4 py-3">
                             <select
                               defaultValue={cs.category}
                               id={`edit-service-category-${cs.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none"
                             >
                               <option value="manicura">Manicura</option>
                               <option value="pedicura">Pedicura</option>
@@ -568,19 +584,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               step="0.01"
                               defaultValue={cs.basePrice}
                               id={`edit-service-price-${cs.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none"
                             />
                           </td>
                           <td className="px-4 py-3">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                cs.active
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {cs.active ? "Activo" : "Inactivo"}
-                            </span>
+                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${cs.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                                {cs.active ? "Activo" : "Inactivo"}
+                             </span>
                           </td>
                           <td className="px-4 py-3 flex gap-2">
                             <button
@@ -609,33 +619,35 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   basePrice,
                                 });
                               }}
-                              className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition"
+                              className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition"
+                              title="Guardar"
                             >
-                              <Save size={18} />
+                              <Save size={16} />
                             </button>
                             <button
                               onClick={() => setEditingCatalogService(null)}
-                              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition"
+                              className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
+                              title="Cancelar"
                             >
-                              <X size={18} />
+                              <X size={16} />
                             </button>
                           </td>
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-3 text-sm font-medium">
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-800">
                             {cs.name}
                           </td>
-                          <td className="px-4 py-3 text-sm">{cs.category}</td>
-                          <td className="px-4 py-3 text-sm font-bold text-green-700">
+                          <td className="px-4 py-3 text-sm text-gray-500 capitalize">{cs.category}</td>
+                          <td className="px-4 py-3 text-sm font-bold text-gray-900">
                             ${cs.basePrice.toFixed(2)}
                           </td>
                           <td className="px-4 py-3">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-bold ${
+                              className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide font-bold ${
                                 cs.active
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
+                                  ? "bg-green-100 text-green-700 border border-green-200"
+                                  : "bg-gray-100 text-gray-700 border border-gray-200"
                               }`}
                             >
                               {cs.active ? "Activo" : "Inactivo"}
@@ -644,34 +656,34 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           <td className="px-4 py-3 flex gap-2">
                             <button
                               onClick={() => setEditingCatalogService(cs.id)}
-                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                              className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                               title="Editar"
                             >
-                              <Edit2 size={18} />
+                              <Edit2 size={16} />
                             </button>
                             <button
                               onClick={() =>
                                 handleToggleCatalogService(cs.id, cs.active)
                               }
-                              className={`p-2 rounded-lg transition ${
+                              className={`p-1.5 rounded-lg transition ${
                                 cs.active
-                                  ? "text-orange-600 hover:bg-orange-50"
+                                  ? "text-orange-500 hover:bg-orange-50"
                                   : "text-green-600 hover:bg-green-50"
                               }`}
                               title={cs.active ? "Desactivar" : "Activar"}
                             >
                               {cs.active ? (
-                                <XCircle size={18} />
+                                <XCircle size={16} />
                               ) : (
-                                <CheckCircle size={18} />
+                                <CheckCircle size={16} />
                               )}
                             </button>
                             <button
                               onClick={() => handleDeleteCatalogService(cs.id)}
-                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
+                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition"
                               title="Eliminar"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={16} />
                             </button>
                           </td>
                         </>
@@ -1400,110 +1412,142 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </button>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Buscador y filtros arriba del todo si se desea, por ahora directo a la tabla */}
+            
+            <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
               <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-purple-50">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="w-10 px-4 py-3"></th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Producto
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                      Cantidad
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Cant. / Unid.
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                      Precio Compra
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Costo Unit.
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Rendimiento
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                      Costo/Servicio
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Costo/Serv.
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Stock
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Estado
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Acciones
                     </th>
                   </tr>
                 </thead>
-                <tbody>
-                  {chemicalProducts.map((product) => (
-                    <tr key={product.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-3 font-semibold text-gray-900">
-                        {product.name}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {product.quantity} {product.unit}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        ${product.purchasePrice.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {product.yield} servicios
-                      </td>
-                      <td className="px-4 py-3 font-bold text-green-600">
-                        ${product.costPerService.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            product.stock <= product.minStock
-                              ? "bg-red-100 text-red-700"
-                              : "bg-green-100 text-green-700"
-                          }`}
-                        >
-                          {product.stock} unidades
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            product.active
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {product.active ? "Activo" : "Inactivo"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 flex gap-2">
-                        <button
-                          onClick={() => {
-                            const newStock = prompt(
-                              `Stock actual de ${product.name}:`,
-                              product.stock.toString()
-                            );
-                            if (newStock !== null) {
-                              const stockNum = parseInt(newStock);
-                              if (!isNaN(stockNum) && stockNum >= 0) {
-                                handleUpdateChemicalProduct(product.id, {
-                                  stock: stockNum,
-                                });
-                              }
-                            }
-                          }}
-                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-                          title="Actualizar Stock"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteChemicalProduct(product.id)}
-                          className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
-                          title="Eliminar"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-gray-100">
+                  {paginatedChemicals.map((product) => {
+                     return (
+                        <tr key={product.id} className="hover:bg-purple-50/50 transition duration-200">
+                          <td className="w-4"></td>
+                          <td className="px-4 py-3 font-semibold text-gray-700 text-sm">
+                            {product.name}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-sm">
+                            {product.quantity} {product.unit}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-sm">
+                            ${product.purchasePrice.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-sm">
+                            {product.yield}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-green-600 text-sm">
+                            ${product.costPerService.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide font-bold ${
+                                product.stock <= product.minStock
+                                  ? "bg-red-100 text-red-700 border border-red-200"
+                                  : "bg-green-100 text-green-700 border border-green-200"
+                              }`}
+                            >
+                              {product.stock} un.
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide font-bold ${
+                                product.active
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {product.active ? "Activo" : "Inactivo"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 flex gap-2">
+                            <button
+                              onClick={() => {
+                                const newStock = prompt(
+                                  `Stock actual de ${product.name}:`,
+                                  product.stock.toString()
+                                );
+                                if (newStock !== null) {
+                                  const stockNum = parseInt(newStock);
+                                  if (!isNaN(stockNum) && stockNum >= 0) {
+                                    handleUpdateChemicalProduct(product.id, {
+                                      stock: stockNum,
+                                    });
+                                  }
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                              title="Actualizar Stock"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteChemicalProduct(product.id)}
+                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition"
+                              title="Eliminar"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                     );
+                  })}
                 </tbody>
               </table>
             </div>
+
+             {/* Pagination Controls */}
+             <div className="flex justify-between items-center px-2 mt-4">
+                <div className="text-sm text-gray-500">
+                    Mostrando {((chemicalsPage - 1) * 5) + 1} a {Math.min(chemicalsPage * 5, chemicalProducts.length)} de {chemicalProducts.length} productos
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setChemicalsPage(p => Math.max(1, p - 1))}
+                        disabled={chemicalsPage === 1}
+                        className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+                    <span className="flex items-center px-3 font-semibold text-gray-700">
+                        Página {chemicalsPage}
+                    </span>
+                    <button
+                        onClick={() => setChemicalsPage(p => (p * 5 < chemicalProducts.length ? p + 1 : p))}
+                        disabled={chemicalsPage * 5 >= chemicalProducts.length}
+                        className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+                </div>
+             </div>
 
             {chemicalProducts.length === 0 && (
               <div className="text-center py-8 text-gray-500">

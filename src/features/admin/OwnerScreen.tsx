@@ -8,6 +8,7 @@ import type {
   Service,
   Expense,
   CatalogService,
+  ServiceRecipe,
   CatalogExtra,
   MaterialRecipe,
   Consumable,
@@ -23,6 +24,7 @@ interface OwnerScreenProps {
   catalogServices: CatalogService[];
   catalogExtras: CatalogExtra[];
   materialRecipes: MaterialRecipe[];
+  serviceRecipes: ServiceRecipe[];
   consumables: Consumable[];
   chemicalProducts: ChemicalProduct[];
   showNotification: (message: string, type?: Toast["type"]) => void;
@@ -148,6 +150,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
               catalogServices={props.catalogServices}
               catalogExtras={props.catalogExtras}
               materialRecipes={props.materialRecipes}
+              serviceRecipes={props.serviceRecipes}
               consumables={props.consumables}
               chemicalProducts={props.chemicalProducts}
               showNotification={props.showNotification}
