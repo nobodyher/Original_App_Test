@@ -12,6 +12,9 @@ import {
   XCircle,
   Save,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Layers,
 } from "lucide-react";
 import type {
   AppUser,
@@ -84,7 +87,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   deleteChemicalProduct,
   initializeMaterialsData,
 }) => {
-  const [catalogTab, setCatalogTab] = useState("personal");
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    personal: true,
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
   const [newCatalogService, setNewCatalogService] = useState({
     name: "",
@@ -249,7 +261,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
   const handleUpdateExtra = async (id: string, name: string, price: number) => {
     try {
-      await updateExtra(id, { name, price, priceSuggested: price });
+      await updateExtra(id, { name, priceSuggested: price });
       setEditingExtraId(null);
       showNotification("Extra actualizado");
     } catch (error) {
@@ -413,66 +425,22 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         </div>
       )}
 
-      <div className="flex gap-4 border-b-2 border-gray-200 pb-2 overflow-x-auto">
-        <button
-          onClick={() => setCatalogTab("personal")}
-          className={`px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-            catalogTab === "personal"
-              ? "bg-purple-600 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Personal
-        </button>
-        <button
-          onClick={() => setCatalogTab("services")}
-          className={`px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-            catalogTab === "services"
-              ? "bg-purple-600 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Servicios
-        </button>
-        <button
-          onClick={() => setCatalogTab("consumables")}
-          className={`px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-            catalogTab === "consumables"
-              ? "bg-purple-600 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Consumibles
-        </button>
-        <button
-          onClick={() => setCatalogTab("extras")}
-          className={`px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-            catalogTab === "extras"
-              ? "bg-purple-600 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Extras
-        </button>
-        <button
-          onClick={() => setCatalogTab("materials")}
-          className={`px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-            catalogTab === "materials"
-              ? "bg-purple-600 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Materiales
-        </button>
-      </div>
 
-      {catalogTab === "services" && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <ShoppingCart size={24} className="text-purple-500" />
-            Catálogo de Servicios
-          </h3>
 
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+        <button
+          onClick={() => toggleSection("services")}
+          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-4">
+            <ShoppingCart size={24} className="text-purple-600" />
+            <span className="text-lg font-bold text-gray-800">Catálogo de Servicios</span>
+          </div>
+          {expandedSections["services"] ? <ChevronUp /> : <ChevronDown />}
+        </button>
+
+        {expandedSections["services"] && (
+        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-purple-50 rounded-lg">
             <input
               type="text"
@@ -544,7 +512,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <tbody>
                 {catalogServices.map((cs) => {
                   const isEditing = editingCatalogService === cs.id;
-                  let editedCS = { ...cs };
 
                   return (
                     <tr
@@ -559,18 +526,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             <input
                               type="text"
                               defaultValue={cs.name}
-                              onChange={(e) => (editedCS.name = e.target.value)}
+                              id={`edit-service-name-${cs.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none w-full"
                             />
                           </td>
                           <td className="px-4 py-3">
                             <select
                               defaultValue={cs.category}
-                              onChange={(e) =>
-                                (editedCS.category = e.target.value as
-                                  | "manicura"
-                                  | "pedicura")
-                              }
+                              id={`edit-service-category-${cs.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
                             >
                               <option value="manicura">Manicura</option>
@@ -582,11 +545,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               type="number"
                               step="0.01"
                               defaultValue={cs.basePrice}
-                              onChange={(e) =>
-                                (editedCS.basePrice = parseFloat(
-                                  e.target.value
-                                ))
-                              }
+                              id={`edit-service-price-${cs.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
                             />
                           </td>
@@ -603,16 +562,38 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           </td>
                           <td className="px-4 py-3 flex gap-2">
                             <button
-                              onClick={() =>
-                                handleUpdateCatalogService(cs.id, editedCS)
-                              }
-                              className="text-green-600 hover:text-green-800"
+                              onClick={() => {
+                                const name = (
+                                  document.getElementById(
+                                    `edit-service-name-${cs.id}`
+                                  ) as HTMLInputElement
+                                ).value;
+                                const category = (
+                                  document.getElementById(
+                                    `edit-service-category-${cs.id}`
+                                  ) as HTMLSelectElement
+                                ).value as "manicura" | "pedicura";
+                                const basePrice = parseFloat(
+                                  (
+                                    document.getElementById(
+                                      `edit-service-price-${cs.id}`
+                                    ) as HTMLInputElement
+                                  ).value
+                                );
+
+                                handleUpdateCatalogService(cs.id, {
+                                  name,
+                                  category,
+                                  basePrice,
+                                });
+                              }}
+                              className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition"
                             >
                               <Save size={18} />
                             </button>
                             <button
                               onClick={() => setEditingCatalogService(null)}
-                              className="text-gray-500 hover:text-gray-700"
+                              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition"
                             >
                               <X size={18} />
                             </button>
@@ -641,7 +622,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           <td className="px-4 py-3 flex gap-2">
                             <button
                               onClick={() => setEditingCatalogService(cs.id)}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                               title="Editar"
                             >
                               <Edit2 size={18} />
@@ -652,8 +633,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               }
                               className={`p-2 rounded-lg transition ${
                                 cs.active
-                                  ? "text-orange-600 hover:text-orange-800"
-                                  : "text-green-600 hover:text-green-800"
+                                  ? "text-orange-600 hover:bg-orange-50"
+                                  : "text-green-600 hover:bg-green-50"
                               }`}
                               title={cs.active ? "Desactivar" : "Activar"}
                             >
@@ -665,7 +646,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             </button>
                             <button
                               onClick={() => handleDeleteCatalogService(cs.id)}
-                              className="text-red-600 hover:text-red-800"
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
                               title="Eliminar"
                             >
                               <Trash2 size={18} />
@@ -680,15 +661,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </table>
           </div>
         </div>
-      )}
+        )}
+      </div>
 
-      {catalogTab === "consumables" && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Package size={24} className="text-purple-500" />
-            Inventario de Consumibles
-          </h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+        <button
+          onClick={() => toggleSection("consumables")}
+          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-4">
+            <Package size={24} className="text-purple-600" />
+            <span className="text-lg font-bold text-gray-800">Inventario de Consumibles</span>
+          </div>
+          {expandedSections["consumables"] ? <ChevronUp /> : <ChevronDown />}
+        </button>
 
+        {expandedSections["consumables"] && (
+        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 bg-purple-50 rounded-lg">
             <input
               type="text"
@@ -781,7 +770,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 {consumables.map((c) => {
                   const isLowStock = c.stockQty <= c.minStockAlert;
                   const isEditing = editingConsumable === c.id;
-                  let editedC = { ...c };
 
                   return (
                     <tr
@@ -796,7 +784,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             <input
                               type="text"
                               defaultValue={c.name}
-                              onChange={(e) => (editedC.name = e.target.value)}
+                              id={`edit-consumable-name-${c.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none w-full"
                             />
                           </td>
@@ -804,7 +792,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             <input
                               type="text"
                               defaultValue={c.unit}
-                              onChange={(e) => (editedC.unit = e.target.value)}
+                              id={`edit-consumable-unit-${c.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
                             />
                           </td>
@@ -813,9 +801,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               type="number"
                               step="0.01"
                               defaultValue={c.unitCost}
-                              onChange={(e) =>
-                                (editedC.unitCost = parseFloat(e.target.value))
-                              }
+                              id={`edit-consumable-cost-${c.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
                             />
                           </td>
@@ -823,9 +809,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             <input
                               type="number"
                               defaultValue={c.stockQty}
-                              onChange={(e) =>
-                                (editedC.stockQty = parseFloat(e.target.value))
-                              }
+                              id={`edit-consumable-stock-${c.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
                             />
                           </td>
@@ -833,26 +817,60 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             <input
                               type="number"
                               defaultValue={c.minStockAlert}
-                              onChange={(e) =>
-                                (editedC.minStockAlert = parseFloat(
-                                  e.target.value
-                                ))
-                              }
+                              id={`edit-consumable-alert-${c.id}`}
                               className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
                             />
                           </td>
                           <td className="px-4 py-3 flex gap-2">
                             <button
-                              onClick={() =>
-                                handleUpdateConsumable(c.id, editedC)
-                              }
-                              className="text-green-600 hover:text-green-800"
+                              onClick={() => {
+                                const name = (
+                                  document.getElementById(
+                                    `edit-consumable-name-${c.id}`
+                                  ) as HTMLInputElement
+                                ).value;
+                                const unit = (
+                                  document.getElementById(
+                                    `edit-consumable-unit-${c.id}`
+                                  ) as HTMLInputElement
+                                ).value;
+                                const unitCost = parseFloat(
+                                  (
+                                    document.getElementById(
+                                      `edit-consumable-cost-${c.id}`
+                                    ) as HTMLInputElement
+                                  ).value
+                                );
+                                const stockQty = parseFloat(
+                                  (
+                                    document.getElementById(
+                                      `edit-consumable-stock-${c.id}`
+                                    ) as HTMLInputElement
+                                  ).value
+                                );
+                                const minStockAlert = parseFloat(
+                                  (
+                                    document.getElementById(
+                                      `edit-consumable-alert-${c.id}`
+                                    ) as HTMLInputElement
+                                  ).value
+                                );
+
+                                handleUpdateConsumable(c.id, {
+                                  name,
+                                  unit,
+                                  unitCost,
+                                  stockQty,
+                                  minStockAlert,
+                                });
+                              }}
+                              className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition"
                             >
                               <Save size={18} />
                             </button>
                             <button
                               onClick={() => setEditingConsumable(null)}
-                              className="text-gray-500 hover:text-gray-700"
+                              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition"
                             >
                               <X size={18} />
                             </button>
@@ -876,14 +894,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           <td className="px-4 py-3 flex gap-2">
                             <button
                               onClick={() => setEditingConsumable(c.id)}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                               title="Editar"
                             >
                               <Edit2 size={18} />
                             </button>
                             <button
                               onClick={() => handleDeleteConsumable(c.id)}
-                              className="text-red-600 hover:text-red-800"
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
                               title="Eliminar"
                             >
                               <Trash2 size={18} />
@@ -898,15 +916,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </table>
           </div>
         </div>
-      )}
+        )}
+      </div>
 
-      {catalogTab === "personal" && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Users size={24} className="text-purple-500" />
-            Gestionar Personal
-          </h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+        <button
+          onClick={() => toggleSection("personal")}
+          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-4">
+            <Users size={24} className="text-purple-600" />
+            <span className="text-lg font-bold text-gray-800">Gestionar Personal</span>
+          </div>
+          {expandedSections["personal"] ? <ChevronUp /> : <ChevronDown />}
+        </button>
 
+        {expandedSections["personal"] && (
+        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
           {/* Crear nuevo usuario */}
           <div className="mb-8 p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
             <h4 className="text-lg font-bold text-blue-900 mb-4">
@@ -1038,7 +1064,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   user.commissionPct.toString()
                                 );
                               }}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                             >
                               <Edit2 size={16} />
                             </button>
@@ -1061,8 +1087,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           onClick={() => handleDeactivateUser(user.id)}
                           className={`p-2 rounded-lg transition ${
                             user.active
-                              ? "text-orange-600 hover:text-orange-800"
-                              : "text-green-600 hover:text-green-800"
+                              ? "text-orange-600 hover:bg-orange-50"
+                              : "text-green-600 hover:bg-green-50"
                           }`}
                           title={user.active ? "Desactivar" : "Activar"}
                         >
@@ -1074,7 +1100,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         </button>
                         <button
                           onClick={() => handleDeleteUserPermanently(user.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
                           title="Eliminar permanentemente"
                         >
                           <Trash2 size={18} />
@@ -1086,14 +1112,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </table>
           </div>
         </div>
-      )}
+        )}
+      </div>
 
-      {catalogTab === "extras" && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-6">
-            Gestión de Extras
-          </h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+        <button
+          onClick={() => toggleSection("extras")}
+          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-4">
+            <Plus size={24} className="text-purple-600" />
+            <span className="text-lg font-bold text-gray-800">Gestión de Extras</span>
+          </div>
+          {expandedSections["extras"] ? <ChevronUp /> : <ChevronDown />}
+        </button>
 
+        {expandedSections["extras"] && (
+        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
           {/* Form agregar extra */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
             <h4 className="font-semibold text-gray-700 mb-3">
@@ -1205,7 +1240,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             </button>
                             <button
                               onClick={() => setEditingExtraId(null)}
-                              className="text-gray-500 hover:text-gray-700"
+                              className="p-2 rounded-lg text-gray-500 hover:text-gray-700"
                             >
                               <X size={18} />
                             </button>
@@ -1236,13 +1271,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           <td className="px-4 py-3 flex gap-2">
                             <button
                               onClick={() => setEditingExtraId(extra.id)}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                             >
                               <Edit2 size={18} />
                             </button>
                             <button
                               onClick={() => handleDeleteExtra(extra.id)}
-                              className="text-red-600 hover:text-red-800"
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
                             >
                               <Trash2 size={18} />
                             </button>
@@ -1262,17 +1297,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </div>
           )}
         </div>
-      )}
+        )}
+      </div>
 
-      {catalogTab === "materials" && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <Package size={24} className="text-purple-500" />
-              Inventario de Materiales Químicos
-            </h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+        <button
+          onClick={() => toggleSection("materials")}
+          className="w-full p-6 flex justify-between items-center bg-white hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-4">
+            <Layers size={24} className="text-purple-600" />
+            <span className="text-lg font-bold text-gray-800">Inventario de Materiales Químicos</span>
           </div>
+          {expandedSections["materials"] ? <ChevronUp /> : <ChevronDown />}
+        </button>
 
+        {expandedSections["materials"] && (
+        <div className="p-6 border-t border-gray-100 animate-in slide-in-from-top-2">
           {/* Botón de inicialización (solo si no hay datos) */}
           {chemicalProducts.length === 0 && (
             <div className="mb-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
@@ -1459,14 +1500,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               }
                             }
                           }}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                           title="Actualizar Stock"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteChemicalProduct(product.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
                           title="Eliminar"
                         >
                           <Trash2 size={18} />
@@ -1547,7 +1588,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </p>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
