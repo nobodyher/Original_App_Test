@@ -142,9 +142,41 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [editingCatalogService, setEditingCatalogService] = useState<string | null>(null);
   const [editingConsumable, setEditingConsumable] = useState<string | null>(null);
 
-  // Chemicals Pagination
+  // Pagination States
+  const ITEMS_PER_PAGE = 7;
+  const [servicesPage, setServicesPage] = useState(1);
+  const [consumablesPage, setConsumablesPage] = useState(1);
+  const [extrasPage, setExtrasPage] = useState(1);
+  
+  // Pagination Link Reset Logic
+  React.useEffect(() => {
+    setServicesPage(1);
+  }, [catalogServices.length]);
+
+  React.useEffect(() => {
+    setConsumablesPage(1);
+  }, [consumables.length]);
+
+  React.useEffect(() => {
+    setExtrasPage(1);
+  }, [catalogExtras.length]);
+  
+  // Chemicals Pagination (Updated limit)
   const [chemicalsPage, setChemicalsPage] = useState(1);
-  const CHEMICALS_PER_PAGE = 5;
+  const CHEMICALS_PER_PAGE = 7;
+
+  // Memoized Paginated Data
+  const paginatedServices = useMemo(() => {
+    return catalogServices.slice((servicesPage - 1) * ITEMS_PER_PAGE, servicesPage * ITEMS_PER_PAGE);
+  }, [catalogServices, servicesPage]);
+
+  const paginatedConsumables = useMemo(() => {
+    return consumables.slice((consumablesPage - 1) * ITEMS_PER_PAGE, consumablesPage * ITEMS_PER_PAGE);
+  }, [consumables, consumablesPage]);
+
+  const paginatedExtras = useMemo(() => {
+    return catalogExtras.slice((extrasPage - 1) * ITEMS_PER_PAGE, extrasPage * ITEMS_PER_PAGE);
+  }, [catalogExtras, extrasPage]);
 
   const paginatedChemicals = useMemo(() => {
     const start = (chemicalsPage - 1) * CHEMICALS_PER_PAGE;
@@ -553,7 +585,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {catalogServices.map((cs) => {
+                {paginatedServices.map((cs) => {
                   const isEditing = editingCatalogService === cs.id;
 
                   return (
@@ -706,6 +738,32 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Catalog Operations Pagination */}
+          <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 mt-2">
+            <div className="text-sm text-gray-500 font-medium">
+              Mostrando {Math.min((servicesPage - 1) * ITEMS_PER_PAGE + 1, catalogServices.length)} - {Math.min(servicesPage * ITEMS_PER_PAGE, catalogServices.length)} de {catalogServices.length} servicios
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setServicesPage((p) => Math.max(1, p - 1))}
+                disabled={servicesPage === 1}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="px-4 py-2 rounded-lg bg-purple-600 text-white font-bold shadow-sm shadow-purple-200">
+                {servicesPage}
+              </span>
+              <button
+                onClick={() => setServicesPage((p) => (p * ITEMS_PER_PAGE < catalogServices.length ? p + 1 : p))}
+                disabled={servicesPage * ITEMS_PER_PAGE >= catalogServices.length}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
         </div>
         )}
 
@@ -808,7 +866,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {consumables.map((c) => {
+                {paginatedConsumables.map((c) => {
                   const isLowStock = c.stockQty <= c.minStockAlert;
                   const isEditing = editingConsumable === c.id;
 
@@ -955,6 +1013,32 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Consumables Pagination */}
+          <div className="flex justify-between items-center px-4 py-3 mt-4">
+             <div className="text-sm text-gray-500 font-medium">
+              Mostrando {Math.min((consumablesPage - 1) * ITEMS_PER_PAGE + 1, consumables.length)} - {Math.min(consumablesPage * ITEMS_PER_PAGE, consumables.length)} de {consumables.length} consumibles
+             </div>
+             <div className="flex gap-2">
+              <button
+                onClick={() => setConsumablesPage((p) => Math.max(1, p - 1))}
+                disabled={consumablesPage === 1}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-sm shadow-blue-200">
+                {consumablesPage}
+              </span>
+              <button
+                onClick={() => setConsumablesPage((p) => (p * ITEMS_PER_PAGE < consumables.length ? p + 1 : p))}
+                disabled={consumablesPage * ITEMS_PER_PAGE >= consumables.length}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronRight size={18} />
+              </button>
+             </div>
           </div>
         </div>
         )}
@@ -1182,7 +1266,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {catalogExtras.map((extra) => {
+                {paginatedExtras.map((extra) => {
                   const price =
                     (extra as any).price || extra.priceSuggested || 0;
                   return (
@@ -1212,11 +1296,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             />
                           </td>
                           <td className="px-6 py-4">
-                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                extra.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
-                             }`}>
-                                {extra.active ? "Activo" : "Inactivo"}
-                             </span>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                extra.active
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {extra.active ? "Activo" : "Inactivo"}
+                            </span>
                           </td>
                           <td className="px-6 py-4 flex items-center gap-2">
                             <button
@@ -1257,7 +1345,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           </td>
                           <td className="px-6 py-4">
                             <span
-                              onClick={() => handleToggleExtra(extra.id, extra.active)}
+                              onClick={() =>
+                                handleToggleExtra(extra.id, extra.active)
+                              }
                               className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold shadow-sm cursor-pointer hover:scale-105 transition-transform ${
                                 extra.active
                                   ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
@@ -1293,6 +1383,43 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Extras Pagination */}
+          <div className="flex justify-between items-center px-4 py-3 mt-4">
+            <div className="text-sm text-gray-500 font-medium">
+              Mostrando{" "}
+              {Math.min(
+                (extrasPage - 1) * ITEMS_PER_PAGE + 1,
+                catalogExtras.length
+              )}{" "}
+              -{" "}
+              {Math.min(extrasPage * ITEMS_PER_PAGE, catalogExtras.length)} de{" "}
+              {catalogExtras.length} extras
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setExtrasPage((p) => Math.max(1, p - 1))}
+                disabled={extrasPage === 1}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="px-4 py-2 rounded-lg bg-orange-500 text-white font-bold shadow-sm shadow-orange-200">
+                {extrasPage}
+              </span>
+              <button
+                onClick={() =>
+                  setExtrasPage((p) =>
+                    p * ITEMS_PER_PAGE < catalogExtras.length ? p + 1 : p
+                  )
+                }
+                disabled={extrasPage * ITEMS_PER_PAGE >= catalogExtras.length}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
 
 
