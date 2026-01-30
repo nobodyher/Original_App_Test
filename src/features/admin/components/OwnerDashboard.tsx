@@ -13,6 +13,7 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import type {
   AppUser,
@@ -64,6 +65,9 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     includeDeleted: false,
     search: "",
   });
+
+  const [showCategoryList, setShowCategoryList] = useState(false);
+  const [showStaffList, setShowStaffList] = useState(false);
 
   const [newExpense, setNewExpense] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -289,13 +293,13 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     return Object.values(stats).sort((a, b) => b.revenue - a.revenue);
   }, [filteredServices, filteredExpenses, users]);
 
-  const sortedServices = useMemo(() => [...filteredServices].reverse(), [filteredServices]);
+  const sortedServices = useMemo(() => [...filteredServices], [filteredServices]);
   const paginatedServices = useMemo(() => {
     const start = (servicesPage - 1) * ITEMS_PER_PAGE;
     return sortedServices.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedServices, servicesPage]);
 
-  const sortedExpenses = useMemo(() => [...filteredExpenses].reverse(), [filteredExpenses]);
+  const sortedExpenses = useMemo(() => [...filteredExpenses], [filteredExpenses]);
   const paginatedExpenses = useMemo(() => {
     const start = (expensesPage - 1) * ITEMS_PER_PAGE;
     return sortedExpenses.slice(start, start + ITEMS_PER_PAGE);
@@ -689,33 +693,64 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                      </div>
                      <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-400 uppercase ml-2">Categoría</label>
-                        <select
-                           value={newExpense.category}
-                           onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value, userId: "" })}
-                           className="w-full h-12 px-2 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:outline-none font-medium text-gray-700 text-sm"
-                        >
-                           <option value="Agua">Agua</option>
-                           <option value="Luz">Luz</option>
-                           <option value="Renta">Renta</option>
-                           <option value="Reposicion">Reposición</option>
-                           <option value="Comisiones">Comisiones</option>
-                        </select>
+                        <div className="relative">
+                           <button
+                              onClick={() => setShowCategoryList(!showCategoryList)}
+                              className="w-full h-12 px-2 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:outline-none font-medium text-gray-700 text-sm text-left flex items-center justify-between"
+                           >
+                              <span>{newExpense.category}</span>
+                              <ChevronDown size={16} className="text-gray-400" />
+                           </button>
+                           
+                           {showCategoryList && (
+                              <div className="absolute z-[60] mt-1 max-h-60 overflow-y-auto w-full bg-white border border-gray-200 rounded-xl shadow-2xl">
+                                 {["Agua", "Luz", "Renta", "Reposicion", "Comisiones"].map((cat) => (
+                                    <div
+                                       key={cat}
+                                       onClick={() => {
+                                          setNewExpense({ ...newExpense, category: cat, userId: "" });
+                                          setShowCategoryList(false);
+                                       }}
+                                       className="p-3 hover:bg-rose-50 cursor-pointer text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+                                    >
+                                       {cat}
+                                    </div>
+                                 ))}
+                              </div>
+                           )}
+                        </div>
                      </div>
                   </div>
 
                   {newExpense.category === "Comisiones" && (
-                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2 relative">
                         <label className="text-xs font-bold text-gray-400 uppercase ml-2">Personal</label>
-                        <select
-                           value={newExpense.userId}
-                           onChange={(e) => setNewExpense({ ...newExpense, userId: e.target.value })}
-                           className="w-full h-12 px-4 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-bold focus:outline-none"
+                        <button
+                           onClick={() => setShowStaffList(!showStaffList)}
+                           className="w-full h-12 px-4 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-bold focus:outline-none text-left flex items-center justify-between"
                         >
-                           <option value="">Seleccionar personal...</option>
-                           {users.filter((u) => u.role === "staff").map((u) => (
-                              <option key={u.id} value={u.id}>{u.name}</option>
-                           ))}
-                        </select>
+                           <span>
+                              {users.find(u => u.id === newExpense.userId)?.name || "Seleccionar personal..."}
+                           </span>
+                           <ChevronDown size={16} className="text-purple-400" />
+                        </button>
+
+                        {showStaffList && (
+                           <div className="absolute z-[60] mt-1 max-h-60 overflow-y-auto w-full bg-white border border-gray-200 rounded-xl shadow-2xl">
+                              {users.filter((u) => u.role === "staff").map((u) => (
+                                 <div
+                                    key={u.id}
+                                    onClick={() => {
+                                       setNewExpense({ ...newExpense, userId: u.id });
+                                       setShowStaffList(false);
+                                    }}
+                                    className="p-3 hover:bg-purple-50 cursor-pointer text-sm font-bold text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+                                 >
+                                    {u.name}
+                                 </div>
+                              ))}
+                           </div>
+                        )}
                      </div>
                   )}
 

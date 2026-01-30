@@ -4,7 +4,12 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  getDoc,
+
+  getDocs,
+  query,
+  where,
+  limit,
+  increment,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
@@ -106,6 +111,41 @@ export const addService = async (
   if (newService.category) {
     serviceData.category = newService.category;
   }
+
+  // ====== AUTOMATIZACIÓN DE CLIENTES ======
+  try {
+    const clientName = newService.client.trim();
+    if (clientName) {
+      const clientsRef = collection(db, "clients");
+      const q = query(clientsRef, where("name", "==", clientName), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // Crear nuevo cliente
+        await addDoc(clientsRef, {
+          name: clientName,
+          firstVisit: newService.date, // Usamos la fecha del servicio
+          lastVisit: newService.date,
+          totalSpent: parseFloat(totalCost.toFixed(2)),
+          totalServices: 1,
+          active: true,
+          phone: "", // Opcional, se puede llenar después
+        });
+      } else {
+        // Actualizar cliente existente
+        const clientDoc = querySnapshot.docs[0];
+        await updateDoc(clientDoc.ref, {
+          lastVisit: newService.date,
+          totalSpent: increment(parseFloat(totalCost.toFixed(2))),
+          totalServices: increment(1),
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error en automatización de clientes (no crítico):", error);
+    // No lanzamos error para no interrumpir el guardado del servicio
+  }
+  // ========================================
 
   await addDoc(collection(db, "services"), serviceData);
 

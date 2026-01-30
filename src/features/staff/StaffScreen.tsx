@@ -72,7 +72,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   });
 
   const [showExtrasSelector, setShowExtrasSelector] = useState(false);
-  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [showServiceList, setShowServiceList] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     search: "",
     dateFrom: "",
@@ -353,27 +353,32 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
                   {/* Service Dropdown */}
                   <div className="relative mb-6">
-                     <select
-                        value={selectedServiceId}
-                        onChange={(e) => {
-                           const selected = activeServices.find((cs) => cs.id === e.target.value);
-                           if (selected) {
-                              selectCatalogService(selected);
-                              setSelectedServiceId("");
-                           }
-                        }}
-                        className="w-full h-14 pl-4 pr-10 rounded-xl bg-gray-50 border-2 border-gray-100 text-gray-700 font-medium appearance-none focus:border-purple-500 focus:bg-white focus:outline-none transition-colors cursor-pointer"
+                     <button
+                        onClick={() => setShowServiceList(!showServiceList)}
+                        className="w-full h-14 pl-4 pr-10 rounded-xl bg-gray-50 border-2 border-gray-100 text-gray-700 font-medium text-left appearance-none focus:border-purple-500 focus:bg-white focus:outline-none transition-colors cursor-pointer"
                      >
-                        <option value="">+ Añadir servicio al carrito...</option>
-                        {activeServices.map((cs) => (
-                           <option key={cs.id} value={cs.id}>
-                              {cs.name} — ${cs.basePrice}
-                           </option>
-                        ))}
-                     </select>
+                        + Añadir servicio al carrito...
+                     </button>
                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                         <ChevronDown size={20} />
                      </div>
+                     {showServiceList && (
+                        <div className="absolute top-full left-0 mt-2 w-full max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+                           {activeServices.map((cs) => (
+                              <div
+                                 key={cs.id}
+                                 onClick={() => {
+                                    selectCatalogService(cs);
+                                    setShowServiceList(false);
+                                 }}
+                                 className="p-4 cursor-pointer hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-0 flex justify-between items-center"
+                              >
+                                 <span className="font-bold text-gray-700">{cs.name}</span>
+                                 <span className="font-bold text-purple-600">${cs.basePrice}</span>
+                              </div>
+                           ))}
+                        </div>
+                     )}
                   </div>
 
                   {/* Selected Services List */}

@@ -134,3 +134,15 @@ export type MaterialRecipe = {
   category: "manicura" | "pedicura";
   active: boolean;
 };
+
+export type Client = {
+  id: string;
+  name: string;
+  phone?: string;
+  firstVisit: string;
+  lastVisit: string;
+  totalSpent: number;
+  totalServices: number;
+  preferredStaffId?: string;
+  active: boolean;
+};

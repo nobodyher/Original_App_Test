@@ -14,6 +14,7 @@ import type {
   Consumable,
   ChemicalProduct,
   Toast,
+  Client,
 } from "../../types";
 
 interface OwnerScreenProps {
@@ -27,6 +28,7 @@ interface OwnerScreenProps {
   serviceRecipes: ServiceRecipe[];
   consumables: Consumable[];
   chemicalProducts: ChemicalProduct[];
+  clients: Client[];
   showNotification: (message: string, type?: Toast["type"]) => void;
   onLogout: () => void;
 
@@ -88,7 +90,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
       <div className="max-w-7xl mx-auto p-6">
         <div className="space-y-6">
           {/* Admin Tabs Navigation */}
-          <div className="flex gap-4 border-b-2 border-gray-200 mt-6 mb-10 py-4 px-2 relative z-10 overflow-x-auto">
+          <div className="flex gap-4 border-b-2 border-gray-200 mt-6 mb-10 overflow-x-auto py-2">
             <button
               onClick={() => setOwnerTab("dashboard")}
               className={`flex items-center gap-2 px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
@@ -154,6 +156,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
               serviceRecipes={props.serviceRecipes}
               consumables={props.consumables}
               chemicalProducts={props.chemicalProducts}
+              clients={props.clients}
               showNotification={props.showNotification}
               createNewUser={props.createNewUser}
               updateUser={props.updateUser}

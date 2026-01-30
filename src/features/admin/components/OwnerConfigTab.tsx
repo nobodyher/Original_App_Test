@@ -29,6 +29,7 @@ import type {
   Consumable,
   ChemicalProduct,
   Toast,
+  Client,
 } from "../../../types";
 
 interface OwnerConfigTabProps {
@@ -39,6 +40,7 @@ interface OwnerConfigTabProps {
   serviceRecipes: ServiceRecipe[];
   consumables: Consumable[];
   chemicalProducts: ChemicalProduct[];
+  clients: Client[];
   showNotification: (message: string, type?: Toast["type"]) => void;
 
   // User Actions
@@ -75,6 +77,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   materialRecipes,
   consumables,
   chemicalProducts,
+  clients,
   showNotification,
   createNewUser,
   updateUser,
@@ -95,13 +98,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   initializeMaterialsData,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    "services" | "consumables" | "personal" | "extras" | "materials"
+    "services" | "consumables" | "personal" | "extras" | "materials" | "clients"
   >("services");
 
   const tabs = [
     { id: "services", label: "Catálogo", icon: ShoppingCart, color: "text-purple-600" },
     { id: "consumables", label: "Consumibles", icon: Package, color: "text-blue-600" },
     { id: "personal", label: "Personal", icon: Users, color: "text-pink-600" },
+    { id: "clients", label: "Clientes", icon: Users, color: "text-indigo-600" },
     { id: "extras", label: "Extras", icon: Plus, color: "text-orange-600" },
     { id: "materials", label: "Químicos", icon: Beaker, color: "text-green-600" }, // Using Beaker imported or ensuring it is imported
   ];
@@ -149,6 +153,22 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [editExtraForm, setEditExtraForm] = useState<Partial<CatalogExtra>>({});
   // Consumables Editing State (Slide-over)
   const [editingConsumableItem, setEditingConsumableItem] = useState<Consumable | null>(null);
+  
+  // Clients State
+  const [clientsPage, setClientsPage] = useState(1);
+  const [clientsSearch, setClientsSearch] = useState("");
+
+  const filteredClients = useMemo(() => {
+    return clients.filter(c => 
+      c.name.toLowerCase().includes(clientsSearch.toLowerCase())
+    );
+  }, [clients, clientsSearch]);
+
+  const paginatedClients = useMemo(() => {
+    const start = (clientsPage - 1) * 7;
+    return filteredClients.slice(start, start + 7);
+  }, [filteredClients, clientsPage]);
+
   const [editConsumableForm, setEditConsumableForm] = useState<Partial<Consumable>>({});
   
   // Chemical Product Editing State (Slide-over)
@@ -518,7 +538,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         </nav>
 
         {/* Content Area */}
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[600px] relative">
+        <div className={`flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[600px] relative ${activeTab === 'clients' ? 'p-5' : 'p-8'}`}>
 
           {/* Services Tab */}
           {activeTab === "services" && (
@@ -569,7 +589,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             />
             <button
               onClick={handleAddCatalogService}
-              className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold"
             >
               Agregar
             </button>
@@ -848,7 +868,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             />
             <button
               onClick={handleAddConsumable}
-              className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold"
             >
               Agregar
             </button>
@@ -1011,7 +1031,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </select>
               <button
                 onClick={handleCreateNewUser}
-                className="bg-linear-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold flex items-center justify-center"
               >
                 <Plus size={18} className="inline mr-2" />
                 Crear Usuario
@@ -1126,7 +1146,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <button
                 onClick={handleAddExtra}
-                className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold"
               >
                 Agregar
               </button>
@@ -1274,7 +1294,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </p>
               <button
                 onClick={initializeMaterialsData}
-                className="bg-linear-to-r from-green-500 to-green-600 text-white px-8 py-3 rounded-lg hover:shadow-lg transition font-bold text-lg"
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl shadow-sm hover:shadow-md transition-all font-bold text-lg"
               >
                 ✨ Inicializar Datos de Materiales
               </button>
@@ -1361,7 +1381,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <button
                 onClick={handleAddChemicalProduct}
-                className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2.5 rounded-lg hover:shadow-lg transition font-bold"
+                className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-sm hover:shadow-md transition-all font-bold"
               >
                 Guardar
               </button>
@@ -1543,6 +1563,121 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
         )}
+
+      {/* ==================== PESTAÑA DE CLIENTES ==================== */}
+      {activeTab === "clients" && (
+        <div className="animate-in fade-in duration-300">
+           {/* Header & Search Combined */}
+           <div className="flex justify-between items-center mb-6 mt-0">
+              <h2 className="text-xl font-bold text-gray-800 m-0">Directorio de Clientes</h2>
+              
+              {/* Buscador Integrado */}
+               <div className="relative w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="Buscar cliente..."
+                  value={clientsSearch}
+                  onChange={(e) => {
+                    setClientsSearch(e.target.value);
+                    setClientsPage(1);
+                   }}
+                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all shadow-sm"
+                />
+                 <div className="absolute left-3 top-2 text-gray-400">
+                    <Users size={16} />
+                 </div>
+              </div>
+           </div>
+
+           {/* Tabla de Clientes */}
+           <div className="overflow-hidden">
+             {filteredClients.length > 0 ? (
+               <div className="overflow-x-auto">
+                 <table className="w-full">
+                    <thead className="bg-gray-50/50 border-b border-gray-100">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Última Visita</th>
+                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Servicios</th>
+                         <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Gasto Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                       {paginatedClients.map((client) => (
+                         <tr key={client.id} className="hover:bg-indigo-50/30 transition-colors group">
+                           <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-10 h-10 rounded-full bg-indigo-100/50 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-200/50 transition-colors">
+                                    {client.name.substring(0, 2).toUpperCase()}
+                                 </div>
+                                 <div className="font-semibold text-gray-800">{client.name}</div>
+                              </div>
+                           </td>
+                           <td className="px-6 py-4 text-sm text-gray-500">
+                              {client.lastVisit}
+                           </td>
+                           <td className="px-6 py-4 text-center">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {client.totalServices} visitas
+                              </span>
+                           </td>
+                           <td className="px-6 py-4 text-right">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
+                                client.totalSpent > 500 
+                                  ? "bg-purple-100 text-purple-700" 
+                                  : "bg-green-100 text-green-700"
+                              }`}>
+                                ${client.totalSpent.toFixed(2)}
+                              </span>
+                           </td>
+                         </tr>
+                       ))}
+                    </tbody>
+                 </table>
+               </div>
+             ) : (
+                <div className="p-12 text-center">
+                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                      <Users size={32} />
+                   </div>
+                   <h3 className="text-lg font-medium text-gray-900 mb-1">
+                     {clientsSearch ? "No se encontraron resultados" : "Aún no hay clientes registrados"}
+                   </h3>
+                   <p className="text-gray-500 max-w-sm mx-auto">
+                      {clientsSearch 
+                        ? "Intenta con otro término de búsqueda." 
+                        : "Aparecerán aquí automáticamente al realizar ventas."}
+                   </p>
+                </div>
+             )}
+             
+             {/* Pagination */}
+              {filteredClients.length > 7 && (
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                  <span className="text-sm text-gray-500">
+                    Mostrando {((clientsPage - 1) * 7) + 1} - {Math.min(clientsPage * 7, filteredClients.length)} de {filteredClients.length}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setClientsPage(p => Math.max(1, p - 1))}
+                      disabled={clientsPage === 1}
+                      className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 transition-all font-medium"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      onClick={() => setClientsPage(p => Math.min(Math.ceil(filteredClients.length / 7), p + 1))}
+                       disabled={clientsPage >= Math.ceil(filteredClients.length / 7)}
+                      className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 transition-all font-medium"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                </div>
+              )}
+           </div>
+        </div>
+      )}
       </div>
     </div>
       {/* Slide-over para Edición de Producto Químico */}
@@ -1584,7 +1719,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     type="text"
                     value={editChemicalForm.name || ""}
                     onChange={(e) => setEditChemicalForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                   />
                 </div>
 
@@ -1595,7 +1730,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         type="number"
                         value={editChemicalForm.quantity ?? ""}
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, quantity: parseFloat(e.target.value) }))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                       />
                    </div>
                    <div className="space-y-2">
@@ -1603,7 +1738,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <select
                         value={editChemicalForm.unit || "ml"}
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, unit: e.target.value as any }))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all bg-white"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                       >
                          <option value="ml">ml</option>
                          <option value="L">Litros</option>
@@ -1632,7 +1767,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           step="0.01"
                           value={editChemicalForm.purchasePrice ?? ""}
                           onChange={(e) => setEditChemicalForm(prev => ({ ...prev, purchasePrice: parseFloat(e.target.value) }))}
-                          className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                         />
                       </div>
                     </div>
@@ -1642,7 +1777,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         type="number"
                         value={editChemicalForm.yield ?? ""}
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, yield: parseFloat(e.target.value) }))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                       />
                     </div>
                 </div>
@@ -1740,7 +1875,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     type="text"
                     value={editConsumableForm.name || ""}
                     onChange={(e) => setEditConsumableForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
                   />
                 </div>
 
@@ -1751,7 +1886,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                      placeholder="ej. Caja, Paquete, Unidad"
                      value={editConsumableForm.unit || ""}
                      onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unit: e.target.value }))}
-                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
+                      className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
                    />
                 </div>
               </div>
@@ -1772,7 +1907,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       step="0.01"
                       value={editConsumableForm.unitCost ?? ""}
                       onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unitCost: parseFloat(e.target.value) }))}
-                      className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:border-green-500 focus:ring-4 focus:ring-green-50/50 outline-none transition-all font-semibold text-gray-800"
+                      className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-4 focus:ring-green-50/50 outline-none transition-all font-semibold"
                     />
                   </div>
                   <p className="text-xs text-gray-500">
@@ -1873,7 +2008,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     type="text"
                     value={editExtraForm.name || ""}
                     onChange={(e) => setEditExtraForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all"
                   />
                 </div>
 
@@ -1886,7 +2021,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         step="0.01"
                         value={editExtraForm.priceSuggested ?? ""}
                         onChange={(e) => setEditExtraForm(prev => ({ ...prev, priceSuggested: parseFloat(e.target.value) }))}
-                        className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all font-bold text-gray-800"
+                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all font-bold"
                        />
                    </div>
                    <p className="text-xs text-slate-400">
@@ -1978,7 +2113,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     type="text"
                     value={editStaffForm.name || ""}
                     onChange={(e) => setEditStaffForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-4 focus:ring-pink-50/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-pink-500 focus:ring-4 focus:ring-pink-50/50 outline-none transition-all"
                   />
                 </div>
 
@@ -1991,7 +2126,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         maxLength={4}
                         value={editStaffForm.pin || ""}
                         onChange={(e) => setEditStaffForm(prev => ({ ...prev, pin: e.target.value }))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-4 focus:ring-pink-50/50 outline-none transition-all font-mono tracking-widest"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-pink-500 focus:ring-4 focus:ring-pink-50/50 outline-none transition-all font-mono tracking-widest"
                    />
                    <p className="text-xs text-slate-400">
                       PIN de 4 dígitos para iniciar sesión.
@@ -2015,7 +2150,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         max="100"
                         value={editStaffForm.commissionPct ?? ""}
                         onChange={(e) => setEditStaffForm(prev => ({ ...prev, commissionPct: parseFloat(e.target.value) }))}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all font-bold text-gray-800 text-lg"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all font-bold text-lg"
                        />
                        <span className="absolute right-4 top-3 text-gray-400 font-bold">%</span>
                    </div>
@@ -2037,7 +2172,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   <select
                     value={editStaffForm.color}
                     onChange={(e) => setEditStaffForm(prev => ({ ...prev, color: e.target.value }))}
-                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none"
+                     className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
                   >
                     <option value="from-pink-500 to-rose-600">Rosa (Pink)</option>
                     <option value="from-purple-500 to-indigo-600">Morado (Purple)</option>
@@ -2095,6 +2230,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
       )}
+
+
+
+
     </div>
   );
 };

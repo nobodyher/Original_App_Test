@@ -17,6 +17,7 @@ import type {
   CatalogExtra,
   ChemicalProduct,
   MaterialRecipe,
+  Client,
 } from "../types";
 import { EXTRAS_CATALOG } from "../constants/catalog";
 
@@ -31,6 +32,7 @@ export const useSalonData = (initialized: boolean) => {
     []
   );
   const [materialRecipes, setMaterialRecipes] = useState<MaterialRecipe[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   // Cargar servicios
   useEffect(() => {
@@ -174,6 +176,21 @@ export const useSalonData = (initialized: boolean) => {
     return () => unsub();
   }, [initialized]);
 
+
+
+  // Cargar clientes
+  useEffect(() => {
+    if (!initialized) return;
+    const q = query(collection(db, "clients"), orderBy("name", "asc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() } as Client)
+      );
+      setClients(data);
+    });
+    return () => unsub();
+  }, [initialized]);
+
   return {
     services,
     setServices,
@@ -191,5 +208,7 @@ export const useSalonData = (initialized: boolean) => {
     setChemicalProducts,
     materialRecipes,
     setMaterialRecipes,
+    clients,
+    setClients,
   };
 };
