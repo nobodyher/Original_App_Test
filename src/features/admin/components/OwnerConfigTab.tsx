@@ -139,6 +139,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     color: "from-blue-500 to-blue-600",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [editingStaffItem, setEditingStaffItem] = useState<AppUser | null>(null);
   const [editStaffForm, setEditStaffForm] = useState<Partial<AppUser>>({});
 
@@ -218,6 +220,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
   // Wrappers
   const handleCreateNewUser = async () => {
+    setIsSubmitting(true);
     try {
       await createNewUser({
         name: newUser.name,
@@ -236,6 +239,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     } catch (error: any) {
       console.error("Error creando usuario:", error);
       showNotification(error.message || "Error al crear usuario", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -279,6 +284,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   };
 
   const handleAddCatalogService = async () => {
+    setIsSubmitting(true);
     try {
       await addCatalogService(
         newCatalogService.name,
@@ -291,6 +297,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     } catch (error: any) {
       console.error("Error agregando servicio:", error);
       showNotification(error.message || "Error al agregar", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -327,6 +335,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   };
 
   const handleAddExtra = async () => {
+    setIsSubmitting(true);
     try {
       await addExtra(newExtraName, parseFloat(newExtraPrice));
       setNewExtraName("");
@@ -335,6 +344,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     } catch (error: any) {
       console.error("Error agregando extra:", error);
       showNotification(error.message || "Error al agregar", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -371,6 +382,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   };
 
   const handleAddConsumable = async () => {
+    setIsSubmitting(true);
     try {
       await addConsumable({
         name: newConsumable.name,
@@ -391,6 +403,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     } catch (error: any) {
       console.error("Error agregando consumible:", error);
       showNotification(error.message || "Error al agregar", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -417,6 +431,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   };
 
   const handleAddChemicalProduct = async () => {
+    setIsSubmitting(true);
     try {
       await addChemicalProduct({
         name: newChemicalProduct.name,
@@ -440,6 +455,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     } catch (error: any) {
       console.error("Error agregando producto:", error);
       showNotification(error.message || "Error al agregar", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -589,7 +606,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             />
             <button
               onClick={handleAddCatalogService}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold"
+              disabled={isSubmitting}
+              className={`bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold ${
+                isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
+              }`}
             >
               Agregar
             </button>
@@ -868,7 +888,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             />
             <button
               onClick={handleAddConsumable}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold"
+              disabled={isSubmitting}
+              className={`bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold ${
+                isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
+              }`}
             >
               Agregar
             </button>
@@ -1031,7 +1054,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </select>
               <button
                 onClick={handleCreateNewUser}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold flex items-center justify-center"
+                disabled={isSubmitting}
+                className={`bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold flex items-center justify-center ${
+                  isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
+                }`}
               >
                 <Plus size={18} className="inline mr-2" />
                 Crear Usuario
@@ -1146,7 +1172,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <button
                 onClick={handleAddExtra}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold"
+                disabled={isSubmitting}
+                className={`bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold ${
+                  isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
+                }`}
               >
                 Agregar
               </button>
@@ -1381,7 +1410,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <button
                 onClick={handleAddChemicalProduct}
-                className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-bold"
+                disabled={isSubmitting}
+                className={`bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-bold ${
+                  isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
+                }`}
               >
                 Guardar
               </button>

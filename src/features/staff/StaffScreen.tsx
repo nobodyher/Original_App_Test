@@ -80,6 +80,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   });
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Service>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter services for current staff user
   const today = new Date().toISOString().split("T")[0];
@@ -183,6 +184,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
   const handleAddService = async () => {
     if (!currentUser) return;
+    setIsSubmitting(true);
     try {
       await addService(currentUser, newService, materialRecipes, totalCost);
       setNewService({
@@ -193,10 +195,15 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
         paymentMethod: "cash",
         category: undefined,
       });
-      showNotification("Servicio agregado exitosamente");
+      // Delay notification to ensure UI feedback is seen
+      setTimeout(() => {
+          showNotification("Servicio agregado exitosamente");
+      }, 200);
     } catch (error: any) {
       console.error("Error completo:", error);
       showNotification(`Error: ${error?.message || "Error desconocido"}`, "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -533,15 +540,17 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
                      <button
                         onClick={handleAddService}
-                        disabled={newService.client === "" || newService.services.length === 0}
-                        className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 ${
+                        disabled={newService.client === "" || newService.services.length === 0 || isSubmitting}
+                        className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 ${
                            newService.client === "" || newService.services.length === 0
                               ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-black text-white hover:bg-gray-900"
+                              : isSubmitting 
+                                 ? "bg-black/70 text-white cursor-wait animate-pulse" 
+                                 : "bg-black text-white hover:bg-gray-900 transform hover:-translate-y-1"
                         }`}
                      >
-                        <Check size={20} />
-                        Confirmar Cobro
+                        <Check size={20} className={isSubmitting ? "hidden" : ""} />
+                        {isSubmitting ? "Procesando..." : "Confirmar Cobro"}
                      </button>
                   </div>
                </div>
