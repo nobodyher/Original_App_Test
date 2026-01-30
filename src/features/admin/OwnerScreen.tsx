@@ -39,6 +39,7 @@ interface OwnerScreenProps {
   restoreDeletedService: (id: string) => Promise<void>;
 
   createNewUser: (data: any) => Promise<void>;
+  updateUser: (userId: string, data: Partial<AppUser>) => Promise<void>;
   updateUserCommission: (userId: string, newCommission: number) => Promise<void>;
   deactivateUser: (userId: string) => Promise<void>;
   deleteUserPermanently: (userId: string) => Promise<void>;
@@ -155,6 +156,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
               chemicalProducts={props.chemicalProducts}
               showNotification={props.showNotification}
               createNewUser={props.createNewUser}
+              updateUser={props.updateUser}
               updateUserCommission={props.updateUserCommission}
               deactivateUser={props.deactivateUser}
               deleteUserPermanently={props.deleteUserPermanently}

@@ -85,6 +85,7 @@ const SalonApp = () => {
         permanentlyDeleteService={salonService.permanentlyDeleteService}
         restoreDeletedService={salonService.restoreDeletedService}
         createNewUser={userService.createNewUser}
+        updateUser={userService.updateUser}
         updateUserCommission={userService.updateUserCommission}
         deactivateUser={userService.deactivateUser}
         deleteUserPermanently={userService.deleteUserPermanently}

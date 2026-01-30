@@ -4,7 +4,6 @@ import {
   ShoppingCart,
   Package,
   Plus,
-  Check,
   X,
   Edit2,
   Trash2,
@@ -17,6 +16,9 @@ import {
   ChevronRight,
   PlusCircle,
   DollarSign,
+  Sparkles,
+  Key,
+  Percent,
 } from "lucide-react";
 import type {
   AppUser,
@@ -41,6 +43,7 @@ interface OwnerConfigTabProps {
 
   // User Actions
   createNewUser: (data: any) => Promise<void>;
+  updateUser: (userId: string, data: Partial<AppUser>) => Promise<void>;
   updateUserCommission: (userId: string, newCommission: number) => Promise<void>;
   deactivateUser: (userId: string) => Promise<void>;
   deleteUserPermanently: (userId: string) => Promise<void>;
@@ -70,12 +73,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   catalogServices,
   catalogExtras,
   materialRecipes,
-  serviceRecipes,
   consumables,
   chemicalProducts,
   showNotification,
   createNewUser,
-  updateUserCommission,
+  updateUser,
   deactivateUser,
   deleteUserPermanently,
   addCatalogService,
@@ -126,10 +128,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     yield: "",
   });
 
-  const [editingExtraId, setEditingExtraId] = useState<string | null>(null);
-  const [newExtraName, setNewExtraName] = useState("");
-  const [newExtraPrice, setNewExtraPrice] = useState("");
-
   const [newUser, setNewUser] = useState({
     name: "",
     pin: "",
@@ -137,10 +135,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     color: "from-blue-500 to-blue-600",
   });
 
-  const [editingUserCommission, setEditingUserCommission] = useState<string | null>(null);
-  const [editingCommissionValue, setEditingCommissionValue] = useState("");
+  const [editingStaffItem, setEditingStaffItem] = useState<AppUser | null>(null);
+  const [editStaffForm, setEditStaffForm] = useState<Partial<AppUser>>({});
+
+  // Extras Adding State
+  const [newExtraName, setNewExtraName] = useState("");
+  const [newExtraPrice, setNewExtraPrice] = useState("");
 
   const [editingCatalogService, setEditingCatalogService] = useState<string | null>(null);
+  
+  // Extras Editing State (Slide-over)
+  const [editingExtraItem, setEditingExtraItem] = useState<CatalogExtra | null>(null);
+  const [editExtraForm, setEditExtraForm] = useState<Partial<CatalogExtra>>({});
   // Consumables Editing State (Slide-over)
   const [editingConsumableItem, setEditingConsumableItem] = useState<Consumable | null>(null);
   const [editConsumableForm, setEditConsumableForm] = useState<Partial<Consumable>>({});
@@ -213,13 +219,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     }
   };
 
-  const handleUpdateUserCommission = async (userId: string, newCommission: number) => {
+  const handleUpdateUser = async (userId: string, updates: Partial<AppUser>) => {
     try {
-      await updateUserCommission(userId, newCommission);
-      setEditingUserCommission(null);
-      showNotification("Comisión actualizada");
+      await updateUser(userId, updates);
+      setEditingStaffItem(null);
+      showNotification("Perfil de usuario actualizado");
     } catch (error: any) {
-      console.error("Error actualizando comisión:", error);
+      console.error("Error actualizando usuario:", error);
       showNotification(error.message || "Error al actualizar", "error");
     }
   };
@@ -312,10 +318,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     }
   };
 
-  const handleUpdateExtra = async (id: string, name: string, price: number) => {
+  const handleUpdateExtra = async (id: string, updates: Partial<CatalogExtra>) => {
     try {
-      await updateExtra(id, { name, priceSuggested: price });
-      setEditingExtraId(null);
+      await updateExtra(id, updates);
+      setEditingExtraItem(null);
       showNotification("Extra actualizado");
     } catch (error) {
       console.error("Error actualizando extra:", error);
@@ -1047,45 +1053,19 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
                   {/* Commission Bubble */}
                   <div className="mb-6">
-                    {editingUserCommission === user.id ? (
-                      <div className="flex items-center justify-center gap-2 bg-slate-50 p-2 rounded-full">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={editingCommissionValue}
-                          onChange={(e) => setEditingCommissionValue(e.target.value)}
-                          className="w-16 px-2 py-1 text-center border-none bg-transparent font-bold text-gray-900 focus:outline-none"
-                          autoFocus
-                        />
-                         <span className="text-sm font-bold text-gray-400">%</span>
-                        <button
-                          onClick={() => handleUpdateUserCommission(user.id, parseFloat(editingCommissionValue))}
-                          className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
-                        >
-                          <Check size={14} />
-                        </button>
-                        <button
-                          onClick={() => setEditingUserCommission(null)}
-                          className="p-1 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button 
+                      <button
                         onClick={() => {
-                            setEditingUserCommission(user.id);
-                            setEditingCommissionValue(user.commissionPct.toString());
+                          setEditingStaffItem(user);
+                          setEditStaffForm(user);
                         }}
                         className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-full bg-purple-50 border-2 border-dashed border-purple-200 hover:border-purple-400 hover:bg-purple-100 transition-all cursor-pointer group/comm"
-                        title="Editar Comisión"
+                        title="Editar Perfil y Comisión"
                       >
                          <span className="text-xl font-black text-purple-600 leading-none">
                            {user.commissionPct}<span className="text-xs align-top">%</span>
                          </span>
                          <span className="text-[9px] font-bold text-purple-400 uppercase tracking-widest mt-0.5 group-hover/comm:text-purple-600">Comisión</span>
                       </button>
-                    )}
                   </div>
 
                   {/* Actions Footer */}
@@ -1183,108 +1163,46 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         !extra.active ? "opacity-60" : ""
                       }`}
                     >
-                      {editingExtraId === extra.id ? (
-                        <>
-                          <td className="px-6 py-4">
-                            <input
-                              type="text"
-                              defaultValue={extra.name || ""}
-                              id={`edit-name-${extra.id}`}
-                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <input
-                              type="number"
-                              step="0.01"
-                              defaultValue={price}
-                              id={`edit-price-${extra.id}`}
-                              className="w-32 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                extra.active
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}
-                            >
-                              {extra.active ? "Activo" : "Inactivo"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                const nameInput = document.getElementById(
-                                  `edit-name-${extra.id}`
-                                ) as HTMLInputElement;
-                                const priceInput = document.getElementById(
-                                  `edit-price-${extra.id}`
-                                ) as HTMLInputElement;
-                                handleUpdateExtra(
-                                  extra.id,
-                                  nameInput.value,
-                                  parseFloat(priceInput.value) || 0
-                                );
-                              }}
-                              className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-sm"
-                              title="Guardar"
-                            >
-                              <Save size={18} strokeWidth={2.5} />
-                            </button>
-                            <button
-                              onClick={() => setEditingExtraId(null)}
-                              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"
-                              title="Cancelar"
-                            >
-                              <X size={18} strokeWidth={2.5} />
-                            </button>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {extra.name || "Sin nombre"}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-bold text-gray-900 font-mono">
-                            ${price.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              onClick={() =>
-                                handleToggleExtra(extra.id, extra.active)
-                              }
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold shadow-sm cursor-pointer hover:scale-105 transition-transform ${
-                                extra.active
-                                  ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
-                                  : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
-                              }`}
-                              title="Clic para alternar estado"
-                            >
-                              {extra.active ? "Activo" : "Inactivo"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <button
-                                onClick={() => setEditingExtraId(extra.id)}
-                                className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
-                                title="Editar"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteExtra(extra.id)}
-                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                title="Eliminar"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </>
-                      )}
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {extra.name || "Sin nombre"}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-gray-900 font-mono">
+                        ${price.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          onClick={() => handleToggleExtra(extra.id, extra.active)}
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold shadow-sm cursor-pointer hover:scale-105 transition-transform ${
+                            extra.active
+                              ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
+                              : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                          }`}
+                          title="Clic para alternar estado"
+                        >
+                          {extra.active ? "Activo" : "Inactivo"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            onClick={() => {
+                              setEditingExtraItem(extra);
+                              setEditExtraForm(extra);
+                            }}
+                            className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExtra(extra.id)}
+                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -1629,7 +1547,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     </div>
       {/* Slide-over para Edición de Producto Químico */}
       {editingProduct && (
-        <div className="fixed inset-0 z-[60] flex justify-end">
+        <div className="fixed inset-0 z-60 flex justify-end">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
@@ -1785,7 +1703,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       )}
       {/* Slide-over para Edición de Consumibles */}
       {editingConsumableItem && (
-        <div className="fixed inset-0 z-[60] flex justify-end">
+        <div className="fixed inset-0 z-60 flex justify-end">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
@@ -1916,8 +1834,270 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
       )}
+      {/* Slide-over para Edición de Extras */}
+      {editingExtraItem && (
+        <div className="fixed inset-0 z-60 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setEditingExtraItem(null)}
+          />
+
+          {/* Panel */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-orange-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Editar Extra</h3>
+                <p className="text-sm text-gray-500">Configuración de servicios adicionales</p>
+              </div>
+              <button 
+                onClick={() => setEditingExtraItem(null)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Información Básica */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Sparkles size={18} className="text-orange-600" />
+                   Detalles del Extra
+                </h4>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Nombre del Extra</label>
+                  <input
+                    type="text"
+                    value={editExtraForm.name || ""}
+                    onChange={(e) => setEditExtraForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-600">Precio Sugerido (por Uña/Unidad)</label>
+                   <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editExtraForm.priceSuggested ?? ""}
+                        onChange={(e) => setEditExtraForm(prev => ({ ...prev, priceSuggested: parseFloat(e.target.value) }))}
+                        className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all font-bold text-gray-800"
+                       />
+                   </div>
+                   <p className="text-xs text-slate-400">
+                      Este precio se usará como base para el cálculo total (Precio * Cantidad).
+                   </p>
+                </div>
+                
+                 {/* Estado Activo */}
+                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                       <span className="block font-semibold text-gray-700">Estado del Servicio</span>
+                       <span className="text-xs text-gray-500">Visible en el catálogo de ventas</span>
+                    </div>
+                    <button
+                      onClick={() => setEditExtraForm(prev => ({ ...prev, active: !prev.active }))}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        editExtraForm.active ? 'bg-emerald-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          editExtraForm.active ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                 </div>
+              </div>
+
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <button
+                onClick={() => setEditingExtraItem(null)}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (editingExtraItem && editExtraForm) {
+                    handleUpdateExtra(editingExtraItem.id, editExtraForm);
+                    setEditingExtraItem(null);
+                  }
+                }}
+                className="flex-1 px-4 py-3 rounded-xl bg-orange-600 text-white font-bold shadow-lg shadow-orange-200 hover:bg-orange-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              >
+                Actualizar Extra
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Slide-over para Edición de Personal */}
+      {editingStaffItem && (
+        <div className="fixed inset-0 z-60 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setEditingStaffItem(null)}
+          />
+
+          {/* Panel */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-pink-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Editar Perfil</h3>
+                <p className="text-sm text-gray-500">Gestión de empleado y comisiones</p>
+              </div>
+              <button 
+                onClick={() => setEditingStaffItem(null)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Identidad */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Users size={18} className="text-pink-600" />
+                   Identidad
+                </h4>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Nombre del Empleado</label>
+                  <input
+                    type="text"
+                    value={editStaffForm.name || ""}
+                    onChange={(e) => setEditStaffForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-4 focus:ring-pink-50/50 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                     <Key size={14} /> PIN de Acceso
+                   </label>
+                   <input
+                        type="text"
+                        maxLength={4}
+                        value={editStaffForm.pin || ""}
+                        onChange={(e) => setEditStaffForm(prev => ({ ...prev, pin: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-4 focus:ring-pink-50/50 outline-none transition-all font-mono tracking-widest"
+                   />
+                   <p className="text-xs text-slate-400">
+                      PIN de 4 dígitos para iniciar sesión.
+                   </p>
+                </div>
+              </div>
+
+               {/* Finanzas */}
+               <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Percent size={18} className="text-purple-600" />
+                   Configuración Financiera
+                </h4>
+
+                <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-600">Porcentaje de Comisión</label>
+                   <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={editStaffForm.commissionPct ?? ""}
+                        onChange={(e) => setEditStaffForm(prev => ({ ...prev, commissionPct: parseFloat(e.target.value) }))}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all font-bold text-gray-800 text-lg"
+                       />
+                       <span className="absolute right-4 top-3 text-gray-400 font-bold">%</span>
+                   </div>
+                   <div className="p-3 bg-purple-50 rounded-lg text-sm text-purple-700">
+                      Este empleado gana el <strong>{editStaffForm.commissionPct ?? 0}%</strong> de cada servicio realizado (calculado automáticamente).
+                   </div>
+                </div>
+              </div>
+
+               {/* Apariencia */}
+               <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Sparkles size={18} className="text-indigo-600" />
+                   Apariencia
+                </h4>
+                
+                 <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Color de Perfil</label>
+                  <select
+                    value={editStaffForm.color}
+                    onChange={(e) => setEditStaffForm(prev => ({ ...prev, color: e.target.value }))}
+                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none"
+                  >
+                    <option value="from-pink-500 to-rose-600">Rosa (Pink)</option>
+                    <option value="from-purple-500 to-indigo-600">Morado (Purple)</option>
+                    <option value="from-blue-500 to-cyan-600">Azul (Blue)</option>
+                    <option value="from-emerald-500 to-teal-600">Esmeralda (Emerald)</option>
+                    <option value="from-orange-500 to-amber-600">Naranja (Orange)</option>
+                    <option value="from-gray-700 to-slate-800">Oscuro (Dark)</option>
+                  </select>
+                   <div className={`h-12 w-full rounded-lg bg-linear-to-r ${editStaffForm.color} shadow-lg mt-2 flex items-center justify-center text-white font-bold opacity-90`}>
+                      Vista Previa
+                   </div>
+                </div>
+               </div>
+
+                {/* Estado */}
+                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                       <span className="block font-semibold text-gray-700">Estado de la cuenta</span>
+                       <span className="text-xs text-gray-500">{editStaffForm.active ? 'El empleado puede acceder al sistema' : 'Acceso bloqueado'}</span>
+                    </div>
+                    <button
+                      onClick={() => setEditStaffForm(prev => ({ ...prev, active: !prev.active }))}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        editStaffForm.active ? 'bg-emerald-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          editStaffForm.active ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                 </div>
+
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <button
+                onClick={() => setEditingStaffItem(null)}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (editingStaffItem && editStaffForm) {
+                    handleUpdateUser(editingStaffItem.id, editStaffForm);
+                  }
+                }}
+                className="flex-1 px-4 py-3 rounded-xl bg-pink-600 text-white font-bold shadow-lg shadow-pink-200 hover:bg-pink-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default OwnerConfigTab;
+

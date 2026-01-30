@@ -125,3 +125,33 @@ export const deactivateUser = async (userId: string) => {
 export const deleteUserPermanently = async (userId: string) => {
   await deleteDoc(doc(db, "users", userId));
 };
+
+export const updateUser = async (
+  userId: string,
+  updates: Partial<{
+    name: string;
+    pin: string;
+    commissionPct: number;
+    color: string;
+    active: boolean;
+  }>
+) => {
+  const dataToUpdate: any = { ...updates };
+
+  // Validation
+  if (updates.commissionPct !== undefined) {
+    if (
+      !Number.isFinite(updates.commissionPct) ||
+      updates.commissionPct < 0 ||
+      updates.commissionPct > 100
+    ) {
+      throw new Error("Porcentaje inválido (0-100)");
+    }
+  }
+
+  if (updates.pin !== undefined && updates.pin.length < 4) {
+    throw new Error("PIN debe tener al menos 4 dígitos");
+  }
+
+  await updateDoc(doc(db, "users", userId), dataToUpdate);
+};
