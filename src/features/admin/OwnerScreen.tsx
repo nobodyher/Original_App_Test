@@ -77,9 +77,9 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
             <h1 className="text-2xl font-bold">Panel de Administración</h1>
             <p className="opacity-90">Bienvenid@, {props.currentUser?.name}</p>
           </div>
-          <button
+            <button
             onClick={props.onLogout}
-            className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg hover:bg-white/30 transition shadow-sm"
+            className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg hover:bg-white/30 transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm"
           >
             <LogOut size={20} />
             <span>Salir</span>

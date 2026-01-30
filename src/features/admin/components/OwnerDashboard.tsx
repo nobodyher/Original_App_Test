@@ -391,7 +391,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       {/* Premium Stats Cards - Banking Style */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Revenue Card - Emerald Premium */}
-        <div className="bg-gradient-to-br from-[#064e3b] to-[#059669] rounded-[2rem] p-6 text-white shadow-2xl shadow-green-900/20 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+        <div className="bg-gradient-to-br from-[#064e3b] to-[#059669] rounded-[2rem] p-6 text-white shadow-2xl shadow-green-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <DollarSign size={120} />
           </div>
@@ -412,7 +412,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Expenses Card - Rose Premium */}
-        <div className="bg-gradient-to-br from-[#881337] to-[#e11d48] rounded-[2rem] p-6 text-white shadow-2xl shadow-rose-900/20 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+        <div className="bg-gradient-to-br from-[#881337] to-[#e11d48] rounded-[2rem] p-6 text-white shadow-2xl shadow-rose-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <CreditCard size={120} />
           </div>
@@ -433,7 +433,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
          {/* Replenishment Card - Amber Premium */}
-         <div className="bg-gradient-to-br from-[#7c2d12] to-[#d97706] rounded-[2rem] p-6 text-white shadow-2xl shadow-orange-900/20 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+         <div className="bg-gradient-to-br from-[#7c2d12] to-[#d97706] rounded-[2rem] p-6 text-white shadow-2xl shadow-orange-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <Package size={120} />
           </div>
@@ -454,7 +454,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Net Profit Card - Violet Premium (Highlighted) */}
-        <div className="bg-gray-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-gray-900/30 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 ring-4 ring-gray-900/5">
+        <div className="bg-gray-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-gray-900/30 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ring-4 ring-gray-900/5">
            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-purple-900/40"></div>
            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
              <Wallet size={120} />
@@ -485,7 +485,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
          <div className="xl:col-span-2 space-y-8">
             
             {/* Recent Services Table Container */}
-            <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                <div className="px-8 py-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center bg-gray-50/50 backdrop-blur-xl">
                   <div>
                      <h3 className="text-xl font-bold text-gray-900">Transacciones Recientes</h3>

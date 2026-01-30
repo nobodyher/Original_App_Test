@@ -1730,7 +1730,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </div>
               <button 
                 onClick={() => setEditingProduct(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -1849,7 +1849,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
               <button
                 onClick={() => setEditingProduct(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -1860,7 +1860,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     setEditingProduct(null);
                   }
                 }}
-                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
                 Guardar Cambios
               </button>
@@ -1886,7 +1886,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </div>
               <button 
                 onClick={() => setEditingConsumableItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -1982,7 +1982,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
               <button
                 onClick={() => setEditingConsumableItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -1993,7 +1993,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     setEditingConsumableItem(null);
                   }
                 }}
-                className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
                 Actualizar Consumible
               </button>
@@ -2019,7 +2019,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </div>
               <button 
                 onClick={() => setEditingExtraItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -2087,7 +2087,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
               <button
                 onClick={() => setEditingExtraItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -2098,7 +2098,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     setEditingExtraItem(null);
                   }
                 }}
-                className="flex-1 px-4 py-3 rounded-xl bg-orange-600 text-white font-bold shadow-lg shadow-orange-200 hover:bg-orange-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                className="flex-1 px-4 py-3 rounded-xl bg-orange-600 text-white font-bold shadow-lg shadow-orange-200 hover:bg-orange-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
                 Actualizar Extra
               </button>
@@ -2124,7 +2124,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </div>
               <button 
                 onClick={() => setEditingStaffItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -2244,7 +2244,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
               <button
                 onClick={() => setEditingStaffItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -2254,7 +2254,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     handleUpdateUser(editingStaffItem.id, editStaffForm);
                   }
                 }}
-                className="flex-1 px-4 py-3 rounded-xl bg-pink-600 text-white font-bold shadow-lg shadow-pink-200 hover:bg-pink-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                className="flex-1 px-4 py-3 rounded-xl bg-pink-600 text-white font-bold shadow-lg shadow-pink-200 hover:bg-pink-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
                 Guardar Cambios
               </button>

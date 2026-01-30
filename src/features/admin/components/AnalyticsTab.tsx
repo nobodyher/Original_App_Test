@@ -194,7 +194,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
       </div>
 
       {/* Métricas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-[2rem] shadow-xl shadow-indigo-500/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
           <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 transform group-hover:scale-120 transition-transform">
              {/* Icon placeholder could go here */}
@@ -231,7 +231,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
           {/* Gráfica por día de semana */}
           <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
             <div className="flex items-center justify-between mb-8">
