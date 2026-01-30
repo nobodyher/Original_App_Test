@@ -309,7 +309,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                            type="date"
                            value={newService.date}
                            onChange={(e) => setNewService({ ...newService, date: e.target.value })}
-                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-100 transition-all outline-none font-medium text-gray-700"
+                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 transition-all duration-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/20 outline-none font-medium text-gray-700"
                         />
                      </div>
                      <div className="space-y-2">
@@ -319,7 +319,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                            placeholder="Nombre del cliente"
                            value={newService.client}
                            onChange={(e) => setNewService({ ...newService, client: e.target.value })}
-                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-100 transition-all outline-none font-medium text-gray-700 placeholder-gray-400"
+                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 transition-all duration-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/20 outline-none font-medium text-gray-700 placeholder-gray-400"
                         />
                      </div>
                   </div>
@@ -340,7 +340,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                        <button
                           key={cat}
                           onClick={() => setNewService({ ...newService, category: cat as any })}
-                          className={`flex-shrink-0 px-6 py-3 rounded-xl border-2 font-bold transition-all ${
+                          className={`flex-shrink-0 px-6 py-3 rounded-xl border-2 font-bold transition-all duration-200 active:scale-95 ${
                              newService.category === cat
                                 ? "border-purple-500 bg-purple-50 text-purple-700 shadow-md"
                                 : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
@@ -363,7 +363,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                         <ChevronDown size={20} />
                      </div>
                      {showServiceList && (
-                        <div className="absolute top-full left-0 mt-2 w-full max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+                        <div className="absolute top-full left-0 mt-2 w-full max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
                            {activeServices.map((cs) => (
                               <div
                                  key={cs.id}
@@ -371,7 +371,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                                     selectCatalogService(cs);
                                     setShowServiceList(false);
                                  }}
-                                 className="p-4 cursor-pointer hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-0 flex justify-between items-center"
+                                 className="p-4 cursor-pointer hover:bg-purple-50 hover:pl-5 transition-all duration-200 border-b border-gray-100 last:border-0 flex justify-between items-center"
                               >
                                  <span className="font-bold text-gray-700">{cs.name}</span>
                                  <span className="font-bold text-purple-600">${cs.basePrice}</span>
@@ -562,7 +562,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                         placeholder="Buscar..."
                         value={filters.search}
                         onChange={e => setFilters({...filters, search: e.target.value})}
-                        className="pl-9 pr-4 py-2 rounded-xl bg-white border border-gray-200 focus:border-pink-500 focus:ring-4 focus:ring-pink-100 outline-none shadow-sm transition-all w-32 focus:w-48"
+                        className="pl-9 pr-4 py-2 rounded-xl bg-white border border-gray-200 transition-all duration-200 focus:border-pink-500 focus:ring-4 focus:ring-pink-500/20 outline-none shadow-sm w-32 focus:w-48"
                      />
                   </div>
                </div>

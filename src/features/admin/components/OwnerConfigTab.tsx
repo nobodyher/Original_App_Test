@@ -517,14 +517,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-left relative overflow-hidden group ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-in-out hover:pl-5 font-medium text-left relative overflow-hidden group ${
                   isActive
                     ? "bg-white shadow-sm text-purple-700"
                     : "text-gray-500 hover:bg-white/60 hover:text-gray-700"
                 }`}
               >
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-purple-600 rounded-r-full shadow-[0_0_10px_rgb(147,51,234)]"></div>
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-purple-600 rounded-r-full shadow-[0_0_10px_rgb(147,51,234)] animate-in slide-in-from-left-1"></div>
                 )}
 
                 <Icon
@@ -558,7 +558,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   name: e.target.value,
                 })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
             />
             <select
               value={newCatalogService.category}
@@ -568,7 +568,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   category: e.target.value as "manicura" | "pedicura",
                 })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
             >
               <option value="manicura">Manicura</option>
               <option value="pedicura">Pedicura</option>
@@ -585,11 +585,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   basePrice: e.target.value,
                 })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
             />
             <button
               onClick={handleAddCatalogService}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold"
             >
               Agregar
             </button>
@@ -624,7 +624,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   return (
                     <tr
                       key={cs.id}
-                      className={`group transition-colors duration-200 even:bg-slate-50/30 hover:bg-purple-50/30 ${
+                      className={`group transition-colors duration-200 even:bg-slate-50/30 hover:bg-gray-100/80 ${
                         !cs.active ? "opacity-60 bg-gray-50" : ""
                       }`}
                     >
@@ -636,14 +636,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               type="text"
                               defaultValue={cs.name}
                               id={`edit-service-name-${cs.id}`}
-                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
                             />
                           </td>
                           <td className="px-6 py-4">
                             <select
                               defaultValue={cs.category}
                               id={`edit-service-category-${cs.id}`}
-                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all appearance-none bg-white"
+                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none appearance-none bg-white"
                             >
                               <option value="manicura">Manicura</option>
                               <option value="pedicura">Pedicura</option>
@@ -655,7 +655,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               step="0.01"
                               defaultValue={cs.basePrice}
                               id={`edit-service-price-${cs.id}`}
-                              className="w-32 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                              className="w-32 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
                             />
                           </td>
                           <td className="px-6 py-4">
@@ -732,7 +732,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <button
                                 onClick={() => setEditingCatalogService(cs.id)}
-                                className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 hover:scale-110 active:scale-90"
                                 title="Editar"
                               >
                                 <Edit2 size={16} />
@@ -745,7 +745,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   cs.active
                                     ? "text-slate-400 hover:text-orange-500 hover:bg-orange-50"
                                     : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
-                                }`}
+                                } transition-all duration-200 hover:scale-110 active:scale-90`}
                                 title={cs.active ? "Desactivar" : "Activar"}
                               >
                                 {cs.active ? (
@@ -756,7 +756,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               </button>
                               <button
                                 onClick={() => handleDeleteCatalogService(cs.id)}
-                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-90"
                                 title="Eliminar"
                               >
                                 <Trash2 size={16} />
@@ -818,7 +818,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               onChange={(e) =>
                 setNewConsumable({ ...newConsumable, name: e.target.value })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
             />
             <input
               type="text"
@@ -827,7 +827,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               onChange={(e) =>
                 setNewConsumable({ ...newConsumable, unit: e.target.value })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
             />
             <input
               type="number"
@@ -840,7 +840,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   unitCost: e.target.value,
                 })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
             />
             <input
               type="number"
@@ -852,7 +852,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   stockQty: e.target.value,
                 })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
             />
             <input
               type="number"
@@ -864,11 +864,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   minStockAlert: e.target.value,
                 })
               }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
             />
             <button
               onClick={handleAddConsumable}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold"
             >
               Agregar
             </button>
@@ -905,7 +905,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   return (
                     <tr
                       key={c.id}
-                      className={`border-b hover:bg-gray-50 transition ${
+                      className={`border-b hover:bg-gray-100/80 transition-colors duration-200 ${
                         isLowStock ? "bg-orange-50" : ""
                       }`}
                     >
@@ -928,14 +928,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             setEditingConsumableItem(c);
                             setEditConsumableForm(c);
                           }}
-                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 hover:scale-110 active:scale-90"
                           title="Editar"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteConsumable(c.id)}
-                          className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition"
+                          className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-90"
                           title="Eliminar"
                         >
                           <Trash2 size={18} />
@@ -995,7 +995,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 onChange={(e) =>
                   setNewUser({ ...newUser, name: e.target.value })
                 }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 focus:outline-none text-gray-900 bg-white"
               />
               <input
                 type="password"
@@ -1004,7 +1004,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 onChange={(e) =>
                   setNewUser({ ...newUser, pin: e.target.value })
                 }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 focus:outline-none text-gray-900 bg-white"
               />
               <input
                 type="number"
@@ -1014,14 +1014,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 onChange={(e) =>
                   setNewUser({ ...newUser, commissionPct: e.target.value })
                 }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 focus:outline-none text-gray-900 bg-white"
               />
               <select
                 value={newUser.color}
                 onChange={(e) =>
                   setNewUser({ ...newUser, color: e.target.value })
                 }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 focus:outline-none text-gray-900 bg-white"
               >
                 <option value="from-blue-500 to-blue-600">Azul</option>
                 <option value="from-pink-500 to-pink-600">Rosa</option>
@@ -1031,7 +1031,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </select>
               <button
                 onClick={handleCreateNewUser}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold flex items-center justify-center"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold flex items-center justify-center"
               >
                 <Plus size={18} className="inline mr-2" />
                 Crear Usuario
@@ -1047,7 +1047,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               .map((user) => (
                 <div
                   key={user.id}
-                  className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col items-center text-center transition-all hover:shadow-md hover:border-purple-100 group relative ${
+                  className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col items-center text-center transition-all hover:bg-gray-100/80 hover:shadow-md hover:border-purple-100 group relative ${
                     !user.active ? "opacity-75 grayscale-[0.5]" : ""
                   }`}
                 >
@@ -1134,7 +1134,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 placeholder="Nombre del extra"
                 value={newExtraName}
                 onChange={(e) => setNewExtraName(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none text-gray-900 bg-white"
               />
               <input
                 type="number"
@@ -1142,11 +1142,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 placeholder="Precio por uña"
                 value={newExtraPrice}
                 onChange={(e) => setNewExtraPrice(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none text-gray-900 bg-white"
               />
               <button
                 onClick={handleAddExtra}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-semibold"
               >
                 Agregar
               </button>
@@ -1179,7 +1179,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   return (
                     <tr
                       key={extra.id}
-                      className={`group transition-colors duration-200 even:bg-slate-50/30 hover:bg-purple-50/30 ${
+                      className={`group transition-colors duration-200 even:bg-slate-50/30 hover:bg-gray-100/80 ${
                         !extra.active ? "opacity-60" : ""
                       }`}
                     >
@@ -1209,14 +1209,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               setEditingExtraItem(extra);
                               setEditExtraForm(extra);
                             }}
-                            className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                            className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 hover:scale-110 active:scale-90"
                             title="Editar"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleDeleteExtra(extra.id)}
-                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-90"
                             title="Eliminar"
                           >
                             <Trash2 size={16} />
@@ -1316,7 +1316,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <input
                 type="text"
                 placeholder="Nombre producto (ej: Alcohol)"
-                className="border-2 border-slate-200 p-2.5 rounded-lg focus:border-purple-500 focus:outline-none bg-white"
+                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
                 value={newChemicalProduct.name}
                 onChange={(e) =>
                   setNewChemicalProduct({
@@ -1329,7 +1329,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 <input
                   type="number"
                   placeholder="Cant."
-                  className="border-2 border-slate-200 p-2.5 rounded-lg w-full focus:border-purple-500 focus:outline-none bg-white"
+                  className="border-2 border-slate-200 p-2.5 rounded-lg w-full transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
                   value={newChemicalProduct.quantity}
                   onChange={(e) =>
                     setNewChemicalProduct({
@@ -1339,7 +1339,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   }
                 />
                 <select
-                  className="border-2 border-slate-200 p-2.5 rounded-lg bg-white focus:border-purple-500 focus:outline-none"
+                  className="border-2 border-slate-200 p-2.5 rounded-lg bg-white transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none"
                   value={newChemicalProduct.unit}
                   onChange={(e) =>
                     setNewChemicalProduct({
@@ -1358,7 +1358,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <input
                 type="number"
                 placeholder="Precio ($)"
-                className="border-2 border-slate-200 p-2.5 rounded-lg focus:border-purple-500 focus:outline-none bg-white"
+                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
                 value={newChemicalProduct.purchasePrice}
                 onChange={(e) =>
                   setNewChemicalProduct({
@@ -1370,7 +1370,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <input
                 type="number"
                 placeholder="Rendimiento (servicios)"
-                className="border-2 border-slate-200 p-2.5 rounded-lg focus:border-purple-500 focus:outline-none bg-white"
+                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
                 value={newChemicalProduct.yield}
                 onChange={(e) =>
                   setNewChemicalProduct({
@@ -1381,7 +1381,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <button
                 onClick={handleAddChemicalProduct}
-                className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-sm hover:shadow-md transition-all font-bold"
+                className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner font-bold"
               >
                 Guardar
               </button>
@@ -1396,7 +1396,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                  return (
                    <div
                      key={product.id}
-                     className={`relative bg-white rounded-xl shadow-sm border p-5 flex flex-col justify-between transition-all hover:shadow-md ${
+                     className={`relative bg-white rounded-xl shadow-sm border p-5 flex flex-col justify-between transition-all hover:bg-gray-100/80 hover:shadow-md ${
                        isLowStock ? "border-orange-300 ring-4 ring-orange-50/50" : "border-slate-200"
                      }`}
                    >
@@ -1449,14 +1449,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                 setEditingProduct(product);
                                 setEditChemicalForm(product);
                             }}
-                            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg text-purple-600 hover:bg-purple-50 font-medium text-sm transition-colors border border-transparent hover:border-purple-100 group"
+                            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg text-purple-600 hover:bg-purple-50 font-medium text-sm transition-all duration-200 hover:scale-105 active:scale-95 border border-transparent hover:border-purple-100 group"
                           >
                              <Edit2 size={16} className="group-hover:scale-110 transition-transform" /> 
                              Editar
                           </button>
                           <button
                              onClick={() => handleDeleteChemicalProduct(product.id)}
-                             className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                             className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-90"
                              title="Eliminar"
                           >
                              <Trash2 size={18} />
@@ -1581,7 +1581,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     setClientsSearch(e.target.value);
                     setClientsPage(1);
                    }}
-                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all shadow-sm"
+                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-lg text-sm transition-all duration-200 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none shadow-sm"
                 />
                  <div className="absolute left-3 top-2 text-gray-400">
                     <Users size={16} />
@@ -1719,7 +1719,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     type="text"
                     value={editChemicalForm.name || ""}
                     onChange={(e) => setEditChemicalForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                   />
                 </div>
 
@@ -1730,7 +1730,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         type="number"
                         value={editChemicalForm.quantity ?? ""}
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, quantity: parseFloat(e.target.value) }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                       />
                    </div>
                    <div className="space-y-2">
@@ -1738,7 +1738,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <select
                         value={editChemicalForm.unit || "ml"}
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, unit: e.target.value as any }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                       >
                          <option value="ml">ml</option>
                          <option value="L">Litros</option>
@@ -1767,7 +1767,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           step="0.01"
                           value={editChemicalForm.purchasePrice ?? ""}
                           onChange={(e) => setEditChemicalForm(prev => ({ ...prev, purchasePrice: parseFloat(e.target.value) }))}
-                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                         />
                       </div>
                     </div>
@@ -1777,7 +1777,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         type="number"
                         value={editChemicalForm.yield ?? ""}
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, yield: parseFloat(e.target.value) }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                       />
                     </div>
                 </div>
@@ -1875,7 +1875,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     type="text"
                     value={editConsumableForm.name || ""}
                     onChange={(e) => setEditConsumableForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                   />
                 </div>
 
@@ -1886,7 +1886,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                      placeholder="ej. Caja, Paquete, Unidad"
                      value={editConsumableForm.unit || ""}
                      onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
+                      className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                    />
                 </div>
               </div>
@@ -1907,7 +1907,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       step="0.01"
                       value={editConsumableForm.unitCost ?? ""}
                       onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unitCost: parseFloat(e.target.value) }))}
-                      className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-4 focus:ring-green-50/50 outline-none transition-all font-semibold"
+                      className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none font-semibold"
                     />
                   </div>
                   <p className="text-xs text-gray-500">
@@ -2008,7 +2008,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     type="text"
                     value={editExtraForm.name || ""}
                     onChange={(e) => setEditExtraForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
                   />
                 </div>
 
@@ -2021,7 +2021,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         step="0.01"
                         value={editExtraForm.priceSuggested ?? ""}
                         onChange={(e) => setEditExtraForm(prev => ({ ...prev, priceSuggested: parseFloat(e.target.value) }))}
-                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50 outline-none transition-all font-bold"
+                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 outline-none font-bold"
                        />
                    </div>
                    <p className="text-xs text-slate-400">
@@ -2126,7 +2126,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         maxLength={4}
                         value={editStaffForm.pin || ""}
                         onChange={(e) => setEditStaffForm(prev => ({ ...prev, pin: e.target.value }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-pink-500 focus:ring-4 focus:ring-pink-50/50 outline-none transition-all font-mono tracking-widest"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none font-mono tracking-widest"
                    />
                    <p className="text-xs text-slate-400">
                       PIN de 4 dígitos para iniciar sesión.
@@ -2150,7 +2150,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         max="100"
                         value={editStaffForm.commissionPct ?? ""}
                         onChange={(e) => setEditStaffForm(prev => ({ ...prev, commissionPct: parseFloat(e.target.value) }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all font-bold text-lg"
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none font-bold text-lg"
                        />
                        <span className="absolute right-4 top-3 text-gray-400 font-bold">%</span>
                    </div>
@@ -2172,7 +2172,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   <select
                     value={editStaffForm.color}
                     onChange={(e) => setEditStaffForm(prev => ({ ...prev, color: e.target.value }))}
-                     className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+                     className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:outline-none"
                   >
                     <option value="from-pink-500 to-rose-600">Rosa (Pink)</option>
                     <option value="from-purple-500 to-indigo-600">Morado (Purple)</option>
