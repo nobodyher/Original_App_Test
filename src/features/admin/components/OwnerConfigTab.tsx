@@ -15,6 +15,7 @@ import {
   Beaker,
   ChevronLeft,
   ChevronRight,
+  PlusCircle,
 } from "lucide-react";
 import type {
   AppUser,
@@ -409,7 +410,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   return (
     <div className="space-y-6">
       {lowStockConsumables.length > 0 && (
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-6">
+        <div className="bg-linear-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="text-orange-600" size={32} />
             <div>
@@ -443,7 +444,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       {/* Main Tab Layout */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Navigation */}
-        <nav className="lg:w-64 flex-shrink-0 space-y-2">
+        <nav className="lg:w-64 shrink-0 space-y-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -451,12 +452,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-left ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-left relative overflow-hidden group ${
                   isActive
-                    ? "bg-white shadow-md text-gray-900 border-l-4 border-purple-600 scale-105"
-                    : "text-gray-500 hover:bg-white/60 hover:text-purple-600"
+                    ? "bg-white shadow-sm text-purple-700"
+                    : "text-gray-500 hover:bg-white/60 hover:text-gray-700"
                 }`}
               >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-purple-600 rounded-r-full shadow-[0_0_10px_rgb(147,51,234)]"></div>
+                )}
+
                 <Icon
                   size={20}
                   className={isActive ? tab.color : "text-gray-400"}
@@ -511,6 +516,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               onChange={(e) =>
                 setNewCatalogService({
                   ...newCatalogService,
+// fixed in previous step or handled here if shift occurred
                   basePrice: e.target.value,
                 })
               }
@@ -518,81 +524,83 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             />
             <button
               onClick={handleAddCatalogService}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+              className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
             >
               Agregar
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-gray-200">
+          <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-slate-50 border-b border-gray-100">
                 <tr>
                   <th className="w-10 px-4 py-3"></th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Categoría
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Precio Base
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 bg-white">
+              <tbody className="divide-y divide-gray-50">
                 {catalogServices.map((cs) => {
                   const isEditing = editingCatalogService === cs.id;
 
                   return (
                     <tr
                       key={cs.id}
-                      className={`hover:bg-purple-50/50 transition duration-200 ${
+                      className={`group transition-colors duration-200 even:bg-slate-50/30 hover:bg-purple-50/30 ${
                         !cs.active ? "opacity-60 bg-gray-50" : ""
                       }`}
                     >
-                      <td className="w-4"></td> {/* Spacer instead of chevron */}
+                      <td className="w-4"></td>
                       {isEditing ? (
                         <>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <input
                               type="text"
                               defaultValue={cs.name}
                               id={`edit-service-name-${cs.id}`}
-                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none w-full"
+                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                             />
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <select
                               defaultValue={cs.category}
                               id={`edit-service-category-${cs.id}`}
-                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none"
+                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all appearance-none bg-white"
                             >
                               <option value="manicura">Manicura</option>
                               <option value="pedicura">Pedicura</option>
                             </select>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <input
                               type="number"
                               step="0.01"
                               defaultValue={cs.basePrice}
                               id={`edit-service-price-${cs.id}`}
-                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none"
+                              className="w-32 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                             />
                           </td>
-                          <td className="px-4 py-3">
-                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${cs.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                          <td className="px-6 py-4">
+                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                cs.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                             }`}>
                                 {cs.active ? "Activo" : "Inactivo"}
                              </span>
                           </td>
-                          <td className="px-4 py-3 flex gap-2">
+                          <td className="px-6 py-4 flex items-center gap-2">
                             <button
                               onClick={() => {
                                 const name = (
@@ -619,72 +627,76 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   basePrice,
                                 });
                               }}
-                              className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition"
+                              className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-sm"
                               title="Guardar"
                             >
-                              <Save size={16} />
+                              <Save size={18} strokeWidth={2.5} />
                             </button>
                             <button
                               onClick={() => setEditingCatalogService(null)}
-                              className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
+                              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"
                               title="Cancelar"
                             >
-                              <X size={16} />
+                              <X size={18} strokeWidth={2.5} />
                             </button>
                           </td>
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-3 text-sm font-semibold text-gray-800">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
                             {cs.name}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 capitalize">{cs.category}</td>
-                          <td className="px-4 py-3 text-sm font-bold text-gray-900">
+                          <td className="px-6 py-4 text-sm text-slate-600 capitalize tracking-wide">
+                            {cs.category}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-bold text-gray-900 font-mono">
                             ${cs.basePrice.toFixed(2)}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide font-bold ${
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold shadow-sm ${
                                 cs.active
-                                  ? "bg-green-100 text-green-700 border border-green-200"
-                                  : "bg-gray-100 text-gray-700 border border-gray-200"
+                                  ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
+                                  : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
                               }`}
                             >
                               {cs.active ? "Activo" : "Inactivo"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 flex gap-2">
-                            <button
-                              onClick={() => setEditingCatalogService(cs.id)}
-                              className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-                              title="Editar"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleToggleCatalogService(cs.id, cs.active)
-                              }
-                              className={`p-1.5 rounded-lg transition ${
-                                cs.active
-                                  ? "text-orange-500 hover:bg-orange-50"
-                                  : "text-green-600 hover:bg-green-50"
-                              }`}
-                              title={cs.active ? "Desactivar" : "Activar"}
-                            >
-                              {cs.active ? (
-                                <XCircle size={16} />
-                              ) : (
-                                <CheckCircle size={16} />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCatalogService(cs.id)}
-                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition"
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <button
+                                onClick={() => setEditingCatalogService(cs.id)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                title="Editar"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleToggleCatalogService(cs.id, cs.active)
+                                }
+                                className={`p-2 rounded-lg transition-colors ${
+                                  cs.active
+                                    ? "text-slate-400 hover:text-orange-500 hover:bg-orange-50"
+                                    : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                }`}
+                                title={cs.active ? "Desactivar" : "Activar"}
+                              >
+                                {cs.active ? (
+                                  <XCircle size={16} />
+                                ) : (
+                                  <CheckCircle size={16} />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCatalogService(cs.id)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </td>
                         </>
                       )}
@@ -703,7 +715,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 <Package className="text-blue-600" />
                 Inventario de Consumibles
               </h3>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 bg-purple-50 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-6 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
+            <h4 className="md:col-span-6 font-bold text-gray-800 mb-2 flex items-center gap-2">
+               <PlusCircle size={18} className="text-purple-600" />
+               Agregar Nuevo Consumible
+            </h4>
             <input
               type="text"
               placeholder="Nombre"
@@ -761,7 +777,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             />
             <button
               onClick={handleAddConsumable}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+              className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
             >
               Agregar
             </button>
@@ -926,7 +942,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             </button>
                             <button
                               onClick={() => handleDeleteConsumable(c.id)}
-                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
+                              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition"
                               title="Eliminar"
                             >
                               <Trash2 size={18} />
@@ -998,7 +1014,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </select>
               <button
                 onClick={handleCreateNewUser}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+                className="bg-linear-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
               >
                 <Plus size={18} className="inline mr-2" />
                 Crear Usuario
@@ -1007,125 +1023,105 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
 
           {/* Lista de usuarios */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Nombre
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Comisión
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Estado
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {users
-                  .filter((u) => u.role === "staff")
-                  .map((user) => (
-                    <tr
-                      key={user.id}
-                      className={`border-b hover:bg-gray-50 transition ${
-                        !user.active ? "opacity-50 bg-gray-100" : ""
+          {/* Lista de usuarios - Diseño Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {users
+              .filter((u) => u.role === "staff")
+              .map((user) => (
+                <div
+                  key={user.id}
+                  className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col items-center text-center transition-all hover:shadow-md hover:border-purple-100 group relative ${
+                    !user.active ? "opacity-75 grayscale-[0.5]" : ""
+                  }`}
+                >
+                  {/* Status Badge Top Right */}
+                  <div className="absolute top-4 right-4">
+                    <span
+                      className={`w-3 h-3 rounded-full block ring-2 ring-white ${
+                        user.active ? "bg-emerald-400" : "bg-slate-300"
                       }`}
-                    >
-                      <td className="px-4 py-3 text-sm font-medium">
-                        {user.name}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {editingUserCommission === user.id ? (
-                          <div className="flex gap-2">
-                            <input
-                              type="number"
-                              step="0.1"
-                              value={editingCommissionValue}
-                              onChange={(e) =>
-                                setEditingCommissionValue(e.target.value)
-                              }
-                              className="w-20 px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
-                            />
-                            <button
-                              onClick={() =>
-                                handleUpdateUserCommission(
-                                  user.id,
-                                  parseFloat(editingCommissionValue)
-                                )
-                              }
-                              className="text-green-600 hover:text-green-800"
-                            >
-                              <Check size={18} />
-                            </button>
-                            <button
-                              onClick={() => setEditingUserCommission(null)}
-                              className="text-gray-500 hover:text-gray-700"
-                            >
-                              <X size={18} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-purple-600">
-                              {user.commissionPct}%
-                            </span>
-                            <button
-                              onClick={() => {
-                                setEditingUserCommission(user.id);
-                                setEditingCommissionValue(
-                                  user.commissionPct.toString()
-                                );
-                              }}
-                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            user.active
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {user.active ? "Activo" : "Inactivo"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 flex gap-2">
+                    />
+                  </div>
+
+                  {/* Avatar Circle */}
+                  <div className="w-20 h-20 rounded-full bg-linear-to-br from-purple-100 to-pink-50 flex items-center justify-center text-2xl font-bold text-purple-700 mb-4 shadow-inner ring-4 ring-white">
+                    {user.name.slice(0, 2).toUpperCase()}
+                  </div>
+
+                  {/* Name */}
+                  <h5 className="text-lg font-bold text-gray-800 mb-1">
+                    {user.name}
+                  </h5>
+                  <p className="text-sm text-slate-500 mb-4 font-medium">Role: Staff</p>
+
+                  {/* Commission Bubble */}
+                  <div className="mb-6">
+                    {editingUserCommission === user.id ? (
+                      <div className="flex items-center justify-center gap-2 bg-slate-50 p-2 rounded-full">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editingCommissionValue}
+                          onChange={(e) => setEditingCommissionValue(e.target.value)}
+                          className="w-16 px-2 py-1 text-center border-none bg-transparent font-bold text-gray-900 focus:outline-none"
+                          autoFocus
+                        />
+                         <span className="text-sm font-bold text-gray-400">%</span>
                         <button
-                          onClick={() => handleDeactivateUser(user.id)}
-                          className={`p-2 rounded-lg transition ${
-                            user.active
-                              ? "text-orange-600 hover:bg-orange-50"
-                              : "text-green-600 hover:bg-green-50"
-                          }`}
-                          title={user.active ? "Desactivar" : "Activar"}
+                          onClick={() => handleUpdateUserCommission(user.id, parseFloat(editingCommissionValue))}
+                          className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
                         >
-                          {user.active ? (
-                            <XCircle size={18} />
-                          ) : (
-                            <CheckCircle size={18} />
-                          )}
+                          <Check size={14} />
                         </button>
                         <button
-                          onClick={() => handleDeleteUserPermanently(user.id)}
-                          className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
-                          title="Eliminar permanentemente"
+                          onClick={() => setEditingUserCommission(null)}
+                          className="p-1 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300"
                         >
-                          <Trash2 size={18} />
+                          <X size={14} />
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => {
+                            setEditingUserCommission(user.id);
+                            setEditingCommissionValue(user.commissionPct.toString());
+                        }}
+                        className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-full bg-purple-50 border-2 border-dashed border-purple-200 hover:border-purple-400 hover:bg-purple-100 transition-all cursor-pointer group/comm"
+                        title="Editar Comisión"
+                      >
+                         <span className="text-xl font-black text-purple-600 leading-none">
+                           {user.commissionPct}<span className="text-xs align-top">%</span>
+                         </span>
+                         <span className="text-[9px] font-bold text-purple-400 uppercase tracking-widest mt-0.5 group-hover/comm:text-purple-600">Comisión</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="w-full pt-4 border-t border-slate-50 flex justify-center gap-4">
+                     <button
+                        onClick={() => handleDeactivateUser(user.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                             user.active 
+                             ? "text-slate-500 hover:text-orange-600 hover:bg-orange-50"
+                             : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                        }`}
+                        title={user.active ? "Desactivar Cuenta" : "Reactivar Cuenta"}
+                     >
+                        {user.active ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                        {user.active ? "Desactivar" : "Activar"}
+                     </button>
+                     
+                     <button
+                        onClick={() => handleDeleteUserPermanently(user.id)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="Eliminar Permanentemente"
+                     >
+                        <Trash2 size={18} />
+                     </button>
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
         )}
@@ -1159,7 +1155,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <button
                 onClick={handleAddExtra}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
+                className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition font-semibold"
               >
                 Agregar
               </button>
@@ -1167,66 +1163,62 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
 
           {/* Tabla de extras */}
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
             <table className="w-full">
-              <thead className="bg-gray-100">
+              <thead className="bg-slate-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Precio/Uña
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-50">
                 {catalogExtras.map((extra) => {
                   const price =
                     (extra as any).price || extra.priceSuggested || 0;
                   return (
                     <tr
                       key={extra.id}
-                      className={`border-b hover:bg-gray-50 transition ${
+                      className={`group transition-colors duration-200 even:bg-slate-50/30 hover:bg-purple-50/30 ${
                         !extra.active ? "opacity-60" : ""
                       }`}
                     >
                       {editingExtraId === extra.id ? (
                         <>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <input
                               type="text"
                               defaultValue={extra.name || ""}
                               id={`edit-name-${extra.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none w-full"
+                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                             />
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <input
                               type="number"
                               step="0.01"
                               defaultValue={price}
                               id={`edit-price-${extra.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none w-20"
+                              className="w-32 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-50/50 outline-none transition-all"
                             />
                           </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                extra.active
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {extra.active ? "Activo" : "Inactivo"}
-                            </span>
+                          <td className="px-6 py-4">
+                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                extra.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                             }`}>
+                                {extra.active ? "Activo" : "Inactivo"}
+                             </span>
                           </td>
-                          <td className="px-4 py-3 flex gap-2">
+                          <td className="px-6 py-4 flex items-center gap-2">
                             <button
                               onClick={() => {
                                 const nameInput = document.getElementById(
@@ -1241,53 +1233,58 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   parseFloat(priceInput.value) || 0
                                 );
                               }}
-                              className="text-green-600 hover:text-green-800"
+                              className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-sm"
+                              title="Guardar"
                             >
-                              <Save size={18} />
+                              <Save size={18} strokeWidth={2.5} />
                             </button>
                             <button
                               onClick={() => setEditingExtraId(null)}
-                              className="p-2 rounded-lg text-gray-500 hover:text-gray-700"
+                              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"
+                              title="Cancelar"
                             >
-                              <X size={18} />
+                              <X size={18} strokeWidth={2.5} />
                             </button>
                           </td>
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-3 font-semibold text-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
                             {extra.name || "Sin nombre"}
                           </td>
-                          <td className="px-4 py-3 text-gray-700">
+                          <td className="px-6 py-4 text-sm font-bold text-gray-900 font-mono">
                             ${price.toFixed(2)}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-bold cursor-pointer ${
+                              onClick={() => handleToggleExtra(extra.id, extra.active)}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold shadow-sm cursor-pointer hover:scale-105 transition-transform ${
                                 extra.active
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
+                                  ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
+                                  : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
                               }`}
-                              onClick={() =>
-                                handleToggleExtra(extra.id, extra.active)
-                              }
+                              title="Clic para alternar estado"
                             >
                               {extra.active ? "Activo" : "Inactivo"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 flex gap-2">
-                            <button
-                              onClick={() => setEditingExtraId(extra.id)}
-                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-                            >
-                              <Edit2 size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteExtra(extra.id)}
-                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
-                            >
-                              <Trash2 size={18} />
-                            </button>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <button
+                                onClick={() => setEditingExtraId(extra.id)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                title="Editar"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteExtra(extra.id)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </td>
                         </>
                       )}
@@ -1297,6 +1294,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </tbody>
             </table>
           </div>
+
 
           {catalogExtras.length === 0 && (
             <div className="text-center py-8 text-gray-500">
@@ -1314,7 +1312,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </h3>
           {/* Botón de inicialización (solo si no hay datos) */}
           {chemicalProducts.length === 0 && (
-            <div className="mb-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
+            <div className="mb-6 p-6 bg-linear-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
               <h4 className="text-lg font-bold text-gray-800 mb-2">
                 🚀 Inicialización Requerida
               </h4>
@@ -1324,7 +1322,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </p>
               <button
                 onClick={initializeMaterialsData}
-                className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-3 rounded-lg hover:shadow-lg transition font-bold text-lg"
+                className="bg-linear-to-r from-green-500 to-green-600 text-white px-8 py-3 rounded-lg hover:shadow-lg transition font-bold text-lg"
               >
                 ✨ Inicializar Datos de Materiales
               </button>
@@ -1337,11 +1335,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               Productos Químicos
             </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm mb-8">
+               <h5 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <PlusCircle size={20} className="text-purple-600" />
+                  Agregar Nuevo Producto Químico
+               </h5>
+               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <input
                 type="text"
                 placeholder="Nombre producto (ej: Alcohol)"
-                className="border p-2 rounded"
+                className="border-2 border-slate-200 p-2.5 rounded-lg focus:border-purple-500 focus:outline-none bg-white"
                 value={newChemicalProduct.name}
                 onChange={(e) =>
                   setNewChemicalProduct({
@@ -1353,8 +1356,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <div className="flex gap-2">
                 <input
                   type="number"
-                  placeholder="Cant. compra"
-                  className="border p-2 rounded w-full"
+                  placeholder="Cant."
+                  className="border-2 border-slate-200 p-2.5 rounded-lg w-full focus:border-purple-500 focus:outline-none bg-white"
                   value={newChemicalProduct.quantity}
                   onChange={(e) =>
                     setNewChemicalProduct({
@@ -1364,7 +1367,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   }
                 />
                 <select
-                  className="border p-2 rounded bg-white"
+                  className="border-2 border-slate-200 p-2.5 rounded-lg bg-white focus:border-purple-500 focus:outline-none"
                   value={newChemicalProduct.unit}
                   onChange={(e) =>
                     setNewChemicalProduct({
@@ -1382,8 +1385,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </div>
               <input
                 type="number"
-                placeholder="Precio Compra ($)"
-                className="border p-2 rounded"
+                placeholder="Precio ($)"
+                className="border-2 border-slate-200 p-2.5 rounded-lg focus:border-purple-500 focus:outline-none bg-white"
                 value={newChemicalProduct.purchasePrice}
                 onChange={(e) =>
                   setNewChemicalProduct({
@@ -1394,8 +1397,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <input
                 type="number"
-                placeholder="Rendimiento est. (servicios)"
-                className="border p-2 rounded"
+                placeholder="Rendimiento (servicios)"
+                className="border-2 border-slate-200 p-2.5 rounded-lg focus:border-purple-500 focus:outline-none bg-white"
                 value={newChemicalProduct.yield}
                 onChange={(e) =>
                   setNewChemicalProduct({
@@ -1406,90 +1409,71 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
               <button
                 onClick={handleAddChemicalProduct}
-                className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 font-bold"
+                className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2.5 rounded-lg hover:shadow-lg transition font-bold"
               >
                 Guardar
               </button>
             </div>
+          </div>
 
             {/* Buscador y filtros arriba del todo si se desea, por ahora directo a la tabla */}
             
-            <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
-              <table className="w-full border-collapse">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="w-10 px-4 py-3"></th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Producto
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Cant. / Unid.
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Costo Unit.
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Rendimiento
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Costo/Serv.
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Stock
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {paginatedChemicals.map((product) => {
-                     return (
-                        <tr key={product.id} className="hover:bg-purple-50/50 transition duration-200">
-                          <td className="w-4"></td>
-                          <td className="px-4 py-3 font-semibold text-gray-700 text-sm">
-                            {product.name}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 text-sm">
-                            {product.quantity} {product.unit}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 text-sm">
-                            ${product.purchasePrice.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 text-sm">
-                            {product.yield}
-                          </td>
-                          <td className="px-4 py-3 font-bold text-green-600 text-sm">
-                            ${product.costPerService.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide font-bold ${
-                                product.stock <= product.minStock
-                                  ? "bg-red-100 text-red-700 border border-red-200"
-                                  : "bg-green-100 text-green-700 border border-green-200"
-                              }`}
-                            >
-                              {product.stock} un.
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wide font-bold ${
-                                product.active
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {product.active ? "Activo" : "Inactivo"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 flex gap-2">
-                            <button
-                              onClick={() => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedChemicals.map((product) => {
+                 const isLowStock = product.stock <= product.minStock;
+                 return (
+                   <div
+                     key={product.id}
+                     className={`relative bg-white rounded-xl shadow-sm border p-5 flex flex-col justify-between transition-all hover:shadow-md ${
+                       isLowStock ? "border-orange-300 ring-4 ring-orange-50/50" : "border-slate-200"
+                     }`}
+                   >
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-4">
+                         <div>
+                            <h5 className="font-bold text-gray-800 text-lg leading-tight">{product.name}</h5>
+                            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
+                               <Package size={14} />
+                               {product.quantity} {product.unit} (compra)
+                            </p>
+                         </div>
+                         <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wide border ${product.active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                            {product.active ? 'Activo' : 'Inactivo'}
+                         </span>
+                      </div>
+
+                      {/* Body Statistics */}
+                      <div className="space-y-3 mb-6">
+                         <div className={`flex items-center justify-between p-3 rounded-lg ${isLowStock ? 'bg-orange-50 border border-orange-100' : 'bg-slate-50 border border-slate-100'}`}>
+                            <span className="text-sm text-slate-600 font-medium">Stock Actual</span>
+                             <div className="flex items-center gap-2">
+                                {isLowStock && <AlertTriangle size={18} className="text-orange-500 animate-pulse" />}
+                                <span className={`text-2xl font-bold ${isLowStock ? 'text-orange-600' : 'text-slate-800'}`}>
+                                   {product.stock}
+                                </span>
+                             </div>
+                         </div>
+
+                         <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="p-2.5 border border-slate-100 rounded-lg">
+                                <span className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">Costo Unit.</span>
+                                <span className="font-semibold text-slate-700">${product.purchasePrice.toFixed(2)}</span>
+                            </div>
+                            <div className="p-2.5 border border-purple-100 bg-purple-50/30 rounded-lg">
+                                 <span className="block text-xs text-purple-600 mb-1 uppercase font-bold tracking-wider">Costo/Servicio</span>
+                                 <span className="font-bold text-purple-700">${product.costPerService.toFixed(2)}</span>
+                            </div>
+                         </div>
+                         
+                         <div className="text-xs text-center text-slate-400">
+                            Rendimiento aprox: <span className="font-medium text-slate-600">{product.yield} servicios</span>
+                         </div>
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="flex items-center gap-2 pt-4 border-t border-slate-50 mt-auto">
+                          <button
+                            onClick={() => {
                                 const newStock = prompt(
                                   `Stock actual de ${product.name}:`,
                                   product.stock.toString()
@@ -1502,25 +1486,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                     });
                                   }
                                 }
-                              }}
-                              className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-                              title="Actualizar Stock"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteChemicalProduct(product.id)}
-                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition"
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                     );
-                  })}
-                </tbody>
-              </table>
+                            }}
+                            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg text-blue-600 hover:bg-blue-50 font-medium text-sm transition-colors border border-transparent hover:border-blue-100 group"
+                          >
+                             <Edit2 size={16} className="group-hover:scale-110 transition-transform" /> 
+                             Ajustar Stock
+                          </button>
+                          <button
+                             onClick={() => handleDeleteChemicalProduct(product.id)}
+                             className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                             title="Eliminar"
+                          >
+                             <Trash2 size={18} />
+                          </button>
+                      </div>
+                   </div>
+                 );
+              })}
             </div>
 
              {/* Pagination Controls */}
@@ -1567,7 +1549,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               {materialRecipes.map((recipe) => (
                 <div
                   key={recipe.id}
-                  className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4 border-2 border-purple-200"
+                 className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-purple-300 transition-colors group"
                 >
                   <h5 className="font-bold text-gray-800 mb-2">
                     {recipe.serviceName}
