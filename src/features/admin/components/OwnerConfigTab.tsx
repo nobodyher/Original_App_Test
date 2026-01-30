@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   PlusCircle,
+  DollarSign,
 } from "lucide-react";
 import type {
   AppUser,
@@ -140,7 +141,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [editingCommissionValue, setEditingCommissionValue] = useState("");
 
   const [editingCatalogService, setEditingCatalogService] = useState<string | null>(null);
-  const [editingConsumable, setEditingConsumable] = useState<string | null>(null);
+  // Consumables Editing State (Slide-over)
+  const [editingConsumableItem, setEditingConsumableItem] = useState<Consumable | null>(null);
+  const [editConsumableForm, setEditConsumableForm] = useState<Partial<Consumable>>({});
   
   // Chemical Product Editing State (Slide-over)
   const [editingProduct, setEditingProduct] = useState<ChemicalProduct | null>(null);
@@ -368,7 +371,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const handleUpdateConsumable = async (id: string, updated: Partial<Consumable>) => {
     try {
       await updateConsumable(id, updated);
-      setEditingConsumable(null);
+      setEditingConsumableItem(null);
       showNotification("Consumible actualizado");
     } catch (error) {
       console.error("Error actualizando consumible:", error);
@@ -872,7 +875,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <tbody>
                 {paginatedConsumables.map((c) => {
                   const isLowStock = c.stockQty <= c.minStockAlert;
-                  const isEditing = editingConsumable === c.id;
 
                   return (
                     <tr
@@ -881,137 +883,38 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         isLowStock ? "bg-orange-50" : ""
                       }`}
                     >
-                      {isEditing ? (
-                        <>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              defaultValue={c.name}
-                              id={`edit-consumable-name-${c.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none w-full"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              defaultValue={c.unit}
-                              id={`edit-consumable-unit-${c.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="number"
-                              step="0.01"
-                              defaultValue={c.unitCost}
-                              id={`edit-consumable-cost-${c.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="number"
-                              defaultValue={c.stockQty}
-                              id={`edit-consumable-stock-${c.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="number"
-                              defaultValue={c.minStockAlert}
-                              id={`edit-consumable-alert-${c.id}`}
-                              className="px-2 py-1 border-2 border-gray-300 rounded text-gray-900 bg-white focus:border-purple-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-4 py-3 flex gap-2">
-                            <button
-                              onClick={() => {
-                                const name = (
-                                  document.getElementById(
-                                    `edit-consumable-name-${c.id}`
-                                  ) as HTMLInputElement
-                                ).value;
-                                const unit = (
-                                  document.getElementById(
-                                    `edit-consumable-unit-${c.id}`
-                                  ) as HTMLInputElement
-                                ).value;
-                                const unitCost = parseFloat(
-                                  (
-                                    document.getElementById(
-                                      `edit-consumable-cost-${c.id}`
-                                    ) as HTMLInputElement
-                                  ).value
-                                );
-                                const stockQty = parseFloat(
-                                  (
-                                    document.getElementById(
-                                      `edit-consumable-stock-${c.id}`
-                                    ) as HTMLInputElement
-                                  ).value
-                                );
-                                const minStockAlert = parseFloat(
-                                  (
-                                    document.getElementById(
-                                      `edit-consumable-alert-${c.id}`
-                                    ) as HTMLInputElement
-                                  ).value
-                                );
-
-                                handleUpdateConsumable(c.id, {
-                                  name,
-                                  unit,
-                                  unitCost,
-                                  stockQty,
-                                  minStockAlert,
-                                });
-                              }}
-                              className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition"
-                            >
-                              <Save size={18} />
-                            </button>
-                            <button
-                              onClick={() => setEditingConsumable(null)}
-                              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition"
-                            >
-                              <X size={18} />
-                            </button>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-4 py-3 text-sm font-medium">
-                            {c.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm">{c.unit}</td>
-                          <td className="px-4 py-3 text-sm">
-                            ${c.unitCost.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-bold">
-                            {c.stockQty} {c.unit}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {c.minStockAlert}
-                          </td>
-                          <td className="px-4 py-3 flex gap-2">
-                            <button
-                              onClick={() => setEditingConsumable(c.id)}
-                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
-                              title="Editar"
-                            >
-                              <Edit2 size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteConsumable(c.id)}
-                              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition"
-                              title="Eliminar"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </td>
-                        </>
-                      )}
+                      <td className="px-4 py-3 text-sm font-medium">
+                        {c.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm">{c.unit}</td>
+                      <td className="px-4 py-3 text-sm">
+                        ${c.unitCost.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-bold">
+                        {c.stockQty} {c.unit}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {c.minStockAlert}
+                      </td>
+                      <td className="px-4 py-3 flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingConsumableItem(c);
+                            setEditConsumableForm(c);
+                          }}
+                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                          title="Editar"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConsumable(c.id)}
+                          className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -1875,6 +1778,139 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
               >
                 Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Slide-over para Edición de Consumibles */}
+      {editingConsumableItem && (
+        <div className="fixed inset-0 z-[60] flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setEditingConsumableItem(null)}
+          />
+
+          {/* Panel */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Editar Consumible</h3>
+                <p className="text-sm text-gray-500">Gestión de insumos y costos</p>
+              </div>
+              <button 
+                onClick={() => setEditingConsumableItem(null)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Información Básica */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Package size={18} className="text-blue-600" />
+                   Información del Consumible
+                </h4>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Nombre del Consumible</label>
+                  <input
+                    type="text"
+                    value={editConsumableForm.name || ""}
+                    onChange={(e) => setEditConsumableForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-600">Unidad de Medida</label>
+                   <input
+                     type="text"
+                     placeholder="ej. Caja, Paquete, Unidad"
+                     value={editConsumableForm.unit || ""}
+                     onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unit: e.target.value }))}
+                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
+                   />
+                </div>
+              </div>
+
+              {/* Costos */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <DollarSign size={18} className="text-green-600" />
+                   Costo Unitario
+                </h4>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Costo por {editConsumableForm.unit || "unidad"}</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editConsumableForm.unitCost ?? ""}
+                      onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unitCost: parseFloat(e.target.value) }))}
+                      className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:border-green-500 focus:ring-4 focus:ring-green-50/50 outline-none transition-all font-semibold text-gray-800"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                     Este valor se usa para calcular el costo de materiales de los servicios.
+                  </p>
+                </div>
+              </div>
+
+              {/* Inventario */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <AlertTriangle size={18} className="text-orange-500" />
+                   Inventario y Alertas
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                    <div className="space-y-2">
+                       <label className="text-sm font-bold text-gray-700">Stock Actual</label>
+                       <input
+                         type="number"
+                         value={editConsumableForm.stockQty ?? ""}
+                         onChange={(e) => setEditConsumableForm(prev => ({ ...prev, stockQty: parseFloat(e.target.value) }))}
+                         className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-200 outline-none transition-all bg-white font-bold text-gray-800"
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <input
+                         type="number"
+                         value={editConsumableForm.minStockAlert ?? ""}
+                         onChange={(e) => setEditConsumableForm(prev => ({ ...prev, minStockAlert: parseFloat(e.target.value) }))}
+                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-orange-500 outline-none transition-all bg-white"
+                       />
+                    </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <button
+                onClick={() => setEditingConsumableItem(null)}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (editingConsumableItem && editConsumableForm) {
+                    handleUpdateConsumable(editingConsumableItem.id, editConsumableForm);
+                    setEditingConsumableItem(null);
+                  }
+                }}
+                className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              >
+                Actualizar Consumible
               </button>
             </div>
           </div>
