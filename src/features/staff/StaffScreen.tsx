@@ -11,6 +11,7 @@ import {
   TrendingUp,
   User,
   Crown,
+  ClipboardList,
 } from "lucide-react";
 import NotificationToast from "../../components/ui/NotificationToast";
 import type {
@@ -48,6 +49,22 @@ interface StaffScreenProps {
   updateService: (id: string, data: Partial<Service>) => Promise<void>;
   softDeleteService: (id: string, userId?: string) => Promise<void>;
 }
+
+const EmptyState = ({ 
+  icon: Icon, 
+  title, 
+  message 
+}: { 
+  icon: any, 
+  title: string, 
+  message: string 
+}) => (
+  <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in col-span-full">
+    <Icon size={64} className="text-gray-200 mb-4" strokeWidth={1.5} />
+    <h3 className="text-lg font-bold text-gray-400 mb-2">{title}</h3>
+    <p className="text-sm text-gray-400 max-w-xs mx-auto">{message}</p>
+  </div>
+);
 
 const StaffScreen: React.FC<StaffScreenProps> = ({
   currentUser,
@@ -579,9 +596,11 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                {filteredServices.length === 0 ? (
-                  <div className="col-span-full py-20 text-center text-gray-400">
-                     No hay servicios registrados con estos filtros.
-                  </div>
+                  <EmptyState 
+                    icon={ClipboardList} 
+                    title="Sin servicios" 
+                    message="Tus servicios realizados aparecerán aquí." 
+                  />
                ) : (
                   filteredServices.slice().reverse().map((service) => {
                      const isEditing = editingServiceId === service.id;

@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import {
   Search,
   DollarSign,
@@ -24,7 +26,6 @@ import type {
   PaymentMethod,
   Toast,
 } from "../../../types";
-import { exportToCSV } from "../../../utils/helpers";
 import * as salonService from "../../../services/salonService";
 import * as inventoryService from "../../../services/inventoryService";
 
@@ -205,6 +206,43 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       return matchDateFrom && matchDateTo;
     });
   }, [expenses, ownerFilters]);
+
+  // Export to Excel function
+  const handleExportExcel = () => {
+    try {
+      const dataToExport = filteredServices.map(service => ({
+        Fecha: service.date,
+        'Realizado por': service.userName,
+        Cliente: service.client,
+        'Método de Pago': service.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia',
+        'Monto Total': service.cost
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      
+      // Column widths
+      const wscols = [
+        { wch: 15 }, // Fecha
+        { wch: 20 }, // Staff
+        { wch: 20 }, // Cliente
+        { wch: 15 }, // Metodo
+        { wch: 15 }, // Monto
+      ];
+      worksheet['!cols'] = wscols;
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte");
+
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+      
+      saveAs(data, `Reporte_Servicios_${new Date().toISOString().split('T')[0]}.xlsx`);
+      showNotification("Reporte exportado exitosamente", "success");
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      showNotification("Error al exportar reporte", "error");
+    }
+  };
 
   const totalRevenue = useMemo(
     () => filteredServices.reduce((sum, s) => sum + s.cost, 0),
@@ -492,11 +530,11 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                      <p className="text-gray-400 text-xs font-medium mt-1">Historial de servicios y pagos</p>
                   </div>
                   <button
-                     onClick={() => exportToCSV(filteredServices, "todos_los_servicios")}
+                     onClick={handleExportExcel}
                      className="mt-4 md:mt-0 flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-gray-800 transition shadow-lg shadow-gray-900/10 text-sm font-bold"
                   >
                      <Download size={16} />
-                     Exportar Reporte
+                     Exportar Excel
                   </button>
                </div>
 

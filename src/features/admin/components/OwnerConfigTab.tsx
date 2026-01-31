@@ -70,6 +70,51 @@ interface OwnerConfigTabProps {
   initializeMaterialsData: () => Promise<void>;
 }
 
+const TableSkeleton = () => (
+  <div className="animate-in fade-in duration-300 w-full">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <table className="w-full">
+        <thead className="bg-gray-50 border-b border-gray-100">
+          <tr>
+            {[1, 2, 3, 4].map((i) => (
+              <th key={i} className="px-6 py-4">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-skeleton"></div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {[1, 2, 3, 4, 5].map((row) => (
+            <tr key={row}>
+              {[1, 2, 3, 4].map((col) => (
+                <td key={col} className="px-6 py-4">
+                  <div className="h-4 w-full bg-gray-100 rounded animate-skeleton"></div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+const EmptyState = ({ 
+  icon: Icon, 
+  title, 
+  message 
+}: { 
+  icon: any, 
+  title: string, 
+  message: string 
+}) => (
+  <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
+    <Icon size={64} className="text-gray-200 mb-4" strokeWidth={1.5} />
+    <h3 className="text-lg font-bold text-gray-400 mb-2">{title}</h3>
+    <p className="text-sm text-gray-400 max-w-xs mx-auto">{message}</p>
+  </div>
+);
+
 const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   users,
   catalogServices,
@@ -100,6 +145,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [activeTab, setActiveTab] = useState<
     "services" | "consumables" | "personal" | "extras" | "materials" | "clients"
   >("services");
+
+  // Skeleton Loading State
+  const [isTableLoading, setIsTableLoading] = useState(false);
+
+  React.useEffect(() => {
+     setIsTableLoading(true);
+     const timer = setTimeout(() => setIsTableLoading(false), 600);
+     return () => clearTimeout(timer);
+  }, [activeTab]);
 
   const tabs = [
     { id: "services", label: "Catálogo", icon: ShoppingCart, color: "text-purple-600" },
@@ -615,6 +669,12 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </button>
           </div>
 
+
+
+          {isTableLoading ? (
+             <TableSkeleton />
+          ) : (
+          <>
           <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-gray-100">
@@ -638,7 +698,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {paginatedServices.map((cs) => {
+                {paginatedServices.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <EmptyState 
+                        icon={ShoppingCart} 
+                        title="No hay servicios" 
+                        message="Usa el formulario de arriba para añadir el primer servicio al catálogo." 
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedServices.map((cs) => {
                   const isEditing = editingCatalogService === cs.id;
 
                   return (
@@ -787,7 +858,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       )}
                     </tr>
                   );
-                })}
+                })
+                )}
               </tbody>
             </table>
           </div>
@@ -817,6 +889,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </button>
             </div>
           </div>
+          </>
+          )}
         </div>
         )}
 
@@ -897,6 +971,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             </button>
           </div>
 
+          {isTableLoading ? (
+             <TableSkeleton />
+          ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-100">
@@ -922,7 +1000,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {paginatedConsumables.map((c) => {
+                {paginatedConsumables.length === 0 ? (
+                   <tr>
+                      <td colSpan={6}>
+                        <EmptyState 
+                          icon={Package} 
+                          title="Sin consumibles" 
+                          message="Agrega algodón, acetona, limas y otros materiales aquí." 
+                        />
+                      </td>
+                   </tr>
+                ) : (
+                  paginatedConsumables.map((c) => {
                   const isLowStock = c.stockQty <= c.minStockAlert;
 
                   return (
@@ -966,7 +1055,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       </td>
                     </tr>
                   );
-                })}
+                })
+              )}
               </tbody>
             </table>
           </div>
@@ -996,6 +1086,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </button>
              </div>
           </div>
+          </div>
+          )}
         </div>
         )}
 
@@ -1067,8 +1159,20 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
           {/* Lista de usuarios */}
           {/* Lista de usuarios - Diseño Cards */}
+          {isTableLoading ? (
+             <TableSkeleton />
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {users
+            {users.filter((u) => u.role === "staff").length === 0 ? (
+                <div className="col-span-full">
+                   <EmptyState 
+                      icon={Users} 
+                      title="No hay personal" 
+                      message="Crea un nuevo usuario con rol de Staff para que pueda acceder al sistema." 
+                   />
+                </div>
+            ) : (
+                users
               .filter((u) => u.role === "staff")
               .map((user) => (
                 <div
@@ -1138,8 +1242,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                      </button>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
           </div>
+          )}
         </div>
         )}
 
@@ -1183,6 +1289,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
 
           {/* Tabla de extras */}
+          {isTableLoading ? (
+             <TableSkeleton />
+          ) : (
           <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-gray-100">
@@ -1202,7 +1311,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {paginatedExtras.map((extra) => {
+                {paginatedExtras.length === 0 ? (
+                   <tr>
+                      <td colSpan={4}>
+                        <EmptyState 
+                          icon={Sparkles} 
+                          title="Sin extras" 
+                          message="Agrega decoraciones y servicios adicionales aquí." 
+                        />
+                      </td>
+                   </tr>
+                ) : (
+                  paginatedExtras.map((extra) => {
                   const price =
                     (extra as any).price || extra.priceSuggested || 0;
                   return (
@@ -1254,11 +1374,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       </td>
                     </tr>
                   );
-                })}
+                })
+              )}
               </tbody>
             </table>
           </div>
-
+          )}
+          
           {/* Extras Pagination */}
           <div className="flex justify-between items-center px-4 py-3 mt-4">
             <div className="text-sm text-gray-500 font-medium">
@@ -1421,18 +1543,30 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
 
             {/* Buscador y filtros arriba del todo si se desea, por ahora directo a la tabla */}
-            
+           <div className="mb-8">
+            <h4 className="text-lg font-semibold text-gray-700 mb-4">
+              Productos Químicos
+            </h4>
+
+            {paginatedChemicals.length === 0 ? (
+               <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm mb-8">
+                  <EmptyState 
+                    icon={Beaker} 
+                    title="Inventario químico vacío" 
+                    message="Registra tus productos químicos para controlar el stock." 
+                  />
+               </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedChemicals.map((product) => {
                  const isLowStock = product.stock <= product.minStock;
+
                  return (
-                   <div
-                     key={product.id}
-                     className={`relative bg-white rounded-xl shadow-sm border p-5 flex flex-col justify-between transition-all hover:bg-gray-100/80 hover:shadow-md ${
-                       isLowStock ? "border-orange-300 ring-4 ring-orange-50/50" : "border-slate-200"
-                     }`}
+                   <div 
+                      key={product.id}
+                      className={`bg-white rounded-2xl p-5 border shadow-sm hover:shadow-md transition-all duration-200 group relative ${isLowStock ? 'border-orange-200 ring-1 ring-orange-100' : 'border-slate-100 hover:border-purple-100'}`}
                    >
-                      {/* Header */}
+                      {/* Header Badge */}
                       <div className="flex justify-between items-start mb-4">
                          <div>
                             <h5 className="font-bold text-gray-800 text-lg leading-tight">{product.name}</h5>
@@ -1498,6 +1632,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                  );
               })}
             </div>
+            )}
+            </div>
 
              {/* Pagination Controls */}
              <div className="flex justify-between items-center px-2 mt-4">
@@ -1525,12 +1661,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </div>
              </div>
 
-            {chemicalProducts.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No hay productos químicos registrados. Los productos se agregarán
-                automáticamente.
-              </div>
-            )}
+
           </div>
 
           {/* Sección 2: Recetas por Servicio */}
