@@ -126,7 +126,7 @@ const SalonApp = () => {
       showNotification={showNotification}
       onLogout={() => setCurrentUser(null)}
       addService={(user, data, recipes, chemProducts, total) => 
-        salonService.addService(user, data, recipes, chemProducts, catalogServices, total)
+        salonService.addService(user, data, recipes, serviceRecipes, consumables, chemProducts, catalogServices, total)
       }
       updateService={salonService.updateService}
       softDeleteService={salonService.softDeleteService}

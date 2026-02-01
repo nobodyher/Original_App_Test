@@ -16,8 +16,14 @@ import type {
   Consumable,
   ChemicalProduct,
   MaterialRecipe,
+  ServiceRecipe,
   ServiceItem,
 } from "../types";
+
+// Collection names
+const SERVICES_COLLECTION = "services";
+const CONSUMABLES_COLLECTION = "consumables";
+const CHEMICAL_PRODUCTS_COLLECTION = "chemical_products";
 
 // ====== Catalog Management ======
 
@@ -313,7 +319,7 @@ export const updateChemicalProduct = async (
    if (updates.purchasePrice !== undefined || updates.yield !== undefined) {
        if (!currentProduct) {
            // Need to fetch current if not provided
-           const snap = await getDoc(doc(db, "chemical_products", id));
+           const snap = await getDoc(doc(db, CHEMICAL_PRODUCTS_COLLECTION, id));
            if (snap.exists()) {
                currentProduct = { id: snap.id, ...snap.data() } as ChemicalProduct;
            }
@@ -337,68 +343,106 @@ export const deleteChemicalProduct = async (id: string): Promise<void> => {
 
 // ====== Helpers for Service Logic (Shared) ======
 
-export const deductConsumables = async (serviceCategory: string): Promise<void> => {
+export const deductConsumables = async (
+  serviceId: string,
+  serviceName: string,
+  serviceRecipes: ServiceRecipe[],
+  consumables: Consumable[],
+  catalogServices: CatalogService[] = []
+): Promise<void> => {
   try {
-    const consumablesToDeduct: { [key: string]: number } = {};
-
-    if (serviceCategory === "manicura") {
-      consumablesToDeduct["Guantes (par)"] = 1;
-      consumablesToDeduct["Mascarilla"] = 1;
-      consumablesToDeduct["Palillo naranja"] = 1;
-      consumablesToDeduct["Bastoncillos"] = 1;
-      consumablesToDeduct["Wipes"] = 1;
-      consumablesToDeduct["Toalla desechable"] = 1;
-      consumablesToDeduct["Gorro"] = 1;
-      consumablesToDeduct["Campo quirúrgico"] = 1;
-    } else if (serviceCategory === "pedicura") {
-      consumablesToDeduct["Campo quirúrgico"] = 1;
-      consumablesToDeduct["Algodón"] = 5;
-      consumablesToDeduct["Guantes (par)"] = 1;
-      consumablesToDeduct["Mascarilla"] = 1;
-      consumablesToDeduct["Palillo naranja"] = 1;
-      consumablesToDeduct["Wipes"] = 1;
-      consumablesToDeduct["Gorro"] = 1;
-      consumablesToDeduct["Bastoncillos"] = 1;
+    // Buscar servicio en catálogo
+    const catalogService = catalogServices.find(
+      s => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+    );
+    
+    let itemsToDeduct: { consumableId: string; qty: number }[] = [];
+    
+    // PRIORIDAD 1: manualConsumables (selección manual del admin)
+    if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {
+      itemsToDeduct = catalogService.manualConsumables;
+      console.log(`⚠️ Usando consumibles manuales (Prioridad Alta) para ${serviceName}`);
+      console.log(`   - Consumibles manuales: ${itemsToDeduct.length}`);
+    } else {
+      // PRIORIDAD 2: serviceRecipes (recetas antiguas, fallback)
+      console.log(`🔍 Usando receta de consumibles (Fallback) para ${serviceName}`);
+      const recipe = serviceRecipes.find(r => r.serviceId === serviceId);
+      itemsToDeduct = recipe?.items || [];
+      
+      if (itemsToDeduct.length === 0) {
+        console.log(`⚠️ No se encontró receta de consumibles para ${serviceName}`);
+      }
     }
-
-    for (const [consumableName, quantity] of Object.entries(consumablesToDeduct)) {
-      // NOTE: Querying by ID/Name convention. Adjust if using generated IDs vs named IDs.
-      // App.tsx logic used `doc(db, "consumables", consumableName)`, implying IDs are names or mapped.
-      const consumableRef = doc(db, "consumables", consumableName);
-      const consumableSnap = await getDoc(consumableRef);
-
-      if (consumableSnap.exists()) {
-        const currentStock = consumableSnap.data().quantity || 0;
+    
+    // Descontar cada consumible
+    for (const item of itemsToDeduct) {
+      const consumable = consumables.find(c => c.id === item.consumableId);
+      
+      if (consumable) {
+        const newQty = Math.max(0, consumable.stockQty - item.qty);
+        
+        // Actualizar en Firestore
+        const consumableRef = doc(db, CONSUMABLES_COLLECTION, item.consumableId);
         await updateDoc(consumableRef, {
-          quantity: Math.max(0, currentStock - quantity),
+          stockQty: newQty,
           lastDeducted: new Date().toISOString(),
         });
+        
+        console.log(`✅ Descuento: ${consumable.name} (-${item.qty} ${consumable.unit}) → Stock: ${newQty}`);
+      } else {
+        console.warn(`⚠️ Consumible no encontrado: ${item.consumableId}`);
       }
     }
   } catch (error) {
-    console.log("Error descargando consumibles (no critico):", error);
+    console.error('❌ Error descargando consumibles:', error);
   }
 };
 
 export const calculateTotalReplenishmentCost = (
   services: ServiceItem[],
-  materialRecipes: MaterialRecipe[]
+  materialRecipes: MaterialRecipe[],
+  catalogServices: CatalogService[] = [],
+  chemicalProducts: ChemicalProduct[] = []
 ): number => {
   let totalCost = 0;
 
   for (const service of services) {
-    const recipe = materialRecipes.find(
-      (r) => r.serviceName.toLowerCase() === service.serviceName.toLowerCase()
+    // Buscar servicio en catálogo
+    const catalogService = catalogServices.find(
+      (cs) => cs.id === service.serviceId || 
+              cs.name?.toLowerCase() === service.serviceName.toLowerCase()
     );
-
-    if (recipe) {
-      totalCost += recipe.totalCost;
+    
+    // PRIORIDAD 1: Si manualMaterials existe, calcular costo dinámicamente
+    if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
+      let serviceCost = 0;
+      
+      for (const materialId of catalogService.manualMaterials) {
+        const product = chemicalProducts.find(p => p.id === materialId);
+        if (product) {
+          const yieldPerUnit = product.yieldPerUnit || product.yield || 1;
+          const costPerUse = (product.purchasePrice || 0) / yieldPerUnit;
+          serviceCost += costPerUse;
+        }
+      }
+      
+      totalCost += serviceCost;
+      console.log(`💰 Costo calculado para ${service.serviceName}: $${serviceCost.toFixed(2)} (${catalogService.manualMaterials.length} materiales)`);
+      
     } else {
-      const serviceName = service.serviceName.toLowerCase();
-      if (serviceName.includes("pedicure") || serviceName.includes("pedicura")) {
-        totalCost += 0.5;
+      // PRIORIDAD 2: Fallback a receta antigua
+      const recipe = materialRecipes.find(
+        (r) => r.serviceName.toLowerCase() === service.serviceName.toLowerCase()
+      );
+
+      if (recipe) {
+        totalCost += recipe.totalCost;
+        console.log(`💰 Costo de receta para ${service.serviceName}: $${recipe.totalCost.toFixed(2)}`);
       } else {
-        totalCost += 0.33;
+        const serviceName = service.serviceName.toLowerCase();
+        const defaultCost = serviceName.includes("pedicure") || serviceName.includes("pedicura") ? 0.5 : 0.33;
+        totalCost += defaultCost;
+        console.log(`💰 Costo por defecto para ${service.serviceName}: $${defaultCost.toFixed(2)}`);
       }
     }
   }

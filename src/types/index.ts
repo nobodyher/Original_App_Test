@@ -80,6 +80,7 @@ export type CatalogService = {
   basePrice: number;
   active: boolean;
   manualMaterials?: string[]; // IDs de productos químicos seleccionados manualmente
+  manualConsumables?: RecipeItem[]; // IDs y cantidades de consumibles seleccionados manualmente
 };
 
 export type Consumable = {

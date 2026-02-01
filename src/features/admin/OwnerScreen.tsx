@@ -133,6 +133,8 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
               users={props.users}
               currentUser={props.currentUser}
               materialRecipes={props.materialRecipes}
+              catalogServices={props.catalogServices}
+              chemicalProducts={props.chemicalProducts}
               showNotification={props.showNotification}
               addExpense={props.addExpense}
               deleteExpense={props.deleteExpense}

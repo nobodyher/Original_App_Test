@@ -22,6 +22,8 @@ import type {
   Service,
   Expense,
   MaterialRecipe,
+  CatalogService,
+  ChemicalProduct,
   OwnerFilters,
   PaymentMethod,
   Toast,
@@ -35,6 +37,8 @@ interface OwnerDashboardProps {
   users: AppUser[];
   currentUser: AppUser | null;
   materialRecipes: MaterialRecipe[];
+  catalogServices: CatalogService[];  // NEW
+  chemicalProducts: ChemicalProduct[];  // NEW
   showNotification: (message: string, type?: Toast["type"]) => void;
   // Actions
   addExpense: (data: any) => Promise<void>;
@@ -51,6 +55,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   users,
   currentUser,
   materialRecipes,
+  catalogServices,  // NEW
+  chemicalProducts,  // NEW
   showNotification,
   addExpense,
   deleteExpense,
@@ -273,7 +279,9 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         (s.reposicion ||
           inventoryService.calculateTotalReplenishmentCost(
             s.services || [],
-            materialRecipes
+            materialRecipes,
+            catalogServices,
+            chemicalProducts
           ))
       );
     }, 0);
@@ -282,7 +290,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       return e.category === "Reposicion" ? sum + e.amount : sum;
     }, 0);
     return Math.max(0, cost - repoExpenses);
-  }, [filteredServices, filteredExpenses, materialRecipes]);
+  }, [filteredServices, filteredExpenses, materialRecipes, catalogServices, chemicalProducts]);
 
   const netProfit = useMemo(
     () =>

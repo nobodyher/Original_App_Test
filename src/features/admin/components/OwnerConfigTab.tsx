@@ -120,6 +120,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   catalogServices,
   catalogExtras,
   materialRecipes,
+  serviceRecipes,
   consumables,
   chemicalProducts,
   clients,
@@ -210,6 +211,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [editingServiceItem, setEditingServiceItem] = useState<CatalogService | null>(null);
   const [editServiceForm, setEditServiceForm] = useState<Partial<CatalogService>>({});
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [selectedConsumables, setSelectedConsumables] = useState<{ consumableId: string; qty: number }[]>([]);
   
   // Extras Editing State (Slide-over)
   const [editingExtraItem, setEditingExtraItem] = useState<CatalogExtra | null>(null);
@@ -400,6 +402,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       await updateCatalogService(id, {
         ...updates,
         manualMaterials: selectedMaterials,
+        manualConsumables: selectedConsumables,
       });
       setEditingServiceItem(null);
       showNotification("Servicio y materiales actualizados");
@@ -414,6 +417,25 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       prev.includes(materialId)
         ? prev.filter(id => id !== materialId)
         : [...prev, materialId]
+    );
+  };
+
+  const handleToggleConsumable = (consumableId: string) => {
+    setSelectedConsumables(prev => {
+      const exists = prev.some(c => c.consumableId === consumableId);
+      if (exists) {
+        return prev.filter(c => c.consumableId !== consumableId);
+      } else {
+        return [...prev, { consumableId, qty: 1 }];
+      }
+    });
+  };
+
+  const handleConsumableQtyChange = (consumableId: string, qty: number) => {
+    setSelectedConsumables(prev =>
+      prev.map(c =>
+        c.consumableId === consumableId ? { ...c, qty: Math.max(1, qty) } : c
+      )
     );
   };
 
@@ -857,11 +879,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <button
-                                onClick={() => {
+                              onClick={() => {
                                   setEditingServiceItem(cs);
                                   setEditServiceForm(cs);
                                   
-                                  // Tarea 1: Prioridad de Guardado (Admin)
+                                  // Tarea 1: Prioridad de Guardado (Admin) - MATERIALES
                                   // SI manualMaterials existe (incluso si está vacío), NO buscar en recetas antiguas
                                   
                                   if (cs.manualMaterials !== undefined && cs.manualMaterials !== null) {
@@ -902,6 +924,34 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                     }
                                     
                                     setSelectedMaterials(legacyMaterialIds);
+                                  }
+                                  
+                                  // CONSUMIBLES - Aplicar misma lógica de prioridad
+                                  if (cs.manualConsumables !== undefined && cs.manualConsumables !== null) {
+                                    // PRIORIDAD ALTA: Usar selección manual
+                                    console.log(`⚠️ Usando consumibles manuales (Prioridad Alta) para ${cs.name}`);
+                                    setSelectedConsumables(cs.manualConsumables);
+                                  } else {
+                                    // FALLBACK: Buscar en serviceRecipes
+                                    console.log(`🔍 Cargando consumibles desde recetas para ${cs.name}`);
+                                    console.log(`   Buscando por cs.id: "${cs.id}"`);
+                                    console.log(`   Buscando por cs.name: "${cs.name}"`);
+                                    console.log(`   IDs disponibles en serviceRecipes:`, serviceRecipes.map(r => r.id));
+                                    
+                                    // Buscar por el ID del documento (que es el nombre del servicio o ID del catálogo)
+                                    let serviceRecipe = serviceRecipes.find(
+                                      (r: ServiceRecipe) => r.id === cs.id || r.id === cs.name
+                                    );
+                                    
+                                    if (serviceRecipe) {
+                                      console.log(`✅ Receta encontrada por ID de documento: ${serviceRecipe.id}`);
+                                      console.log(`   Items a cargar: ${serviceRecipe.items.length} consumibles`);
+                                      setSelectedConsumables(serviceRecipe.items);
+                                    } else {
+                                      console.log(`❌ No se encontró receta para "${cs.name}"`);
+                                      console.log(`   Ningún ID coincide con "${cs.id}" ni con "${cs.name}"`);
+                                      setSelectedConsumables([]);
+                                    }
                                   }
                                 }}
                                 className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 hover:scale-110 active:scale-90"
@@ -2091,6 +2141,112 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <p className="text-sm font-semibold text-purple-800">
                         {selectedMaterials.length} material{selectedMaterials.length !== 1 ? 'es' : ''} seleccionado{selectedMaterials.length !== 1 ? 's' : ''}
                       </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Vincular Consumibles (Desechables) */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Package size={18} className="text-blue-600" />
+                   Vincular Consumibles (Desechables)
+                </h4>
+                
+                <p className="text-sm text-gray-500">
+                  Selecciona los consumibles desechables que se utilizan en este servicio y especifica la cantidad
+                </p>
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
+                  {consumables.length === 0 ? (
+                    <div className="p-6 text-center">
+                      <Package size={48} className="mx-auto text-gray-300 mb-3" />
+                      <p className="text-sm text-gray-400">No hay consumibles disponibles</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {consumables
+                        .filter(c => c.active)
+                        .map((consumable) => {
+                          const isSelected = selectedConsumables.some(sc => sc.consumableId === consumable.id);
+                          const selectedItem = selectedConsumables.find(sc => sc.consumableId === consumable.id);
+                          const isLowStock = consumable.stockQty <= consumable.minStockAlert;
+                          
+                          return (
+                            <div
+                              key={consumable.id}
+                              className={`p-4 hover:bg-blue-50 transition-colors ${
+                                isSelected ? 'bg-blue-50/50' : ''
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleConsumable(consumable.id)}
+                                  className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2 mb-2">
+                                    <p className="font-semibold text-gray-800 truncate">{consumable.name}</p>
+                                    {isLowStock && (
+                                      <span className="shrink-0 px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full">
+                                        BAJO STOCK
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <p className="text-xs text-gray-600">
+                                      <span className="font-medium">Unidad:</span> {consumable.unit}
+                                    </p>
+                                    <p className={`text-xs font-semibold ${isLowStock ? 'text-orange-600' : 'text-slate-700'}`}>
+                                      Stock: {consumable.stockQty} {consumable.unit}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Quantity Input - Only show if selected */}
+                                  {isSelected && (
+                                    <div className="mt-3 flex items-center gap-2">
+                                      <label className="text-xs font-medium text-gray-600">Cantidad:</label>
+                                      <div className="relative">
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          value={selectedItem?.qty || 1}
+                                          onChange={(e) => handleConsumableQtyChange(consumable.id, parseInt(e.target.value) || 1)}
+                                          className="w-20 px-3 py-1.5 text-sm bg-white text-gray-900 border border-blue-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                        />
+                                        <span className="ml-2 text-xs text-gray-500">{consumable.unit}</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                {selectedConsumables.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-blue-600" />
+                      <p className="text-sm font-semibold text-blue-800">
+                        {selectedConsumables.length} consumible{selectedConsumables.length !== 1 ? 's' : ''} seleccionado{selectedConsumables.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedConsumables.map(sc => {
+                        const consumable = consumables.find(c => c.id === sc.consumableId);
+                        return consumable ? (
+                          <span key={sc.consumableId} className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-blue-200 rounded-md text-xs text-gray-700">
+                            <span className="font-medium">{consumable.name}</span>
+                            <span className="text-blue-600 font-bold">×{sc.qty}</span>
+                          </span>
+                        ) : null;
+                      })}
                     </div>
                   </div>
                 )}

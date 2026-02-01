@@ -21,6 +21,8 @@ import type {
   PaymentMethod,
   Service,
   MaterialRecipe,
+  ServiceRecipe,
+  Consumable,
   ChemicalProduct,
   CatalogService,
 } from "../types";
@@ -65,8 +67,10 @@ export const addService = async (
   currentUser: AppUser,
   newService: NewServiceState,
   materialRecipes: MaterialRecipe[],
+  serviceRecipes: ServiceRecipe[],
+  consumables: Consumable[],
   chemicalProducts: ChemicalProduct[],
-  catalogServices: CatalogService[], // Nuevo parámetro
+  catalogServices: CatalogService[],
   totalCost: number,
 ): Promise<void> => {
   if (!newService.client || newService.services.length === 0) {
@@ -83,6 +87,8 @@ export const addService = async (
   const totalReposicion = calculateTotalReplenishmentCost(
     newService.services,
     materialRecipes,
+    catalogServices,
+    chemicalProducts
   );
 
   const serviceData: any = {
@@ -153,20 +159,25 @@ export const addService = async (
 
   await addDoc(collection(db, "services"), serviceData);
 
-  // Descontar consumibles si hay categoría
-  if (newService.category) {
-    await deductConsumables(newService.category);
-  }
-
   // ====== DESCUENTO DE INVENTARIO BASADO EN RECETAS ======
   // Tarea 3: No cerrar ventana hasta que termine la operación
   for (const serviceItem of newService.services) {
+    // Descontar materiales químicos
     await deductInventoryByRecipe(
       serviceItem.serviceId,
       serviceItem.serviceName,
       materialRecipes,
       chemicalProducts,
       catalogServices // Pasar catalogServices
+    );
+    
+    // Descontar consumibles con prioridad (manualConsumables → serviceRecipes)
+    await deductConsumables(
+      serviceItem.serviceId,
+      serviceItem.serviceName,
+      serviceRecipes,
+      consumables,
+      catalogServices
     );
   }
   // ========================================
