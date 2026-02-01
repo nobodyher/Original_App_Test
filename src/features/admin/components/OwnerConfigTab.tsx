@@ -9,6 +9,7 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
+  Save,
   AlertTriangle,
   Beaker,
   ChevronLeft,
@@ -167,7 +168,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     name: "",
     category: "manicura" as "manicura" | "pedicura",
     basePrice: "",
-    linkedChemicals: [] as string[],
   });
 
   const [newConsumable, setNewConsumable] = useState({
@@ -184,6 +184,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     unit: "ml",
     purchasePrice: "",
     yield: "",
+    stock: "",
+    yieldPerUnit: "",
   });
 
   const [newUser, setNewUser] = useState({
@@ -202,9 +204,12 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [newExtraName, setNewExtraName] = useState("");
   const [newExtraPrice, setNewExtraPrice] = useState("");
 
-  // const [editingCatalogService, setEditingCatalogService] = useState<string | null>(null); // REMOVED: Inline editing
+  const [editingCatalogService, setEditingCatalogService] = useState<string | null>(null);
+  
+  // Service Editing State (Slide-over)
   const [editingServiceItem, setEditingServiceItem] = useState<CatalogService | null>(null);
   const [editServiceForm, setEditServiceForm] = useState<Partial<CatalogService>>({});
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   
   // Extras Editing State (Slide-over)
   const [editingExtraItem, setEditingExtraItem] = useState<CatalogExtra | null>(null);
@@ -345,21 +350,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       await addCatalogService(
         newCatalogService.name,
         newCatalogService.category,
-        parseFloat(newCatalogService.basePrice),
-        // @ts-ignore - passing extra arg if supported by hook, else will be ignored until hook updated
-        // For now we assume addCatalogService needs update or we handle update after.
-        // ACTUALLY: The props interface says addCatalogService(name, cat, price).
-        // we might need to update the prop signature in a separate step or update the service afterwards.
-        // Let's assume we update the custom hook separately or use update immediately.
+        parseFloat(newCatalogService.basePrice)
       );
-      
-      // Temporary: Since addCatalogService might not accept linkedChemicals yet, we might need to handle it.
-      // Ideally we update the interface in props. But for this file context, let's keep it simple.
-      // If the backend allows it, we should pass it. 
-      // User instruction said "El objeto del servicio debe guardar un array called linkedChemicals".
-      // I will assume for this specific edit we just reset the form including the new field.
 
-      setNewCatalogService({ name: "", category: "manicura", basePrice: "", linkedChemicals: [] });
+      setNewCatalogService({ name: "", category: "manicura", basePrice: "" });
       showNotification("Servicio agregado al catálogo");
     } catch (error: any) {
       console.error("Error agregando servicio:", error);
@@ -372,7 +366,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const handleUpdateCatalogService = async (id: string, updated: Partial<CatalogService>) => {
     try {
       await updateCatalogService(id, updated);
-      setEditingServiceItem(null);
+      setEditingCatalogService(null);
       showNotification("Servicio actualizado");
     } catch (error) {
       console.error("Error actualizando servicio:", error);
@@ -399,6 +393,28 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       console.error("Error eliminando servicio:", error);
       showNotification("Error al eliminar", "error");
     }
+  };
+
+  const handleUpdateServiceWithMaterials = async (id: string, updates: Partial<CatalogService>) => {
+    try {
+      await updateCatalogService(id, {
+        ...updates,
+        manualMaterials: selectedMaterials,
+      });
+      setEditingServiceItem(null);
+      showNotification("Servicio y materiales actualizados");
+    } catch (error) {
+      console.error("Error actualizando servicio:", error);
+      showNotification("Error al actualizar", "error");
+    }
+  };
+
+  const handleToggleMaterial = (materialId: string) => {
+    setSelectedMaterials(prev => 
+      prev.includes(materialId)
+        ? prev.filter(id => id !== materialId)
+        : [...prev, materialId]
+    );
   };
 
   const handleAddExtra = async () => {
@@ -500,17 +516,19 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const handleAddChemicalProduct = async () => {
     setIsSubmitting(true);
     try {
+      const yieldPerUnit = parseFloat(newChemicalProduct.yieldPerUnit || newChemicalProduct.yield);
+      
       await addChemicalProduct({
         name: newChemicalProduct.name,
         quantity: parseFloat(newChemicalProduct.quantity),
         unit: newChemicalProduct.unit as "ml" | "L" | "g" | "kg" | "unid",
         purchasePrice: parseFloat(newChemicalProduct.purchasePrice),
         yield: parseFloat(newChemicalProduct.yield),
-        yieldPerUnit: parseFloat(newChemicalProduct.yield),
-        currentYieldRemaining: parseFloat(newChemicalProduct.yield),
         costPerService: 0,
-        stock: 0,
+        stock: parseFloat(newChemicalProduct.stock || "0"),
         minStock: 0,
+        yieldPerUnit: yieldPerUnit,
+        currentYieldRemaining: yieldPerUnit, // Tarea 3: Inicialización
       });
 
       setNewChemicalProduct({
@@ -519,6 +537,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         unit: "ml",
         purchasePrice: "",
         yield: "",
+        stock: "",
+        yieldPerUnit: "",
       });
       showNotification("Producto guardado");
     } catch (error: any) {
@@ -674,16 +694,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
             />
             <button
-              onClick={() => {
-                 // For now, simpler creation without chemicals or simple one?
-                 // Let's stick to the prompt: Task 1: Selector de Insumos En el formulario de 'Agregar/Editar Servicio'
-                 // We need to add the selector here too? Or just in edit?
-                 // "En el formulario de 'Agregar/Editar Servicio'" -> Both.
-                 // let's add a small popover or just a multiselect dropdown.
-                 // For simplicity in this view, maybe just a "Configurar Insumos" modal or expand.
-                 // Let's rely on Editing for detailed config if space is tight, OR add a dropdown.
-                 handleAddCatalogService();
-              }}
+              onClick={handleAddCatalogService}
               disabled={isSubmitting}
               className={`bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold ${
                 isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
@@ -691,12 +702,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             >
               Agregar
             </button>
-            {/* Note: Detailed chemical selection for creation is tricky in this inline row. 
-                We will prioritize the Edit Slide-over for full control as per common pattern, 
-                but user asked for it in "Agregar". Let's add the slide-over for creation? 
-                No, let's just create basic and let user edit insumos. 
-                OR add a small trigger.
-            */}
           </div>
 
 
@@ -740,6 +745,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   </tr>
                 ) : (
                   paginatedServices.map((cs) => {
+                  const isEditing = editingCatalogService === cs.id;
+
                   return (
                     <tr
                       key={cs.id}
@@ -748,19 +755,97 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       }`}
                     >
                       <td className="w-4"></td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {cs.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 capitalize tracking-wide">
-                        {cs.category}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-bold text-gray-900 font-mono">
-                        ${cs.basePrice.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                         <div className="flex flex-col gap-1">
+                      {isEditing ? (
+                        <>
+                          <td className="px-6 py-4">
+                            <input
+                              type="text"
+                              defaultValue={cs.name}
+                              id={`edit-service-name-${cs.id}`}
+                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <select
+                              defaultValue={cs.category}
+                              id={`edit-service-category-${cs.id}`}
+                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none appearance-none bg-white"
+                            >
+                              <option value="manicura">Manicura</option>
+                              <option value="pedicura">Pedicura</option>
+                            </select>
+                          </td>
+                          <td className="px-6 py-4">
+                            <input
+                              type="number"
+                              step="0.01"
+                              defaultValue={cs.basePrice}
+                              id={`edit-service-price-${cs.id}`}
+                              className="w-32 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                cs.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                             }`}>
+                                {cs.active ? "Activo" : "Inactivo"}
+                             </span>
+                          </td>
+                          <td className="px-6 py-4 flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const name = (
+                                  document.getElementById(
+                                    `edit-service-name-${cs.id}`
+                                  ) as HTMLInputElement
+                                ).value;
+                                const category = (
+                                  document.getElementById(
+                                    `edit-service-category-${cs.id}`
+                                  ) as HTMLSelectElement
+                                ).value as "manicura" | "pedicura";
+                                const basePrice = parseFloat(
+                                  (
+                                    document.getElementById(
+                                      `edit-service-price-${cs.id}`
+                                    ) as HTMLInputElement
+                                  ).value
+                                );
+
+                                handleUpdateCatalogService(cs.id, {
+                                  name,
+                                  category,
+                                  basePrice,
+                                });
+                              }}
+                              className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-sm"
+                              title="Guardar"
+                            >
+                              <Save size={18} strokeWidth={2.5} />
+                            </button>
+                            <button
+                              onClick={() => setEditingCatalogService(null)}
+                              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"
+                              title="Cancelar"
+                            >
+                              <X size={18} strokeWidth={2.5} />
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {cs.name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600 capitalize tracking-wide">
+                            {cs.category}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-bold text-gray-900 font-mono">
+                            ${cs.basePrice.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4">
                             <span
-                              className={`inline-flex self-start items-center px-3 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold shadow-sm ${
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold shadow-sm ${
                                 cs.active
                                   ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200"
                                   : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
@@ -768,51 +853,90 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             >
                               {cs.active ? "Activo" : "Inactivo"}
                             </span>
-                            {cs.linkedChemicals && cs.linkedChemicals.length > 0 && (
-                               <span className="text-[10px] text-purple-600 font-medium flex items-center gap-1">
-                                  <Beaker size={10} /> {cs.linkedChemicals.length} químicos
-                               </span>
-                            )}
-                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <button
-                            onClick={() => {
-                               setEditingServiceItem(cs);
-                               setEditServiceForm(cs);
-                            }}
-                            className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 hover:scale-110 active:scale-90"
-                            title="Editar"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleToggleCatalogService(cs.id, cs.active)
-                            }
-                            className={`p-2 rounded-lg transition-colors ${
-                              cs.active
-                                ? "text-slate-400 hover:text-orange-500 hover:bg-orange-50"
-                                : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
-                            } transition-all duration-200 hover:scale-110 active:scale-90`}
-                            title={cs.active ? "Desactivar" : "Activar"}
-                          >
-                            {cs.active ? (
-                              <XCircle size={16} />
-                            ) : (
-                              <CheckCircle size={16} />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCatalogService(cs.id)}
-                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-90"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <button
+                                onClick={() => {
+                                  setEditingServiceItem(cs);
+                                  setEditServiceForm(cs);
+                                  
+                                  // Tarea 1: Prioridad de Guardado (Admin)
+                                  // SI manualMaterials existe (incluso si está vacío), NO buscar en recetas antiguas
+                                  
+                                  if (cs.manualMaterials !== undefined && cs.manualMaterials !== null) {
+                                    // PRIORIDAD ALTA: Usar selección manual
+                                    console.log(`⚠️ Usando selección manual (Prioridad Alta) para ${cs.name}`);
+                                    setSelectedMaterials(cs.manualMaterials);
+                                  } else {
+                                    // FALLBACK: Solo si NO existe manualMaterials, buscar en recetas antiguas
+                                    console.log(`🔍 Cargando desde recetas antiguas para ${cs.name}`);
+                                    
+                                    const legacyRecipe = materialRecipes.find(
+                                      r => r.serviceId === cs.id || r.serviceName.toLowerCase() === cs.name.toLowerCase()
+                                    );
+                                    
+                                    const legacyMaterialIds: string[] = [];
+                                    
+                                    if (legacyRecipe) {
+                                      for (const chemicalIdOrName of legacyRecipe.chemicalIds) {
+                                        // Primero intentar encontrar por ID exacto
+                                        let matchedProduct = chemicalProducts.find(p => p.id === chemicalIdOrName);
+                                        
+                                        // Si no se encuentra por ID, buscar por nombre normalizado
+                                        if (!matchedProduct) {
+                                          const normalizedSearch = chemicalIdOrName.toLowerCase().replace(/_/g, ' ').trim();
+                                          matchedProduct = chemicalProducts.find(p => {
+                                            const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+                                            return normalizedProductName === normalizedSearch || 
+                                                   normalizedProductName.includes(normalizedSearch) ||
+                                                   normalizedSearch.includes(normalizedProductName);
+                                          });
+                                        }
+                                        
+                                        // Si encontramos coincidencia, agregar el ID del producto
+                                        if (matchedProduct) {
+                                          legacyMaterialIds.push(matchedProduct.id);
+                                        }
+                                      }
+                                    }
+                                    
+                                    setSelectedMaterials(legacyMaterialIds);
+                                  }
+                                }}
+                                className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 hover:scale-110 active:scale-90"
+                                title="Editar"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleToggleCatalogService(cs.id, cs.active)
+                                }
+                                className={`p-2 rounded-lg transition-colors ${
+                                  cs.active
+                                    ? "text-slate-400 hover:text-orange-500 hover:bg-orange-50"
+                                    : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                } transition-all duration-200 hover:scale-110 active:scale-90`}
+                                title={cs.active ? "Desactivar" : "Activar"}
+                              >
+                                {cs.active ? (
+                                  <XCircle size={16} />
+                                ) : (
+                                  <CheckCircle size={16} />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCatalogService(cs.id)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 hover:scale-110 active:scale-90"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })
@@ -1420,7 +1544,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   <PlusCircle size={20} className="text-purple-600" />
                   Agregar Nuevo Producto Químico
                </h5>
-               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+               <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
               <input
                 type="text"
                 placeholder="Nombre producto (ej: Alcohol)"
@@ -1487,6 +1611,30 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   })
                 }
               />
+              <input
+                type="number"
+                placeholder="Stock (uds)"
+                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                value={newChemicalProduct.stock}
+                onChange={(e) =>
+                  setNewChemicalProduct({
+                    ...newChemicalProduct,
+                    stock: e.target.value,
+                  })
+                }
+              />
+              <input
+                type="number"
+                placeholder="Usos/unidad"
+                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                value={newChemicalProduct.yieldPerUnit}
+                onChange={(e) =>
+                  setNewChemicalProduct({
+                    ...newChemicalProduct,
+                    yieldPerUnit: e.target.value,
+                  })
+                }
+              />
               <button
                 onClick={handleAddChemicalProduct}
                 disabled={isSubmitting}
@@ -1539,36 +1687,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
                       {/* Body Statistics */}
                       <div className="space-y-3 mb-6">
-                         <div className={`p-3 rounded-lg ${isLowStock ? 'bg-orange-50 border border-orange-100' : 'bg-slate-50 border border-slate-100'}`}>
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="text-sm text-slate-600 font-medium">Control de Existencias</span>
-                                {isLowStock && <AlertTriangle size={16} className="text-orange-500 animate-pulse" />}
-                            </div>
-                             
-                             <div className="space-y-2">
-                                <div className="flex items-baseline justify-between">
-                                    <span className="text-xs text-slate-500">Stock Físico:</span>
-                                    <span className={`font-bold ${isLowStock ? 'text-orange-600' : 'text-slate-800'}`}>
-                                       {product.stock} unid.
-                                    </span>
-                                </div>
-                                
-                                <div className="flex items-baseline justify-between">
-                                    <span className="text-xs text-slate-500">Uso (Envase en uso):</span>
-                                    <span className="font-medium text-purple-700 text-sm">
-                                       {product.currentYieldRemaining ?? (product.yieldPerUnit || product.yield)} / {product.yieldPerUnit || product.yield}
-                                    </span>
-                                </div>
-
-                                {/* Visual Bar for Yield Usage */}
-                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                    <div 
-                                      className="bg-purple-500 h-1.5 rounded-full transition-all duration-500" 
-                                      style={{ 
-                                        width: `${Math.min(100, Math.max(0, ((product.currentYieldRemaining ?? (product.yieldPerUnit || product.yield)) / (product.yieldPerUnit || product.yield || 1)) * 100))}%` 
-                                      }}
-                                    ></div>
-                                </div>
+                         <div className={`flex flex-col p-3 rounded-lg ${isLowStock ? 'bg-orange-50 border border-orange-100' : 'bg-slate-50 border border-slate-100'}`}>
+                            <span className="text-xs text-slate-400 mb-2 uppercase font-bold tracking-wider">Inventario</span>
+                            <div className="flex items-center gap-2">
+                                {isLowStock && <AlertTriangle size={18} className="text-orange-500 animate-pulse" />}
+                                <span className={`text-sm font-semibold ${isLowStock ? 'text-orange-600' : 'text-slate-700'}`}>
+                                   Stock: {product.stock} uds. | Uso: {product.currentYieldRemaining || product.yieldPerUnit || product.yield}/{product.yieldPerUnit || product.yield}
+                                </span>
                              </div>
                          </div>
 
@@ -1823,6 +1948,178 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       )}
       </div>
     </div>
+      
+      {/* Slide-over para Edición de Servicio con Materiales */}
+      {editingServiceItem && (
+        <div className="fixed inset-0 z-60 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setEditingServiceItem(null)}
+          />
+
+          {/* Panel */}
+          <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-purple-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Editar Servicio</h3>
+                <p className="text-sm text-gray-500">Configuración y materiales</p>
+              </div>
+              <button 
+                onClick={() => setEditingServiceItem(null)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Información Básica */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <ShoppingCart size={18} className="text-purple-600" />
+                   Información del Servicio
+                </h4>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Nombre del Servicio</label>
+                  <input
+                    type="text"
+                    value={editServiceForm.name || ""}
+                    onChange={(e) => setEditServiceForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Categoría</label>
+                      <select
+                        value={editServiceForm.category || "manicura"}
+                        onChange={(e) => setEditServiceForm(prev => ({ ...prev, category: e.target.value as "manicura" | "pedicura" }))}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                      >
+                         <option value="manicura">Manicura</option>
+                         <option value="pedicura">Pedicura</option>
+                      </select>
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Precio Base</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editServiceForm.basePrice ?? ""}
+                          onChange={(e) => setEditServiceForm(prev => ({ ...prev, basePrice: parseFloat(e.target.value) }))}
+                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                        />
+                      </div>
+                   </div>
+                </div>
+              </div>
+
+              {/* Vincular Materiales */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Beaker size={18} className="text-green-600" />
+                   Vincular Materiales
+                </h4>
+                
+                <p className="text-sm text-gray-500">
+                  Selecciona los productos químicos que se utilizan en este servicio
+                </p>
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
+                  {chemicalProducts.length === 0 ? (
+                    <div className="p-6 text-center">
+                      <Beaker size={48} className="mx-auto text-gray-300 mb-3" />
+                      <p className="text-sm text-gray-400">No hay productos químicos disponibles</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {chemicalProducts
+                        .filter(p => p.active)
+                        .map((product) => {
+                          const isLowStock = product.stock <= product.minStock;
+                          const currentYield = product.currentYieldRemaining || product.yieldPerUnit || product.yield || 0;
+                          const totalYield = product.yieldPerUnit || product.yield || 0;
+                          
+                          return (
+                            <label
+                              key={product.id}
+                              className={`flex items-start gap-3 p-4 hover:bg-purple-50 cursor-pointer transition-colors ${
+                                selectedMaterials.includes(product.id) ? 'bg-purple-50/50' : ''
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedMaterials.includes(product.id)}
+                                onChange={() => handleToggleMaterial(product.id)}
+                                className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <p className="font-semibold text-gray-800 truncate">{product.name}</p>
+                                  {isLowStock && (
+                                    <span className="shrink-0 px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full">
+                                      BAJO STOCK
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <p className="text-xs text-gray-600">
+                                    <span className="font-medium">Presentación:</span> {product.quantity} {product.unit}
+                                  </p>
+                                  <p className={`text-xs font-semibold ${isLowStock ? 'text-orange-600' : 'text-slate-700'}`}>
+                                    Stock: {product.stock} uds. | Uso: {currentYield}/{totalYield}
+                                  </p>
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                {selectedMaterials.length > 0 && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-purple-600" />
+                      <p className="text-sm font-semibold text-purple-800">
+                        {selectedMaterials.length} material{selectedMaterials.length !== 1 ? 'es' : ''} seleccionado{selectedMaterials.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <button
+                onClick={() => setEditingServiceItem(null)}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (editingServiceItem && editServiceForm) {
+                    handleUpdateServiceWithMaterials(editingServiceItem.id, editServiceForm);
+                  }
+                }}
+                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Slide-over para Edición de Producto Químico */}
       {editingProduct && (
         <div className="fixed inset-0 z-60 flex justify-end">
@@ -1918,12 +2215,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <label className="text-sm font-medium text-gray-600">Rendimiento (Servicios)</label>
                       <input
                         type="number"
-                        value={editChemicalForm.yield ?? editChemicalForm.yieldPerUnit ?? ""}
-                        onChange={(e) => setEditChemicalForm(prev => ({ 
-                          ...prev, 
-                          yield: parseFloat(e.target.value),
-                          yieldPerUnit: parseFloat(e.target.value)
-                        }))}
+                        value={editChemicalForm.yield ?? ""}
+                        onChange={(e) => setEditChemicalForm(prev => ({ ...prev, yield: parseFloat(e.target.value) }))}
                         className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                       />
                     </div>
@@ -1931,6 +2224,33 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </div>
 
               {/* Inventario */}
+              {/* Rendimiento por Unidad */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Percent size={18} className="text-purple-600" />
+                   Rendimiento por Unidad
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Usos por Unidad</label>
+                      <input
+                        type="number"
+                        value={editChemicalForm.yieldPerUnit ?? ""}
+                        onChange={(e) => setEditChemicalForm(prev => ({ ...prev, yieldPerUnit: parseFloat(e.target.value) }))}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Usos Restantes</label>
+                      <input
+                        type="number"
+                        value={editChemicalForm.currentYieldRemaining ?? ""}
+                        onChange={(e) => setEditChemicalForm(prev => ({ ...prev, currentYieldRemaining: parseFloat(e.target.value) }))}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                      />
+                    </div>
+                </div>
+              </div>
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
                    <AlertTriangle size={18} className="text-orange-500" />
@@ -2380,171 +2700,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
 
 
-
-      {/* Slide-over para Edición de Servicios */}
-      {editingServiceItem && (
-        <div className="fixed inset-0 z-60 flex justify-end">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
-            onClick={() => setEditingServiceItem(null)}
-          />
-
-          {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-purple-50/50">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">Editar Servicio</h3>
-                <p className="text-sm text-gray-500">Configuración y materiales</p>
-              </div>
-              <button 
-                onClick={() => setEditingServiceItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              
-              {/* Información Básica */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <ShoppingCart size={18} className="text-purple-600" />
-                   Detalles del Servicio
-                </h4>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Servicio</label>
-                  <input
-                    type="text"
-                    value={editServiceForm.name || ""}
-                    onChange={(e) => setEditServiceForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Categoría</label>
-                       <select
-                          value={editServiceForm.category || "manicura"}
-                          onChange={(e) =>
-                            setEditServiceForm({
-                              ...editServiceForm,
-                              category: e.target.value as "manicura" | "pedicura",
-                            })
-                          }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none bg-white"
-                        >
-                          <option value="manicura">Manicura</option>
-                          <option value="pedicura">Pedicura</option>
-                        </select>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Precio Base</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={editServiceForm.basePrice ?? ""}
-                          onChange={(e) => setEditServiceForm(prev => ({ ...prev, basePrice: parseFloat(e.target.value) }))}
-                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none font-bold"
-                        />
-                      </div>
-                   </div>
-                </div>
-
-                 {/* Estado Activo */}
-                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <div>
-                       <span className="block font-semibold text-gray-700">Estado del Servicio</span>
-                       <span className="text-xs text-gray-500">Visible en el catálogo de ventas</span>
-                    </div>
-                    <button
-                      onClick={() => setEditServiceForm(prev => ({ ...prev, active: !prev.active }))}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        editServiceForm.active ? 'bg-emerald-500' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          editServiceForm.active ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                 </div>
-              </div>
-
-              {/* Insumos Vinculados */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <Beaker size={18} className="text-blue-600" />
-                   Insumos Químicos (Descuento automático)
-                </h4>
-                
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
-                   {chemicalProducts.filter(c => c.active).length === 0 ? (
-                      <p className="text-sm text-gray-500 italic text-center py-2">No hay productos químicos activos.</p>
-                   ) : (
-                      chemicalProducts.filter(c => c.active).map(chemical => {
-                          const isSelected = (editServiceForm.linkedChemicals || []).includes(chemical.id);
-                          return (
-                             <label key={chemical.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'bg-purple-50 border-purple-200 shadow-sm' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
-                                   {isSelected && <CheckCircle size={14} className="text-white" />}
-                                </div>
-                                <input 
-                                   type="checkbox" 
-                                   className="hidden"
-                                   checked={isSelected}
-                                   onChange={() => {
-                                      const current = editServiceForm.linkedChemicals || [];
-                                      const updated = isSelected 
-                                         ? current.filter(id => id !== chemical.id)
-                                         : [...current, chemical.id];
-                                      setEditServiceForm(prev => ({ ...prev, linkedChemicals: updated }));
-                                   }}
-                                />
-                                <div className="flex-1">
-                                   <p className={`text-sm font-medium ${isSelected ? 'text-purple-900' : 'text-gray-700'}`}>{chemical.name}</p>
-                                   <p className="text-xs text-slate-500">{chemical.yieldPerUnit || chemical.yield} serv / {chemical.unit}</p>
-                                </div>
-                             </label>
-                          )
-                      })
-                   )}
-                </div>
-                <p className="text-xs text-gray-500">
-                   * Al realizar este servicio, se descontará 1 uso del "Rendimiento Restante" de cada producto seleccionado.
-                </p>
-              </div>
-
-            </div>
-
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
-              <button
-                onClick={() => setEditingServiceItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  if (editingServiceItem && editServiceForm) {
-                    handleUpdateCatalogService(editingServiceItem.id, editServiceForm);
-                    setEditingServiceItem(null);
-                  }
-                }}
-                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
-              >
-                Guardar Cambios
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

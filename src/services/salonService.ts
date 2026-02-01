@@ -21,8 +21,10 @@ import type {
   PaymentMethod,
   Service,
   MaterialRecipe,
+  ChemicalProduct,
+  CatalogService,
 } from "../types";
-import { deductConsumables, calculateTotalReplenishmentCost } from "./inventoryService";
+import { deductConsumables, calculateTotalReplenishmentCost, deductInventoryByRecipe } from "./inventoryService";
 
 export interface NewServiceState {
   date: string;
@@ -63,6 +65,8 @@ export const addService = async (
   currentUser: AppUser,
   newService: NewServiceState,
   materialRecipes: MaterialRecipe[],
+  chemicalProducts: ChemicalProduct[],
+  catalogServices: CatalogService[], // Nuevo parámetro
   totalCost: number,
 ): Promise<void> => {
   if (!newService.client || newService.services.length === 0) {
@@ -153,6 +157,19 @@ export const addService = async (
   if (newService.category) {
     await deductConsumables(newService.category);
   }
+
+  // ====== DESCUENTO DE INVENTARIO BASADO EN RECETAS ======
+  // Tarea 3: No cerrar ventana hasta que termine la operación
+  for (const serviceItem of newService.services) {
+    await deductInventoryByRecipe(
+      serviceItem.serviceId,
+      serviceItem.serviceName,
+      materialRecipes,
+      chemicalProducts,
+      catalogServices // Pasar catalogServices
+    );
+  }
+  // ========================================
 };
 
 export const updateService = async (

@@ -1,4 +1,4 @@
-
+import type { DocumentData } from "firebase/firestore";
 
 export type Role = "owner" | "staff";
 
@@ -78,8 +78,8 @@ export type CatalogService = {
   name: string;
   category: "manicura" | "pedicura";
   basePrice: number;
-  linkedChemicals?: string[];
   active: boolean;
+  manualMaterials?: string[]; // IDs de productos químicos seleccionados manualmente
 };
 
 export type Consumable = {
@@ -117,12 +117,12 @@ export type ChemicalProduct = {
   quantity: number;
   unit: "ml" | "kg" | "L" | "g" | "unid";
   purchasePrice: number;
-  yield: number; // Historical/Legacy field, now effectively yieldPerUnit
-  yieldPerUnit?: number;
-  currentYieldRemaining?: number;
+  yield: number;
   costPerService: number;
   stock: number;
   minStock: number;
+  yieldPerUnit?: number; // Rendimiento por botella/unidad
+  currentYieldRemaining?: number; // Usos restantes de la botella actual
   active: boolean;
 };
 

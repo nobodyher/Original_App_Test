@@ -24,6 +24,7 @@ import type {
   Consumable,
   CatalogExtra,
   MaterialRecipe,
+  ChemicalProduct,
   Toast,
   Filters,
 } from "../../types";
@@ -37,6 +38,7 @@ interface StaffScreenProps {
   catalogExtras: CatalogExtra[];
   materialRecipes: MaterialRecipe[];
   consumables: Consumable[];
+  chemicalProducts: ChemicalProduct[];
   notification: Toast | null;
   showNotification: (message: string, type?: Toast["type"]) => void;
   onLogout: () => void;
@@ -44,6 +46,7 @@ interface StaffScreenProps {
     user: AppUser,
     data: NewServiceState,
     recipes: MaterialRecipe[],
+    chemicalProducts: ChemicalProduct[],
     total: number
   ) => Promise<void>;
   updateService: (id: string, data: Partial<Service>) => Promise<void>;
@@ -72,6 +75,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   catalogServices,
   catalogExtras,
   materialRecipes,
+  chemicalProducts,
   notification,
   showNotification,
   onLogout,
@@ -203,7 +207,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
     if (!currentUser) return;
     setIsSubmitting(true);
     try {
-      await addService(currentUser, newService, materialRecipes, totalCost);
+      await addService(currentUser, newService, materialRecipes, chemicalProducts, totalCost);
       setNewService({
         date: new Date().toISOString().split("T")[0],
         client: "",

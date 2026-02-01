@@ -120,11 +120,14 @@ const SalonApp = () => {
       catalogServices={catalogServices}
       catalogExtras={catalogExtras}
       materialRecipes={materialRecipes}
+      chemicalProducts={chemicalProducts}
       consumables={consumables}
       notification={notification}
       showNotification={showNotification}
       onLogout={() => setCurrentUser(null)}
-      addService={salonService.addService}
+      addService={(user, data, recipes, chemProducts, total) => 
+        salonService.addService(user, data, recipes, chemProducts, catalogServices, total)
+      }
       updateService={salonService.updateService}
       softDeleteService={salonService.softDeleteService}
     />

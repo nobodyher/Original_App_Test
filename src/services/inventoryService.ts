@@ -405,3 +405,131 @@ export const calculateTotalReplenishmentCost = (
 
   return totalCost;
 };
+
+// ====== Recipe-Based Inventory Deduction ======
+
+export const deductInventoryByRecipe = async (
+  serviceId: string,
+  serviceName: string,
+  materialRecipes: MaterialRecipe[],
+  chemicalProducts: ChemicalProduct[],
+  catalogServices: CatalogService[] = [] // Nuevo parámetro para acceder a manualMaterials
+): Promise<void> => {
+  try {
+    // Tarea 2: Sincronización en el Cobro (Staff)
+    // Aplicar regla de prioridad:
+    
+    // Buscar servicio en catálogo
+    const catalogService = catalogServices.find(
+      (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+    );
+    
+    let materialsToDeduct: string[] = [];
+    
+    // SI manualMaterials existe (incluso si está vacío), usar SOLO eso
+    if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
+      // PRIORIDAD ALTA: Usar selección manual
+      materialsToDeduct = catalogService.manualMaterials;
+      console.log(`⚠️ Usando selección manual (Prioridad Alta) para ${serviceName}`);
+      console.log(`   - Materiales manuales: ${materialsToDeduct.length}`);
+    } else {
+      // FALLBACK: Solo si NO existe manualMaterials, buscar en recetas antiguas
+      console.log(`🔍 Usando recetas antiguas (Fallback) para ${serviceName}`);
+      
+      const recipe = materialRecipes.find(
+        (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
+      );
+      
+      materialsToDeduct = recipe ? recipe.chemicalIds : [];
+      console.log(`   - Recetas antiguas: ${materialsToDeduct.length}`);
+    }
+    
+    if (materialsToDeduct.length === 0) {
+      console.log(`⚠️ No se encontraron materiales para: ${serviceName}`);
+      return;
+    }
+
+    // Tarea 3: Ejecución del Rendimiento para cada material
+    for (const chemicalId of materialsToDeduct) {
+      // Primero intentar buscar por ID en el array local
+      let product = chemicalProducts.find((p) => p.id === chemicalId);
+      let productRef = null;
+      let productSnap = null;
+      
+      // Si no se encuentra por ID, buscar por nombre en Firestore (fallback)
+      if (!product) {
+        console.log(`🔍 Buscando producto por nombre: ${chemicalId}`);
+        
+        // Normalizar el nombre para búsqueda (quitar guiones bajos, espacios, minúsculas)
+        const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
+        
+        // Buscar en todos los productos químicos
+        const chemicalProductsRef = collection(db, "chemical_products");
+        const allProductsSnap = await getDocs(chemicalProductsRef);
+        
+        // Buscar coincidencia por nombre (ignorando mayúsculas y espacios)
+        for (const docSnap of allProductsSnap.docs) {
+          const data = docSnap.data() as ChemicalProduct;
+          const normalizedProductName = data.name.toLowerCase().replace(/_/g, ' ').trim();
+          
+          if (normalizedProductName === normalizedSearchName || 
+              normalizedProductName.includes(normalizedSearchName) ||
+              normalizedSearchName.includes(normalizedProductName)) {
+            product = { ...data, id: docSnap.id };
+            productRef = doc(db, "chemical_products", docSnap.id);
+            productSnap = docSnap;
+            console.log(`✅ Producto encontrado por nombre: ${data.name} (ID: ${docSnap.id})`);
+            break;
+          }
+        }
+      } else {
+        // Si se encontró por ID, obtener referencia de Firestore
+        productRef = doc(db, "chemical_products", chemicalId);
+      }
+      
+      if (!product || !productRef) {
+        console.log(`⚠️ Producto químico no encontrado: ${chemicalId}`);
+        continue;
+      }
+
+      // Verificar que el documento existe en Firestore
+      if (!productSnap) {
+        productSnap = await getDoc(productRef);
+      }
+
+      if (!productSnap.exists()) {
+        console.log(`⚠️ Producto no existe en Firestore: ${product.name}`);
+        continue;
+      }
+
+      const currentData = productSnap.data() as ChemicalProduct;
+      
+      // Inicializar valores si no existen
+      let currentYieldRemaining = currentData.currentYieldRemaining ?? currentData.yieldPerUnit ?? currentData.yield ?? 1;
+      let stock = currentData.stock ?? 0;
+      const yieldPerUnit = currentData.yieldPerUnit ?? currentData.yield ?? 1;
+
+      // Aplicar fórmula: currentYieldRemaining = currentYieldRemaining - 1
+      currentYieldRemaining = currentYieldRemaining - 1;
+
+      // Regla de reposición: Si currentYieldRemaining <= 0
+      if (currentYieldRemaining <= 0) {
+        stock = Math.max(0, stock - 1); // Abrir nueva botella
+        currentYieldRemaining = yieldPerUnit; // Resetear rendimiento
+        console.log(`🔄 Nueva botella abierta: ${product.name} (Stock restante: ${stock})`);
+      }
+
+      // Actualizar Firestore
+      await updateDoc(productRef, {
+        currentYieldRemaining,
+        stock,
+      });
+
+      console.log(`✅ Descuento aplicado: ${product.name} (${currentYieldRemaining}/${yieldPerUnit})`);
+    }
+  } catch (error) {
+    console.error(`❌ Error al descontar inventario:`, error);
+    // No lanzamos error para no interrumpir el flujo principal
+  }
+};
+
