@@ -219,6 +219,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [editExtraForm, setEditExtraForm] = useState<Partial<CatalogExtra>>({});
   // Consumables Editing State (Slide-over)
   const [editingConsumableItem, setEditingConsumableItem] = useState<Consumable | null>(null);
+  const [addingConsumableItem, setAddingConsumableItem] = useState(false);
   
   // Clients State
   const [clientsPage, setClientsPage] = useState(1);
@@ -239,6 +240,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   
   // Chemical Product Editing State (Slide-over)
   const [editingProduct, setEditingProduct] = useState<ChemicalProduct | null>(null);
+  const [addingChemicalProduct, setAddingChemicalProduct] = useState(false);
   const [editChemicalForm, setEditChemicalForm] = useState<Partial<ChemicalProduct>>({});
 
   // Pagination States
@@ -1066,89 +1068,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   {isSubmitting ? 'Migrando...' : 'Migrar Datos'}
                 </button>
               </div>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-6 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
-            <h4 className="md:col-span-6 font-bold text-gray-800 mb-2 flex items-center gap-2">
-               <PlusCircle size={18} className="text-purple-600" />
-               Agregar Nuevo Consumible
-            </h4>
-            <input
-              type="text"
-              placeholder="Nombre"
-              value={newConsumable.name}
-              onChange={(e) =>
-                setNewConsumable({ ...newConsumable, name: e.target.value })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
-            />
-            <input
-              type="text"
-              placeholder="Unidad"
-              value={newConsumable.unit}
-              onChange={(e) =>
-                setNewConsumable({ ...newConsumable, unit: e.target.value })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
-            />
-            <input
-              type="number"
-              step="0.01"
-              placeholder="Precio de compra"
-              value={newConsumable.purchasePrice}
-              onChange={(e) =>
-                setNewConsumable({
-                  ...newConsumable,
-                  purchasePrice: e.target.value,
-                })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
-            />
-            <input
-              type="number"
-              step="1"
-              placeholder="Tamaño del paquete"
-              value={newConsumable.packageSize}
-              onChange={(e) =>
-                setNewConsumable({
-                  ...newConsumable,
-                  packageSize: e.target.value,
-                })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
-            />
-            <input
-              type="number"
-              placeholder="Stock inicial"
-              value={newConsumable.stockQty}
-              onChange={(e) =>
-                setNewConsumable({
-                  ...newConsumable,
-                  stockQty: e.target.value,
-                })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
-            />
-            <input
-              type="number"
-              placeholder="Alerta mínima"
-              value={newConsumable.minStockAlert}
-              onChange={(e) =>
-                setNewConsumable({
-                  ...newConsumable,
-                  minStockAlert: e.target.value,
-                })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
-            />
+          {/* Botón para agregar nuevo consumible */}
+          <div className="mb-6">
             <button
-              onClick={handleAddConsumable}
-              disabled={isSubmitting}
-              className={`bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold ${
-                isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
-              }`}
+              onClick={() => setAddingConsumableItem(true)}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ease-out font-bold flex items-center justify-center gap-3 group"
             >
-              Agregar
+              <PlusCircle size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+              Agregar Nuevo Consumible
             </button>
           </div>
+
 
           {isTableLoading ? (
              <TableSkeleton />
@@ -1717,113 +1647,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               Productos Químicos
             </h4>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm mb-8">
-               <h5 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <PlusCircle size={20} className="text-purple-600" />
-                  Agregar Nuevo Producto Químico
-               </h5>
-               <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-              <input
-                type="text"
-                placeholder="Nombre producto (ej: Alcohol)"
-                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
-                value={newChemicalProduct.name}
-                onChange={(e) =>
-                  setNewChemicalProduct({
-                    ...newChemicalProduct,
-                    name: e.target.value,
-                  })
-                }
-              />
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Cant."
-                  className="border-2 border-slate-200 p-2.5 rounded-lg w-full transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
-                  value={newChemicalProduct.quantity}
-                  onChange={(e) =>
-                    setNewChemicalProduct({
-                      ...newChemicalProduct,
-                      quantity: e.target.value,
-                    })
-                  }
-                />
-                <select
-                  className="border-2 border-slate-200 p-2.5 rounded-lg bg-white transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none"
-                  value={newChemicalProduct.unit}
-                  onChange={(e) =>
-                    setNewChemicalProduct({
-                      ...newChemicalProduct,
-                      unit: e.target.value,
-                    })
-                  }
-                >
-                  <option value="ml">ml</option>
-                  <option value="L">L</option>
-                  <option value="g">g</option>
-                  <option value="kg">kg</option>
-                  <option value="unid">unid</option>
-                </select>
-              </div>
-              <input
-                type="number"
-                placeholder="Precio ($)"
-                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
-                value={newChemicalProduct.purchasePrice}
-                onChange={(e) =>
-                  setNewChemicalProduct({
-                    ...newChemicalProduct,
-                    purchasePrice: e.target.value,
-                  })
-                }
-              />
-              <input
-                type="number"
-                placeholder="Rendimiento (servicios)"
-                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
-                value={newChemicalProduct.yield}
-                onChange={(e) =>
-                  setNewChemicalProduct({
-                    ...newChemicalProduct,
-                    yield: e.target.value,
-                  })
-                }
-              />
-              <input
-                type="number"
-                placeholder="Stock (uds)"
-                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
-                value={newChemicalProduct.stock}
-                onChange={(e) =>
-                  setNewChemicalProduct({
-                    ...newChemicalProduct,
-                    stock: e.target.value,
-                  })
-                }
-              />
-              <input
-                type="number"
-                placeholder="Usos/unidad"
-                className="border-2 border-slate-200 p-2.5 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
-                value={newChemicalProduct.yieldPerUnit}
-                onChange={(e) =>
-                  setNewChemicalProduct({
-                    ...newChemicalProduct,
-                    yieldPerUnit: e.target.value,
-                  })
-                }
-              />
+            {/* Botón para agregar nuevo producto químico */}
+            <div className="mb-6">
               <button
-                onClick={handleAddChemicalProduct}
-                disabled={isSubmitting}
-                className={`bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-bold ${
-                  isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
-                }`}
+                onClick={() => setAddingChemicalProduct(true)}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ease-out font-bold flex items-center justify-center gap-3 group"
               >
-                Guardar
+                <PlusCircle size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                Agregar Nuevo Producto Químico
               </button>
             </div>
-          </div>
+
 
             {/* Buscador y filtros arriba del todo si se desea, por ahora directo a la tabla */}
            <div className="mb-8">
@@ -2587,6 +2421,219 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
       )}
+      
+      {/* Slide-over para AGREGAR Producto Químico */}
+      {addingChemicalProduct && (
+        <div className="fixed inset-0 z-60 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setAddingChemicalProduct(false)}
+          />
+
+          {/* Panel */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-green-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Agregar Producto Químico</h3>
+                <p className="text-sm text-gray-500">Nuevo producto para el inventario</p>
+              </div>
+              <button 
+                onClick={() => setAddingChemicalProduct(false)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Información Básica */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Beaker size={18} className="text-green-600" />
+                   Información del Producto
+                </h4>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Nombre del Producto</label>
+                  <input
+                    type="text"
+                    placeholder="ej. Gel Constructor, Top Coat, Base Coat"
+                    value={newChemicalProduct.name}
+                    onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Cantidad</label>
+                      <input
+                        type="number"
+                        placeholder="100"
+                        value={newChemicalProduct.quantity}
+                        onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, quantity: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                      />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Unidad</label>
+                      <select
+                        value={newChemicalProduct.unit}
+                        onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, unit: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                      >
+                         <option value="ml">ml</option>
+                         <option value="L">Litros</option>
+                         <option value="g">Gramos</option>
+                         <option value="kg">Kilos</option>
+                         <option value="unid">Unidades</option>
+                      </select>
+                   </div>
+                </div>
+              </div>
+
+              {/* Costos y Rendimiento */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <DollarSign size={18} className="text-green-600" />
+                   Costos y Rendimiento
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Precio de Compra</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={newChemicalProduct.purchasePrice}
+                          onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, purchasePrice: e.target.value }))}
+                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none font-semibold"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Rendimiento Total</label>
+                      <input
+                        type="number"
+                        placeholder="50"
+                        value={newChemicalProduct.yield}
+                        onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, yield: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                      />
+                    </div>
+                </div>
+                
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-semibold">Rendimiento:</span> Número total de servicios que se pueden realizar con todo el producto
+                  </p>
+                </div>
+              </div>
+
+              {/* Rendimiento por Unidad */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Percent size={18} className="text-purple-600" />
+                   Rendimiento por Unidad
+                </h4>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Usos por Unidad (Botella/Paquete)</label>
+                  <input
+                    type="number"
+                    placeholder="25"
+                    value={newChemicalProduct.yieldPerUnit}
+                    onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, yieldPerUnit: e.target.value }))}
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                  />
+                </div>
+                
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-semibold">Ejemplo:</span> Si una botella de 100ml rinde para 25 servicios, ingresa 25
+                  </p>
+                </div>
+              </div>
+
+              {/* Inventario */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <AlertTriangle size={18} className="text-orange-500" />
+                   Inventario Inicial
+                </h4>
+
+                <div className="space-y-2 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                  <label className="text-sm font-bold text-gray-700">Stock Inicial (Unidades)</label>
+                  <input
+                    type="number"
+                    placeholder="5"
+                    value={newChemicalProduct.stock}
+                    onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, stock: e.target.value }))}
+                    className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-200 outline-none transition-all bg-white font-bold text-gray-800"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Número de botellas/paquetes que tienes en inventario
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <button
+                onClick={() => {
+                  setAddingChemicalProduct(false);
+                  setNewChemicalProduct({
+                    name: "",
+                    quantity: "",
+                    unit: "ml",
+                    purchasePrice: "",
+                    yield: "",
+                    stock: "",
+                    yieldPerUnit: "",
+                  });
+                }}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  setIsSubmitting(true);
+                  try {
+                    await handleAddChemicalProduct();
+                    setAddingChemicalProduct(false);
+                    // Reset form after successful add
+                    setNewChemicalProduct({
+                      name: "",
+                      quantity: "",
+                      unit: "ml",
+                      purchasePrice: "",
+                      yield: "",
+                      stock: "",
+                      yieldPerUnit: "",
+                    });
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+                disabled={isSubmitting}
+                className={`flex-1 px-4 py-3 rounded-xl bg-green-600 text-white font-bold shadow-lg shadow-green-200 hover:bg-green-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner ${
+                  isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : ""
+                }`}
+              >
+                {isSubmitting ? "Guardando..." : "Agregar Producto"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Slide-over para Edición de Consumibles */}
       {editingConsumableItem && (
         <div className="fixed inset-0 z-60 flex justify-end">
@@ -2715,6 +2762,191 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
                 Actualizar Consumible
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Slide-over para AGREGAR Consumibles */}
+      {addingConsumableItem && (
+        <div className="fixed inset-0 z-60 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setAddingConsumableItem(false)}
+          />
+
+          {/* Panel */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-blue-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Agregar Consumible</h3>
+                <p className="text-sm text-gray-500">Nuevo insumo para el inventario</p>
+              </div>
+              <button 
+                onClick={() => setAddingConsumableItem(false)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Información Básica */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <Package size={18} className="text-blue-600" />
+                   Información del Consumible
+                </h4>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">Nombre del Consumible</label>
+                  <input
+                    type="text"
+                    placeholder="ej. Algodón, Guantes, Toallas"
+                    value={newConsumable.name}
+                    onChange={(e) => setNewConsumable(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-600">Unidad de Medida</label>
+                   <input
+                     type="text"
+                     placeholder="ej. gramo, unidad, par, metro"
+                     value={newConsumable.unit}
+                     onChange={(e) => setNewConsumable(prev => ({ ...prev, unit: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                   />
+                </div>
+              </div>
+
+              {/* Costos y Paquete */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <DollarSign size={18} className="text-green-600" />
+                   Información de Compra
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Precio de Compra</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={newConsumable.purchasePrice}
+                          onChange={(e) => setNewConsumable(prev => ({ ...prev, purchasePrice: e.target.value }))}
+                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none font-semibold"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Tamaño del Paquete</label>
+                      <input
+                        type="number"
+                        step="1"
+                        placeholder="100"
+                        value={newConsumable.packageSize}
+                        onChange={(e) => setNewConsumable(prev => ({ ...prev, packageSize: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                      />
+                    </div>
+                </div>
+                
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-semibold">Ejemplo:</span> Si compras un paquete de 100 guantes por $13.00, el costo por unidad será $0.13
+                  </p>
+                </div>
+              </div>
+
+              {/* Inventario */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <AlertTriangle size={18} className="text-orange-500" />
+                   Inventario Inicial
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                    <div className="space-y-2">
+                       <label className="text-sm font-bold text-gray-700">Stock Inicial</label>
+                       <input
+                         type="number"
+                         placeholder="100"
+                         value={newConsumable.stockQty}
+                         onChange={(e) => setNewConsumable(prev => ({ ...prev, stockQty: e.target.value }))}
+                         className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-200 outline-none transition-all bg-white font-bold text-gray-800"
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <input
+                         type="number"
+                         placeholder="10"
+                         value={newConsumable.minStockAlert}
+                         onChange={(e) => setNewConsumable(prev => ({ ...prev, minStockAlert: e.target.value }))}
+                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-orange-500 outline-none transition-all bg-white"
+                       />
+                    </div>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-semibold">Nota:</span> Recibirás una alerta cuando el stock llegue al nivel mínimo configurado
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <button
+                onClick={() => {
+                  setAddingConsumableItem(false);
+                  setNewConsumable({
+                    name: "",
+                    unit: "",
+                    purchasePrice: "",
+                    packageSize: "",
+                    stockQty: "",
+                    minStockAlert: "",
+                  });
+                }}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  setIsSubmitting(true);
+                  try {
+                    await handleAddConsumable();
+                    setAddingConsumableItem(false);
+                    // Reset form after successful add
+                    setNewConsumable({
+                      name: "",
+                      unit: "",
+                      purchasePrice: "",
+                      packageSize: "",
+                      stockQty: "",
+                      minStockAlert: "",
+                    });
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+                disabled={isSubmitting}
+                className={`flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner ${
+                  isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : ""
+                }`}
+              >
+                {isSubmitting ? "Guardando..." : "Agregar Consumible"}
               </button>
             </div>
           </div>
