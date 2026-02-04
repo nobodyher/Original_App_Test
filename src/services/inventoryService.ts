@@ -388,7 +388,14 @@ export const deductConsumables = async (
           lastDeducted: new Date().toISOString(),
         });
         
-        console.log(`✅ Descuento: ${consumable.name} (-${item.qty} ${consumable.unit}) → Stock: ${newQty}`);
+        // Log con información de rendimiento
+        const servicesRemaining = newQty; // Asumiendo 1 unidad por servicio
+        console.log(`✅ Descuento: ${consumable.name} (-${item.qty} ${consumable.unit}) → Stock: ${newQty} (${servicesRemaining} servicios restantes)`);
+        
+        // Alerta de stock bajo
+        if (newQty <= consumable.minStockAlert) {
+          console.warn(`⚠️ STOCK BAJO: ${consumable.name} (${newQty}/${consumable.packageSize || 'N/A'})`);
+        }
       } else {
         console.warn(`⚠️ Consumible no encontrado: ${item.consumableId}`);
       }
@@ -577,3 +584,37 @@ export const deductInventoryByRecipe = async (
   }
 };
 
+// ====== Consumables Helper Functions ======
+
+/**
+ * Calcula el costo por unidad de un consumible
+ */
+export const getConsumableCostPerUnit = (consumable: Consumable): number => {
+  if (consumable.purchasePrice && consumable.packageSize) {
+    return consumable.purchasePrice / consumable.packageSize;
+  }
+  // Fallback a unitCost legacy
+  return consumable.unitCost || 0;
+};
+
+/**
+ * Calcula el costo total de consumibles para un servicio
+ */
+export const calculateConsumableCost = (consumable: Consumable, qty: number): number => {
+  const costPerUnit = getConsumableCostPerUnit(consumable);
+  return costPerUnit * qty;
+};
+
+/**
+ * Obtiene el rendimiento (servicios restantes) de un consumible
+ */
+export const getConsumableYield = (consumable: Consumable, qtyPerService: number = 1): number => {
+  return Math.floor(consumable.stockQty / qtyPerService);
+};
+
+/**
+ * Verifica si un consumible está en stock bajo
+ */
+export const isConsumableLowStock = (consumable: Consumable): boolean => {
+  return consumable.stockQty <= consumable.minStockAlert;
+};

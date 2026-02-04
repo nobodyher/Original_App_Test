@@ -174,7 +174,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const [newConsumable, setNewConsumable] = useState({
     name: "",
     unit: "",
-    unitCost: "",
+    purchasePrice: "",
+    packageSize: "",
     stockQty: "",
     minStockAlert: "",
   });
@@ -492,7 +493,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       await addConsumable({
         name: newConsumable.name,
         unit: newConsumable.unit,
-        unitCost: parseFloat(newConsumable.unitCost),
+        purchasePrice: parseFloat(newConsumable.purchasePrice),
+        packageSize: parseFloat(newConsumable.packageSize),
         stockQty: parseFloat(newConsumable.stockQty),
         minStockAlert: parseFloat(newConsumable.minStockAlert),
       });
@@ -500,7 +502,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       setNewConsumable({
         name: "",
         unit: "",
-        unitCost: "",
+        purchasePrice: "",
+        packageSize: "",
         stockQty: "",
         minStockAlert: "",
       });
@@ -1027,10 +1030,42 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
           {activeTab === "consumables" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <Package className="text-blue-600" />
-                Inventario de Consumibles
-              </h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Package className="text-blue-600" />
+                  Inventario de Consumibles
+                </h3>
+                <button
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    try {
+                      const { migrateConsumables } = await import('../../../services/consumablesMigration');
+                      const result = await migrateConsumables();
+                      
+                      console.log('📦 Migración de Consumibles:');
+                      console.log(result.message);
+                      result.details.forEach(d => console.log(d));
+                      
+                      showNotification(result.message, result.success ? 'success' : 'error');
+                      
+                      // Reload page to see updated consumables
+                      if (result.success) {
+                        setTimeout(() => window.location.reload(), 1500);
+                      }
+                    } catch (error: any) {
+                      console.error('Error en migración:', error);
+                      showNotification(`Error: ${error.message}`, 'error');
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Sparkles size={18} />
+                  {isSubmitting ? 'Migrando...' : 'Migrar Datos'}
+                </button>
+              </div>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-6 bg-slate-50 border border-slate-200 rounded-xl shadow-sm">
             <h4 className="md:col-span-6 font-bold text-gray-800 mb-2 flex items-center gap-2">
                <PlusCircle size={18} className="text-purple-600" />
@@ -1057,12 +1092,25 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             <input
               type="number"
               step="0.01"
-              placeholder="Costo/unidad"
-              value={newConsumable.unitCost}
+              placeholder="Precio de compra"
+              value={newConsumable.purchasePrice}
               onChange={(e) =>
                 setNewConsumable({
                   ...newConsumable,
-                  unitCost: e.target.value,
+                  purchasePrice: e.target.value,
+                })
+              }
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
+            />
+            <input
+              type="number"
+              step="1"
+              placeholder="Tamaño del paquete"
+              value={newConsumable.packageSize}
+              onChange={(e) =>
+                setNewConsumable({
+                  ...newConsumable,
+                  packageSize: e.target.value,
                 })
               }
               className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-gray-900 bg-white"
@@ -1108,24 +1156,24 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-100">
+              <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Unidad
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Costo/unidad
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Stock
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
-                    Alerta
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Costo Base
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Costo/Servicio
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Rendimiento
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Acciones
                   </th>
                 </tr>
@@ -1144,27 +1192,107 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 ) : (
                   paginatedConsumables.map((c) => {
                   const isLowStock = c.stockQty <= c.minStockAlert;
+                  
+                  // Calculate cost per unit (with fallback to legacy unitCost)
+                  const costPerUnit = (c.purchasePrice && c.packageSize) 
+                    ? c.purchasePrice / c.packageSize 
+                    : (c.unitCost || 0);
+                  
+                  // Calculate stock percentage for progress bar
+                  const stockPercentage = c.packageSize 
+                    ? Math.min((c.stockQty / c.packageSize) * 100, 100)
+                    : 100;
+                  
+                  // Determine progress bar color
+                  const progressColor = stockPercentage > 50 
+                    ? 'bg-green-500' 
+                    : stockPercentage > 20 
+                      ? 'bg-yellow-500' 
+                      : 'bg-red-500';
 
                   return (
                     <tr
                       key={c.id}
-                      className={`border-b hover:bg-gray-100/80 transition-colors duration-200 ${
-                        isLowStock ? "bg-orange-50" : ""
+                      className={`border-b hover:bg-blue-50/30 transition-all duration-200 ${ 
+                        isLowStock ? "bg-orange-50/50" : ""
                       }`}
                     >
-                      <td className="px-4 py-3 text-sm font-medium">
-                        {c.name}
+                      {/* Nombre */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Package size={16} className="text-blue-600" />
+                          <span className="text-sm font-medium text-gray-900">{c.name}</span>
+                          {isLowStock && (
+                            <span className="px-2 py-0.5 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full">
+                              BAJO STOCK
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-sm">{c.unit}</td>
-                      <td className="px-4 py-3 text-sm">
-                        ${c.unitCost.toFixed(2)}
+                      
+                      {/* Stock con barra de progreso */}
+                      <td className="px-4 py-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-bold text-gray-900">
+                              {c.stockQty} {c.unit}
+                            </span>
+                            {c.packageSize && (
+                              <span className="text-xs text-gray-500">
+                                / {c.packageSize}
+                              </span>
+                            )}
+                          </div>
+                          {c.packageSize && (
+                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                              <div
+                                className={`h-full ${progressColor} transition-all duration-300 rounded-full`}
+                                style={{ width: `${stockPercentage}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold">
-                        {c.stockQty} {c.unit}
+                      
+                      {/* Costo Base */}
+                      <td className="px-4 py-3">
+                        {c.purchasePrice && c.packageSize ? (
+                          <div className="text-sm">
+                            <div className="font-semibold text-gray-900">
+                              ${c.purchasePrice.toFixed(2)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {c.packageSize} {c.unit}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">N/A</span>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-sm">
-                        {c.minStockAlert}
+                      
+                      {/* Costo por Servicio */}
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-semibold text-blue-600">
+                          ${costPerUnit.toFixed(3)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          por {c.unit}
+                        </div>
                       </td>
+                      
+                      {/* Rendimiento */}
+                      <td className="px-4 py-3">
+                        <div className="text-sm">
+                          <div className="font-bold text-gray-900">
+                            {c.stockQty} servicios
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            restantes
+                          </div>
+                        </div>
+                      </td>
+                      
+                      {/* Acciones */}
                       <td className="px-4 py-3 flex gap-2">
                         <button
                           onClick={() => {

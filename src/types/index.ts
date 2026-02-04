@@ -87,10 +87,20 @@ export type Consumable = {
   id: string;
   name: string;
   unit: string;
-  unitCost: number;
-  stockQty: number;
-  minStockAlert: number;
+  
+  // Inventory tracking
+  stockQty: number;              // Cantidad actual en stock
+  minStockAlert: number;         // Alerta de stock mínimo
+  
+  // Purchase information
+  purchasePrice: number;         // Precio de compra del paquete completo
+  packageSize: number;           // Cantidad en el paquete (ej: 50 pares, 100 unidades)
+  
+  // Legacy field (keep for backward compatibility)
+  unitCost?: number;             // Deprecated: use purchasePrice/packageSize instead
+  
   active: boolean;
+  category?: string;
 };
 
 export type RecipeItem = {
