@@ -267,7 +267,7 @@ export const addConsumable = async (
    if (
         !consumable.name ||
         !consumable.unit ||
-        consumable.unitCost < 0 ||
+        (consumable.unitCost ?? 0) < 0 ||
         consumable.stockQty < 0 ||
         consumable.minStockAlert < 0
       ) {

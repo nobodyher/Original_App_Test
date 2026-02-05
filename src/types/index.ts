@@ -101,6 +101,7 @@ export type Consumable = {
   
   active: boolean;
   category?: string;
+  yieldPerUnit?: number; // Rendimiento estimado por unidad/paquete
 };
 
 export type RecipeItem = {
