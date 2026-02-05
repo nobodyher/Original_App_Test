@@ -41,12 +41,20 @@ interface OwnerDashboardProps {
   chemicalProducts: ChemicalProduct[];  // NEW
   showNotification: (message: string, type?: Toast["type"]) => void;
   // Actions
-  addExpense: (data: any) => Promise<void>;
+  addExpense: (data: Omit<Expense, "id">) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   updateServiceCost: (id: string, cost: number) => Promise<void>;
   softDeleteService: (id: string, userId?: string) => Promise<void>; // Admin version
   permanentlyDeleteService: (id: string) => Promise<void>;
   restoreDeletedService: (id: string) => Promise<void>;
+}
+
+interface ExpenseFormState {
+  date: string;
+  description: string;
+  category: string;
+  amount: number | "";
+  userId: string;
 }
 
 const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
@@ -76,7 +84,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   const [showCategoryList, setShowCategoryList] = useState(false);
   const [showStaffList, setShowStaffList] = useState(false);
 
-  const [newExpense, setNewExpense] = useState({
+  const [newExpense, setNewExpense] = useState<ExpenseFormState>({
     date: new Date().toISOString().split("T")[0],
     description: "",
     category: "Agua",
@@ -90,6 +98,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     setServicesPage(1);
     setExpensesPage(1);
   }, [ownerFilters]);
@@ -103,9 +112,10 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       await updateServiceCost(serviceId, newCost);
       setEditingServiceId(null);
       showNotification("Costo actualizado");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error actualizando costo:", error);
-      showNotification(error.message || "Error al actualizar", "error");
+      const message = error instanceof Error ? error.message : "Error al actualizar";
+      showNotification(message, "error");
     }
   };
 
@@ -159,7 +169,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         date: newExpense.date,
         description: newExpense.description,
         category: newExpense.category,
-        amount: parseFloat(newExpense.amount),
+        amount: newExpense.amount === "" ? 0 : newExpense.amount,
         userId: newExpense.userId,
       });
 
@@ -171,9 +181,10 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         userId: "",
       });
       showNotification("Gasto agregado");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error agregando gasto:", error);
-      showNotification(error.message || "Error al agregar gasto", "error");
+      const message = error instanceof Error ? error.message : "Error al agregar gasto";
+      showNotification(message, "error");
     }
   };
 
@@ -733,7 +744,13 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                            type="number"
                            placeholder="$0.00"
                            value={newExpense.amount}
-                           onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                           onChange={(e) => {
+                             const val = e.target.value;
+                             setNewExpense({ 
+                               ...newExpense, 
+                               amount: val === "" ? "" : parseFloat(val) 
+                             });
+                           }}
                            className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all outline-none font-medium text-gray-700"
                         />
                      </div>

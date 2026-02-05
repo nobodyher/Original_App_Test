@@ -47,6 +47,10 @@ export type Service = {
   deleted?: boolean;
 };
 
+export type CreateServicePayload = Omit<Service, "id"> & {
+  timestamp?: any;
+};
+
 export type Expense = {
   id: string;
   date: string;
@@ -101,7 +105,6 @@ export type Consumable = {
   
   active: boolean;
   category?: string;
-  yieldPerUnit?: number; // Rendimiento estimado por unidad/paquete
 };
 
 export type RecipeItem = {

@@ -25,6 +25,7 @@ import type {
   Consumable,
   ChemicalProduct,
   CatalogService,
+  CreateServicePayload,
 } from "../types";
 import { deductConsumables, calculateTotalReplenishmentCost, deductInventoryByRecipe } from "./inventoryService";
 
@@ -91,7 +92,7 @@ export const addService = async (
     chemicalProducts
   );
 
-  const serviceData: any = {
+  const serviceData: CreateServicePayload = {
     userId: currentUser.id,
     userName: currentUser.name,
     date: newService.date,

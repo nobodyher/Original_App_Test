@@ -19,7 +19,6 @@ import type {
   Service,
   ServiceItem,
   ExtraItem,
-  PaymentMethod,
   CatalogService,
   Consumable,
   CatalogExtra,
@@ -58,7 +57,7 @@ const EmptyState = ({
   title, 
   message 
 }: { 
-  icon: any, 
+  icon: React.ElementType, 
   title: string, 
   message: string 
 }) => (
@@ -174,7 +173,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
       if (nailsCount === 0) {
         return { ...prev, extras: filtered };
       }
-      const pricePerNail = (extra as any).price || extra.priceSuggested || 0;
+      const pricePerNail = extra.priceSuggested || 0;
       const newExtraItem: ExtraItem = {
         extraId: extra.id,
         extraName: extra.name,
@@ -220,9 +219,10 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
       setTimeout(() => {
           showNotification("Servicio agregado exitosamente");
       }, 200);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error completo:", error);
-      showNotification(`Error: ${error?.message || "Error desconocido"}`, "error");
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      showNotification(`Error: ${message}`, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -364,10 +364,10 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                   
                   {/* Category Buttons (Mobile Friendly) */}
                   <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide">
-                    {["manicura", "pedicura"].map((cat) => (
+                    {(["manicura", "pedicura"] as const).map((cat) => (
                        <button
                           key={cat}
-                          onClick={() => setNewService({ ...newService, category: cat as any })}
+                          onClick={() => setNewService({ ...newService, category: cat })}
                           className={`flex-shrink-0 px-6 py-3 rounded-xl border-2 font-bold transition-all duration-200 active:scale-95 ${
                              newService.category === cat
                                 ? "border-purple-500 bg-purple-50 text-purple-700 shadow-md"
@@ -463,9 +463,9 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                                     >
                                        <div className="flex justify-between items-start mb-2">
                                           <p className={`font-bold text-sm leading-tight ${isActive ? 'text-orange-900' : 'text-gray-700'}`}>{extra.name}</p>
-                                          <span className="text-xs font-semibold bg-white px-2 py-0.5 rounded border border-gray-100">
-                                             ${((extra as any).price || extra.priceSuggested || 0)}
-                                          </span>
+                                           <span className="text-xs font-semibold bg-white px-2 py-0.5 rounded border border-gray-100">
+                                              ${(extra.priceSuggested || 0)}
+                                           </span>
                                        </div>
                                        
                                        <div className="flex items-center justify-between mt-2 bg-white/50 rounded-lg p-1">
