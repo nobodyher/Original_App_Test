@@ -124,6 +124,7 @@ export type CatalogExtra = {
   priceSuggested: number;
   appliesToCategories: string[];
   active: boolean;
+  price?: number;
 };
 
 export type ChemicalProduct = {

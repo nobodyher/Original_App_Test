@@ -127,7 +127,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   showNotification,
   createNewUser,
   updateUser,
-  deactivateUser,
+  // deactivateUser, // Removed as we use updateUser for toggling status
   deleteUserPermanently,
   addCatalogService,
   updateCatalogService,
@@ -284,6 +284,39 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     return chemicalProducts.slice(start, start + CHEMICALS_PER_PAGE);
   }, [chemicalProducts, chemicalsPage]);
 
+  // Dynamic Cost Calculation for Service Editing
+  const totalEstimatedMaterialCost = useMemo(() => {
+    // 1. Chemicals Cost
+    const chemicalsCost = selectedMaterials.reduce((total, chemId) => {
+      const chem = chemicalProducts.find((c) => c.id === chemId);
+      if (!chem) return total;
+      // Use pre-calculated costPerService OR calculate on the fly
+      // costPerService is usually purchasePrice / yield
+      const cost =
+        chem.costPerService || (chem.purchasePrice || 0) / (chem.yield || 1);
+      return total + (Number.isFinite(cost) ? cost : 0);
+    }, 0);
+
+    // 2. Consumables Cost
+    const consumablesCost = selectedConsumables.reduce((total, item) => {
+      const cons = consumables.find((c) => c.id === item.consumableId);
+      if (!cons) return total;
+
+      const unitCost =
+        cons.purchasePrice && cons.packageSize
+          ? cons.purchasePrice / cons.packageSize
+          : cons.unitCost || 0;
+
+      return total + unitCost * item.qty;
+    }, 0);
+
+    return {
+      chemicals: chemicalsCost,
+      consumables: consumablesCost,
+      total: chemicalsCost + consumablesCost,
+    };
+  }, [selectedMaterials, selectedConsumables, chemicalProducts, consumables]);
+
   // Wrappers
   const handleCreateNewUser = async () => {
     setIsSubmitting(true);
@@ -306,9 +339,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         color: "from-blue-500 to-blue-600",
       });
       showNotification("Usuario creado exitosamente");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creando usuario:", error);
-      showNotification(error.message || "Error al crear usuario", "error");
+      const message = error instanceof Error ? error.message : "Error al crear usuario";
+      showNotification(message, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -319,20 +353,34 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       await updateUser(userId, updates);
       setEditingStaffItem(null);
       showNotification("Perfil de usuario actualizado");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error actualizando usuario:", error);
-      showNotification(error.message || "Error al actualizar", "error");
+      const message = error instanceof Error ? error.message : "Error al actualizar";
+      showNotification(message, "error");
     }
   };
 
-  const handleDeactivateUser = async (userId: string) => {
-    if (!window.confirm("¿Desactivar este usuario?")) return;
+  // Refactor: Toggle Status Logic
+  // Nota: El componente padre debe asegurar que la prop 'users' se actualice para reflejar el cambio en la tabla.
+  const handleToggleStaffStatus = async (userId: string) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+
+    const newStatus = !user.active;
+    const action = newStatus ? "activar" : "desactivar";
+
+    if (!window.confirm(`¿Desea ${action} a este empleado?`)) return;
+
     try {
-      await deactivateUser(userId);
-      showNotification("Usuario desactivado");
-    } catch (error: any) {
-      console.error("Error desactivando usuario:", error);
-      showNotification("Error al desactivar", "error");
+      await updateUser(userId, { active: newStatus });
+      showNotification(
+        `Usuario ${action === "activar" ? "activado" : "desactivado"} exitosamente`
+      );
+    } catch (error) {
+      console.error(`Error al ${action} usuario:`, error);
+      const message =
+        error instanceof Error ? error.message : `Error al ${action} usuario`;
+      showNotification(message, "error");
     }
   };
 
@@ -347,7 +395,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     try {
       await deleteUserPermanently(userId);
       showNotification("Usuario eliminado permanentemente");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error eliminando usuario:", error);
       showNotification("Error al eliminar", "error");
     }
@@ -1370,9 +1418,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               .map((user) => (
                 <div
                   key={user.id}
-                  className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col items-center text-center transition-all hover:bg-gray-100/80 hover:shadow-md hover:border-purple-100 group relative ${
-                    !user.active ? "opacity-75 grayscale-[0.5]" : ""
-                  }`}
+                  className={`rounded-2xl shadow-sm border p-6 flex flex-col items-center text-center transition-all hover:shadow-md group relative ${
+                    user.active 
+                      ? "bg-white border-slate-100 hover:bg-gray-100/80 hover:border-purple-100" 
+                      : "bg-red-50/60 border-red-100 hover:bg-red-100/50"
+                  } ${!user.active ? "opacity-90 grayscale-[0.2]" : ""}`}
                 >
                   {/* Status Badge Top Right */}
                   <div className="absolute top-4 right-4">
@@ -1414,7 +1464,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   {/* Actions Footer */}
                   <div className="w-full pt-4 border-t border-slate-50 flex justify-center gap-4">
                      <button
-                        onClick={() => handleDeactivateUser(user.id)}
+                        onClick={() => handleToggleStaffStatus(user.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                              user.active 
                              ? "text-slate-500 hover:text-orange-600 hover:bg-orange-50"
@@ -2222,6 +2272,42 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               </div>
 
             </div>
+
+
+              {/* Cost Summary Section */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-6 mx-6">
+                <h4 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <DollarSign size={16} className="text-gray-500" />
+                  Resumen de Costos Estimados
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-gray-600">
+                    <span>
+                      Costo Químicos ({selectedMaterials.length}):
+                    </span>
+                    <span>
+                      ${totalEstimatedMaterialCost.chemicals.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>
+                      Costo Desechables (
+                      {selectedConsumables.reduce((a, b) => a + b.qty, 0)}):
+                    </span>
+                    <span>
+                      ${totalEstimatedMaterialCost.consumables.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-200 mt-2">
+                    <span className="font-black text-gray-800 uppercase">
+                      Costo Total Materiales:
+                    </span>
+                    <span className="font-black text-green-600 text-lg">
+                      ${totalEstimatedMaterialCost.total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
               <button
@@ -3219,7 +3305,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     <button
                       onClick={() => setEditStaffForm(prev => ({ ...prev, active: !prev.active }))}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        editStaffForm.active ? 'bg-emerald-500' : 'bg-gray-300'
+                        editStaffForm.active ? 'bg-emerald-500' : 'bg-red-500'
                       }`}
                     >
                       <span

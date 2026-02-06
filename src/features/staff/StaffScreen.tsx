@@ -173,7 +173,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
       if (nailsCount === 0) {
         return { ...prev, extras: filtered };
       }
-      const pricePerNail = extra.priceSuggested || 0;
+      const pricePerNail = extra.priceSuggested || extra.price || 0;
       const newExtraItem: ExtraItem = {
         extraId: extra.id,
         extraName: extra.name,
@@ -464,7 +464,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                                        <div className="flex justify-between items-start mb-2">
                                           <p className={`font-bold text-sm leading-tight ${isActive ? 'text-orange-900' : 'text-gray-700'}`}>{extra.name}</p>
                                            <span className="text-xs font-semibold bg-white px-2 py-0.5 rounded border border-gray-100">
-                                              ${(extra.priceSuggested || 0)}
+                                              ${extra.priceSuggested || extra.price || 0}
                                            </span>
                                        </div>
                                        
