@@ -142,7 +142,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
     <div className="space-y-8 pb-10">
       {/* Filtros */}
       <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6 border border-gray-100">
-        <h3 className="text-xl font-black text-gray-800 mb-6 tracking-tight">Filtros de Análisis</h3>
+        <h3 className="text-xl font-black text-[#0F172A] mb-6 tracking-tight">Filtros de Análisis</h3>
         <div className="flex flex-wrap gap-3 mb-6">
           {(["week", "month", "year", "custom"] as const).map((filterType) => (
              <button
@@ -150,8 +150,8 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                onClick={() => setAnalyticsFilter(filterType)}
                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 transform active:scale-95 ${
                  analyticsFilter === filterType
-                   ? "bg-gray-900 text-white shadow-lg shadow-gray-900/20"
-                   : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                   ? "bg-[#3A1078] text-white shadow-lg shadow-[#3A1078]/20"
+                   : "bg-[#F8FAFC] text-[#0F172A] hover:bg-gray-100 hover:text-[#3A1078]"
                }`}
              >
                {filterType === "week" && "Esta Semana"}
@@ -170,7 +170,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                  type="date"
                  value={customDateFrom}
                  onChange={(e) => setCustomDateFrom(e.target.value)}
-                 className="px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-violet-500 focus:outline-none bg-gray-50 font-semibold text-gray-700"
+                 className="px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#3A1078] focus:outline-none bg-[#F8FAFC] font-semibold text-[#0F172A]"
                />
             </div>
             <div className="flex flex-col gap-1">
@@ -179,53 +179,57 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                  type="date"
                  value={customDateTo}
                  onChange={(e) => setCustomDateTo(e.target.value)}
-                 className="px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-violet-500 focus:outline-none bg-gray-50 font-semibold text-gray-700"
+                 className="px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-[#3A1078] focus:outline-none bg-[#F8FAFC] font-semibold text-[#0F172A]"
                />
             </div>
           </div>
         )}
 
         <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
-           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+           <div className="w-2 h-2 rounded-full bg-[#3A1078] animate-pulse"></div>
            <p className="text-sm font-medium text-gray-500">
-             Mostrando datos del: <strong className="text-gray-900">{dateRange.from}</strong> al <strong className="text-gray-900">{dateRange.to}</strong>
+             Mostrando datos del: <strong className="text-[#0F172A]">{dateRange.from}</strong> al <strong className="text-[#0F172A]">{dateRange.to}</strong>
            </p>
         </div>
       </div>
 
       {/* Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-[2rem] shadow-xl shadow-indigo-500/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        {/* Income - Violeta Real */}
+        <div className="bg-gradient-to-br from-[#3A1078] to-[#240A48] text-white rounded-[2rem] shadow-xl shadow-[#3A1078]/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
           <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 transform group-hover:scale-120 transition-transform">
              {/* Icon placeholder could go here */}
           </div>
           <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Ingresos Totales</h4>
           <p className="text-4xl font-black mt-2 tracking-tight">${totalIncome.toFixed(2)}</p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+          <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
             <span>{totalServices} servicios realizados</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-[2rem] shadow-xl shadow-pink-500/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        {/* Ticket - Rosa Ojo de Perdiz */}
+        <div className="bg-gradient-to-br from-[#88304E] to-[#602035] text-white rounded-[2rem] shadow-xl shadow-[#88304E]/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
           <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Ticket Promedio</h4>
           <p className="text-4xl font-black mt-2 tracking-tight">${averageTicket.toFixed(2)}</p>
-           <div className="mt-4 inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+           <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
             <span>Por cliente</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-400 to-amber-500 text-white rounded-[2rem] shadow-xl shadow-orange-500/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        {/* Staff - Oro Champagne */}
+        <div className="bg-gradient-to-br from-[#C5A059] to-[#A08040] text-white rounded-[2rem] shadow-xl shadow-[#C5A059]/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
           <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Top Staff</h4>
           <p className="text-3xl font-black mt-2 truncate max-w-full">{topStaff?.[0] || "N/A"}</p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+          <div className="mt-4 inline-flex items-center gap-2 bg-black/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
              <span>Generó ${topStaff?.[1].revenue.toFixed(2) || "0.00"}</span>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-teal-400 to-emerald-500 text-white rounded-[2rem] shadow-xl shadow-teal-500/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        {/* Service - Slate 900 */}
+        <div className="bg-gradient-to-br from-[#0F172A] to-[#334155] text-white rounded-[2rem] shadow-xl shadow-[#0F172A]/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
           <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Servicio Estrella</h4>
           <p className="text-2xl font-black mt-2 truncate max-w-full leading-tight">{topService?.[0] || "N/A"}</p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+          <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
              <span>{topService?.[1].count || 0} ventas</span>
           </div>
         </div>
@@ -235,10 +239,10 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
           {/* Gráfica por día de semana */}
           <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
             <div className="flex items-center justify-between mb-8">
-               <h3 className="text-xl font-black text-gray-800">
+               <h3 className="text-xl font-black text-[#0F172A]">
                  Ingresos Semanales
                </h3>
-               <div className="px-3 py-1 rounded-full bg-violet-50 text-violet-600 text-xs font-bold">
+               <div className="px-3 py-1 rounded-full bg-[#3A1078]/10 text-[#3A1078] text-xs font-bold">
                   Tendencia diaria
                </div>
             </div>
@@ -249,12 +253,12 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                 <svg style={{ position: "absolute", width: 0, height: 0 }}>
                   <defs>
                     <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8b5cf6" />
-                      <stop offset="100%" stopColor="#6366f1" />
+                      <stop offset="0%" stopColor="#3A1078" />
+                      <stop offset="100%" stopColor="#240A48" />
                     </linearGradient>
                     <linearGradient id="barGradientHover" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#a78bfa" />
-                      <stop offset="100%" stopColor="#818cf8" />
+                      <stop offset="0%" stopColor="#4C1D95" />
+                      <stop offset="100%" stopColor="#3A1078" />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -309,7 +313,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                       <div className="text-center">
                         <p
                           className={`text-xs font-bold ${
-                            isMax ? "text-violet-600" : "text-gray-400"
+                            isMax ? "text-[#3A1078]" : "text-gray-400"
                           }`}
                         >
                           {day.slice(0, 3)}
@@ -324,7 +328,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
 
           {/* Gráfica de dona - Servicios más vendidos */}
           <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
-            <h3 className="text-xl font-black text-gray-800 mb-8">
+            <h3 className="text-xl font-black text-[#0F172A] mb-8">
                Distribución de Servicios
             </h3>
             
@@ -340,14 +344,14 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                             0
                           );
                           const vibrantColors = [
-                            "#8b5cf6", // Violet
-                            "#ec4899", // Pink
-                            "#f97316", // Orange
-                            "#14b8a6", // Teal
-                            "#f43f5e", // Rose
-                            "#eab308", // Yellow
-                            "#3b82f6", // Blue
-                            "#6366f1", // Indigo
+                            "#3A1078", // Violeta Real
+                            "#88304E", // Rosa Ojo de Perdiz
+                            "#C5A059", // Oro Champagne
+                            "#0F172A", // Slate 900
+                            "#4C1D95", // Violet Dark
+                            "#602035", // Rose Dark
+                            "#A08040", // Gold Dark
+                            "#334155", // Slate Light
                           ];
                           let currentAngle = 0;
 
@@ -406,7 +410,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                       </svg>
                       {/* Center Stats */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                         <span className="text-3xl font-black text-gray-800">{totalServices}</span>
+                         <span className="text-3xl font-black text-[#0F172A]">{totalServices}</span>
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total</span>
                       </div>
                   </div>
@@ -429,8 +433,8 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                     );
                     const percentage = ((data.count / total) * 100).toFixed(1);
                     const vibrantColors = [
-                        "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", 
-                        "#f43f5e", "#eab308", "#3b82f6", "#6366f1"
+                            "#3A1078", "#88304E", "#C5A059", "#0F172A", 
+                            "#4C1D95", "#602035", "#A08040", "#334155"
                     ];
 
                     return (
@@ -443,7 +447,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                           style={{ backgroundColor: vibrantColors[idx % vibrantColors.length] }}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-700 truncate group-hover:text-gray-900 transition-colors">
+                          <p className="text-sm font-bold text-gray-700 truncate group-hover:text-[#0F172A] transition-colors">
                             {service}
                           </p>
                           <p className="text-[10px] font-semibold text-gray-400">
@@ -451,7 +455,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className="text-xs font-black text-gray-800 bg-gray-100 px-2 py-1 rounded-lg">
+                          <span className="text-xs font-black text-[#0F172A] bg-[#F8FAFC] px-2 py-1 rounded-lg">
                             {percentage}%
                           </span>
                         </div>

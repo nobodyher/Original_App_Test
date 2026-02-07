@@ -269,109 +269,124 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   if (!currentUser) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 relative selection:bg-[#88304E]/20">
+      {/* Ambient Background Blobs (Subtle) */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#3A1078]/10 rounded-full blur-[120px] opacity-60" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#88304E]/10 rounded-full blur-[120px] opacity-60" />
+      </div>
+
       <NotificationToast notification={notification} />
       
       {/* Header with Glassmorphism */}
-      <div className={`relative overflow-hidden bg-gradient-to-r ${currentUser.color} pb-12 pt-8 px-6 shadow-xl`}>
-         <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]" />
-         <div className="relative max-w-5xl mx-auto flex justify-between items-end">
+      <div className="relative z-10 overflow-hidden bg-white/70 backdrop-blur-xl border-b border-[#C5A059]/20 pb-12 pt-8 px-6 shadow-sm">
+         <div className="relative max-w-7xl mx-auto flex justify-between items-end">
             <div>
-              <p className="text-white/80 font-medium mb-1 uppercase tracking-wider text-xs">Panel de Staff</p>
-              <h1 className="text-3xl font-black text-white tracking-tight">Hola, {currentUser.name}</h1>
+              <div className="flex items-center gap-3 mb-2">
+                 <div className={`w-12 h-12 rounded-full bg-gradient-to-tr from-[#3A1078] to-[#88304E] flex items-center justify-center shadow-sm`}>
+                    <User className="text-white" size={24} />
+                 </div>
+                 <div>
+                    <p className="text-[#0F172A]/60 font-bold uppercase tracking-wider text-xs">Panel de Staff</p>
+                    <h1 className="text-3xl font-black text-[#0F172A] tracking-tight leading-none">Hola, {currentUser.name}</h1>
+                 </div>
+              </div>
             </div>
             
             <button
                onClick={onLogout}
-               className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl transition-all border border-white/20 text-sm font-bold shadow-lg"
+               className="flex items-center gap-2 bg-white border border-[#C5A059]/30 text-[#0F172A] px-5 py-2.5 rounded-2xl transition-all hover:bg-[#F8FAFC] hover:border-[#C5A059]/50 hover:shadow-md text-sm font-bold active:scale-95"
             >
                <LogOut size={18} />
-               <span className="hidden sm:inline">Salir</span>
+               <span className="hidden sm:inline">Cerrar Turno</span>
             </button>
          </div>
       </div>
 
-      {/* Main Content using Negative Margin for overlapping effect */}
-      <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-10 space-y-6">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 -mt-8 relative z-10 space-y-8">
          
          {/* Stats Row */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl shadow-lg p-5 border border-purple-50 flex flex-col justify-between h-28 relative overflow-hidden group">
-               <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                  <Check size={64} className="text-purple-600" />
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/80 backdrop-blur-md rounded-[2rem] shadow-sm border border-[#C5A059]/20 p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
+               <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
+                  <Check size={80} className="text-[#3A1078]" />
                </div>
-               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Servicios Hoy</p>
-               <p className="text-4xl font-black text-gray-800">{userServices.length}</p>
+               <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wider">Servicios Hoy</p>
+               <p className="text-5xl font-black text-[#0F172A]">{userServices.length}</p>
             </div>
-            <div className="bg-white rounded-2xl shadow-lg p-5 border border-green-50 flex flex-col justify-between h-28 relative overflow-hidden group">
-               <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                  <TrendingUp size={64} className="text-green-600" />
+            <div className="bg-white/80 backdrop-blur-md rounded-[2rem] shadow-sm border border-[#C5A059]/20 p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
+               <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
+                  <TrendingUp size={80} className="text-[#C5A059]" />
                </div>
-               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Ventas Totales</p>
-               <p className="text-4xl font-black text-green-600">${totalToday.toFixed(2)}</p>
+               <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wider">Ventas Totales</p>
+               <p className="text-5xl font-black text-[#0F172A]">${totalToday.toFixed(2)}</p>
             </div>
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg p-5 flex flex-col justify-between h-28 relative overflow-hidden text-white">
-               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Tu Comisión Est.</p>
-               <p className="text-4xl font-black text-yellow-400">${finalTotalCommission.toFixed(2)}</p>
+            <div className="bg-gradient-to-br from-[#3A1078] to-[#0F172A] rounded-[2rem] shadow-xl p-6 flex flex-col justify-between h-32 relative overflow-hidden text-white group">
+               <div className="absolute right-0 top-0 p-5 opacity-10 group-hover:scale-110 transition-transform">
+                  <Crown size={80} className="text-[#C5A059]" />
+               </div>
+               <p className="text-white/60 text-xs font-bold uppercase tracking-wider">Tu Comisión Est.</p>
+               <p className="text-5xl font-black text-[#F8FAFC]">${finalTotalCommission.toFixed(2)}</p>
             </div>
          </div>
 
-         {/* NEW SERVICE FORM - Split into Cards */}
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         {/* Creates New Service Section */}
+         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
             
-            {/* Left Column: Form Inputs */}
-            <div className="lg:col-span-2 space-y-6">
+            {/* Left Column: Form Inputs (8 cols) */}
+            <div className="xl:col-span-8 space-y-6">
                
                {/* 1. Client & Basics Card */}
-               <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                     <span className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">
-                        <User size={16} />
+               <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-white/60 p-8">
+                  <h3 className="text-xl font-bold text-[#0F172A] mb-6 flex items-center gap-3">
+                     <span className="w-10 h-10 rounded-2xl bg-[#88304E]/10 flex items-center justify-center text-[#88304E] ring-1 ring-[#88304E]/20">
+                        <User size={20} />
                      </span>
                      Datos del Cliente
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase ml-2">Fecha</label>
+                        <label className="text-xs font-bold text-[#0F172A]/50 uppercase ml-1">Fecha</label>
                         <input
                            type="date"
                            value={newService.date}
                            onChange={(e) => setNewService({ ...newService, date: e.target.value })}
-                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 transition-all duration-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/20 outline-none font-medium text-gray-700"
+                           className="w-full h-14 px-5 rounded-2xl bg-[#F8FAFC] border border-[#C5A059]/20 transition-all duration-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 outline-none font-semibold text-[#0F172A]"
                         />
                      </div>
                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase ml-2">Cliente</label>
+                        <label className="text-xs font-bold text-[#0F172A]/50 uppercase ml-1">Cliente</label>
                         <input
                            type="text"
                            placeholder="Nombre del cliente"
                            value={newService.client}
                            onChange={(e) => setNewService({ ...newService, client: e.target.value })}
-                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 transition-all duration-200 focus:bg-white focus:border-pink-500 focus:ring-4 focus:ring-pink-500/20 outline-none font-medium text-gray-700 placeholder-gray-400"
+                           className="w-full h-14 px-5 rounded-2xl bg-[#F8FAFC] border border-[#C5A059]/20 transition-all duration-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 outline-none font-semibold text-[#0F172A] placeholder-stone-400"
                         />
                      </div>
                   </div>
                </div>
 
                {/* 2. Service Selection Card */}
-               <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                     <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                        <Plus size={16} />
+               <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-white/60 p-8 relative z-20">
+                  <h3 className="text-xl font-bold text-[#0F172A] mb-6 flex items-center gap-3">
+                     <span className="w-10 h-10 rounded-2xl bg-[#3A1078]/10 flex items-center justify-center text-[#3A1078] ring-1 ring-[#3A1078]/20">
+                        <Plus size={20} />
                      </span>
                      Seleccionar Servicios
                   </h3>
                   
-                  {/* Category Buttons (Mobile Friendly) */}
-                  <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                  {/* Category Buttons */}
+                  <div className="flex gap-4 mb-6 overflow-x-auto pb-2 scrollbar-hide">
                     {(["manicura", "pedicura"] as const).map((cat) => (
                        <button
                           key={cat}
                           onClick={() => setNewService({ ...newService, category: cat })}
-                          className={`flex-shrink-0 px-6 py-3 rounded-xl border-2 font-bold transition-all duration-200 active:scale-95 ${
+                          className={`flex-shrink-0 px-8 py-4 rounded-2xl border font-bold transition-all duration-300 active:scale-95 ${
                              newService.category === cat
-                                ? "border-purple-500 bg-purple-50 text-purple-700 shadow-md"
-                                : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                                ? "border-[#3A1078] bg-[#3A1078] text-white shadow-lg shadow-[#3A1078]/20"
+                                : "border-[#C5A059]/30 bg-white text-[#0F172A]/60 hover:border-[#3A1078]/50 hover:text-[#0F172A]"
                           }`}
                        >
                           {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -380,18 +395,18 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                   </div>
 
                   {/* Service Dropdown */}
-                  <div className="relative mb-6">
+                  <div className="relative mb-8">
                      <button
                         onClick={() => setShowServiceList(!showServiceList)}
-                        className="w-full h-14 pl-4 pr-10 rounded-xl bg-gray-50 border-2 border-gray-100 text-gray-700 font-medium text-left appearance-none focus:border-purple-500 focus:bg-white focus:outline-none transition-colors cursor-pointer"
+                        className="w-full h-16 pl-6 pr-12 rounded-2xl bg-[#F8FAFC] border-2 border-dashed border-[#C5A059]/40 text-[#0F172A]/70 font-bold text-left hover:bg-white hover:border-[#3A1078]/50 focus:border-[#3A1078] focus:bg-white transition-all cursor-pointer flex items-center"
                      >
                         + Añadir servicio al carrito...
                      </button>
-                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                        <ChevronDown size={20} />
+                     <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-[#C5A059]">
+                        <ChevronDown size={24} />
                      </div>
                      {showServiceList && (
-                        <div className="absolute top-full left-0 mt-2 w-full max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute top-full left-0 mt-3 w-full max-h-80 overflow-y-auto bg-white border border-stone-100 rounded-3xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 p-2">
                            {activeServices.map((cs) => (
                               <div
                                  key={cs.id}
@@ -399,10 +414,10 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                                     selectCatalogService(cs);
                                     setShowServiceList(false);
                                  }}
-                                 className="p-4 cursor-pointer hover:bg-purple-50 hover:pl-5 transition-all duration-200 border-b border-gray-100 last:border-0 flex justify-between items-center"
+                                 className="p-4 cursor-pointer hover:bg-stone-50 rounded-2xl transition-all duration-200 flex justify-between items-center group"
                               >
-                                 <span className="font-bold text-gray-700">{cs.name}</span>
-                                 <span className="font-bold text-purple-600">${cs.basePrice}</span>
+                                 <span className="font-bold text-stone-600 group-hover:text-stone-900">{cs.name}</span>
+                                 <span className="font-bold text-stone-800 bg-stone-100 px-3 py-1 rounded-lg group-hover:bg-white shadow-sm">${cs.basePrice}</span>
                               </div>
                            ))}
                         </div>
@@ -411,20 +426,20 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
                   {/* Selected Services List */}
                   {newService.services.length > 0 && (
-                     <div className="space-y-3">
+                     <div className="space-y-4">
                         {newService.services.map((s, idx) => (
-                           <div key={idx} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 group hover:border-purple-200 transition-colors">
-                              <div className="flex items-center gap-3">
-                                 <div className="w-2 h-10 rounded-full bg-purple-500"></div>
-                                 <p className="font-bold text-gray-700">{s.serviceName}</p>
-                              </div>
+                           <div key={idx} className="flex justify-between items-center bg-white p-5 rounded-2xl border border-[#C5A059]/20 shadow-sm transition-colors group hover:shadow-md">
                               <div className="flex items-center gap-4">
-                                 <span className="font-bold text-gray-800">${s.servicePrice}</span>
+                                 <div className="w-1.5 h-12 rounded-full bg-[#3A1078] group-hover:h-14 transition-all duration-300"></div>
+                                 <p className="font-bold text-[#0F172A] text-lg">{s.serviceName}</p>
+                              </div>
+                              <div className="flex items-center gap-6">
+                                 <span className="font-black text-[#0F172A] text-lg">${s.servicePrice}</span>
                                  <button 
                                     onClick={() => removeServiceFromList(idx)} 
-                                    className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                                    className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#C5A059]/20 flex items-center justify-center text-[#0F172A]/40 hover:bg-[#88304E]/10 hover:text-[#88304E] hover:border-[#88304E]/30 transition-all active:scale-95"
                                  >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={18} />
                                  </button>
                               </div>
                            </div>
@@ -434,42 +449,44 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                </div>
                
                {/* 3. Extras Card */}
-               <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+               <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-white/60 p-8">
                  <button
                     onClick={() => setShowExtrasSelector(!showExtrasSelector)}
-                    className="w-full flex justify-between items-center"
+                    className="w-full flex justify-between items-center group"
                  > 
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
-                            <Crown size={16} />
+                    <h3 className="text-xl font-bold text-[#0F172A] flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-2xl bg-[#C5A059]/10 flex items-center justify-center text-[#C5A059] ring-1 ring-[#C5A059]/20">
+                            <Crown size={20} />
                         </span>
                         Extras & Decoración
                     </h3>
-                    <ChevronDown size={20} className={`text-gray-400 transition-transform ${showExtrasSelector ? "rotate-180" : ""}`} />
+                    <div className="p-2 rounded-full bg-[#F8FAFC] group-hover:bg-white transition-colors">
+                        <ChevronDown size={24} className={`text-[#C5A059] transition-transform duration-300 ${showExtrasSelector ? "rotate-180" : ""}`} />
+                    </div>
                  </button>
 
                  {(showExtrasSelector || newService.extras.length > 0) && (
-                    <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="mt-8 animate-in fade-in slide-in-from-top-4 duration-500">
                        {/* Selector Area */}
                         {showExtrasSelector && (
-                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                               {catalogExtras.filter((e) => e.active).map((extra) => {
                                  const current = newService.extras.find((e) => e.extraId === extra.id);
                                  const isActive = !!current;
                                  return (
                                     <div 
                                        key={extra.id} 
-                                       className={`p-3 rounded-xl border-2 transition-all cursor-pointer ${isActive ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-white hover:border-orange-200'}`}
+                                       className={`p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${isActive ? 'border-[#C5A059]/30 bg-[#C5A059]/10' : 'border-[#C5A059]/20 bg-white hover:border-[#C5A059]/40'}`}
                                     >
-                                       <div className="flex justify-between items-start mb-2">
-                                          <p className={`font-bold text-sm leading-tight ${isActive ? 'text-orange-900' : 'text-gray-700'}`}>{extra.name}</p>
-                                           <span className="text-xs font-semibold bg-white px-2 py-0.5 rounded border border-gray-100">
+                                       <div className="flex justify-between items-start mb-3">
+                                          <p className={`font-bold text-sm leading-tight ${isActive ? 'text-[#0F172A]' : 'text-[#0F172A]/70'}`}>{extra.name}</p>
+                                           <span className="text-xs font-bold bg-white px-2 py-1 rounded-lg border border-[#C5A059]/20 shadow-sm text-[#0F172A]/60">
                                               ${extra.priceSuggested || extra.price || 0}
                                            </span>
                                        </div>
                                        
-                                       <div className="flex items-center justify-between mt-2 bg-white/50 rounded-lg p-1">
-                                          <span className="text-[10px] uppercase font-bold text-gray-400 pl-1">Uñas:</span>
+                                       <div className="flex items-center justify-between mt-2 bg-white/70 rounded-xl p-1.5 border border-[#C5A059]/20">
+                                          <span className="text-[10px] uppercase font-bold text-[#0F172A]/50 pl-2">Uñas:</span>
                                           <input
                                              type="number"
                                              min={0}
@@ -477,7 +494,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                                              value={current?.nailsCount ?? 0}
                                              onClick={(e) => e.stopPropagation()}
                                              onChange={(e) => updateExtraNailsCount(extra.id, parseInt(e.target.value || "0", 10))}
-                                             className="w-12 text-center font-bold bg-transparent border-b-2 border-orange-200 focus:border-orange-500 focus:outline-none p-1"
+                                             className="w-12 text-center font-black text-[#0F172A] bg-transparent border-b-2 border-[#C5A059]/30 focus:border-[#C5A059] focus:outline-none p-1"
                                           />
                                        </div>
                                     </div>
@@ -488,17 +505,17 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
                         {/* Selected Extras List */}
                         {newService.extras.length > 0 && (
-                           <div className="space-y-2">
+                           <div className="space-y-3">
                               {newService.extras.map((e, idx) => (
-                                 <div key={idx} className="flex justify-between items-center text-sm p-3 bg-orange-50/50 rounded-lg border border-orange-100">
+                                 <div key={idx} className="flex justify-between items-center text-sm p-4 bg-[#C5A059]/10 rounded-2xl border border-[#C5A059]/20">
                                     <div className="flex flex-col">
-                                       <span className="font-bold text-gray-700">{e.extraName}</span>
-                                       <span className="text-orange-600 text-xs font-medium">{e.nailsCount} uñas × ${e.pricePerNail}</span>
+                                       <span className="font-bold text-[#0F172A] text-base">{e.extraName}</span>
+                                       <span className="text-[#C5A059] text-xs font-bold uppercase tracking-wide">{e.nailsCount} uñas × ${e.pricePerNail}</span>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                       <span className="font-bold text-gray-800">${e.totalPrice.toFixed(2)}</span>
-                                       <button onClick={() => removeExtraFromList(idx)} className="text-gray-400 hover:text-red-500">
-                                          <X size={16} />
+                                    <div className="flex items-center gap-4">
+                                       <span className="font-bold text-[#0F172A] text-lg">${e.totalPrice.toFixed(2)}</span>
+                                       <button onClick={() => removeExtraFromList(idx)} className="text-[#0F172A]/30 hover:text-[#88304E] transition-colors p-2 hover:bg-[#88304E]/10 rounded-lg">
+                                          <X size={18} />
                                        </button>
                                     </div>
                                  </div>
@@ -511,47 +528,47 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
             </div>
 
-            {/* Right Column: Total & Pay */}
-            <div className="lg:col-span-1">
-               <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-6 sticky top-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-6">Resumen</h3>
+            {/* Right Column: Total & Pay (4 cols) */}
+            <div className="xl:col-span-4">
+               <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-xl border border-[#C5A059]/20 p-8 sticky top-6">
+                  <h3 className="text-xl font-bold text-[#0F172A] mb-8">Resumen</h3>
                   
-                  <div className="space-y-4 mb-8">
-                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Servicios ({newService.services.length})</span>
-                        <span className="font-medium">${newService.services.reduce((acc, s) => acc + s.servicePrice, 0).toFixed(2)}</span>
+                  <div className="space-y-5 mb-10">
+                     <div className="flex justify-between text-base">
+                        <span className="text-[#0F172A]/60 font-medium">Servicios ({newService.services.length})</span>
+                        <span className="font-bold text-[#0F172A]">${newService.services.reduce((acc, s) => acc + s.servicePrice, 0).toFixed(2)}</span>
                      </div>
-                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Extras ({newService.extras.length})</span>
-                        <span className="font-medium">${newService.extras.reduce((acc, e) => acc + e.totalPrice, 0).toFixed(2)}</span>
+                     <div className="flex justify-between text-base">
+                        <span className="text-[#0F172A]/60 font-medium">Extras ({newService.extras.length})</span>
+                        <span className="font-bold text-[#0F172A]">${newService.extras.reduce((acc, e) => acc + e.totalPrice, 0).toFixed(2)}</span>
                      </div>
-                     <div className="h-px bg-gray-100 my-2" />
+                     <div className="h-px bg-[#C5A059]/20 my-4" />
                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-800">Total</span>
-                        <span className="text-3xl font-black text-gray-900">${totalCost.toFixed(2)}</span>
+                        <span className="text-xl font-bold text-[#0F172A]">Total</span>
+                        <span className="text-4xl font-black text-[#0F172A] tracking-tight">${totalCost.toFixed(2)}</span>
                      </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                      <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Método de Pago</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <label className="block text-xs font-bold text-[#0F172A]/50 uppercase mb-3 ml-1">Método de Pago</label>
+                        <div className="grid grid-cols-2 gap-3">
                            <button
                               onClick={() => setNewService({ ...newService, paymentMethod: "cash" })}
-                              className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                              className={`py-4 rounded-2xl border font-bold text-sm transition-all duration-300 active:scale-95 ${
                                  newService.paymentMethod === "cash"
-                                    ? "border-green-500 bg-green-50 text-green-700"
-                                    : "border-gray-100 text-gray-400 hover:border-gray-200"
+                                    ? "border-[#C5A059] bg-[#C5A059]/10 text-[#C5A059] shadow-sm"
+                                    : "border-[#C5A059]/20 bg-[#F8FAFC] text-[#0F172A]/40 hover:border-[#C5A059]/50 hover:bg-white"
                               }`}
                            >
                               Efectivo
                            </button>
                            <button
                               onClick={() => setNewService({ ...newService, paymentMethod: "transfer" })}
-                              className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                              className={`py-4 rounded-2xl border font-bold text-sm transition-all duration-300 active:scale-95 ${
                                  newService.paymentMethod === "transfer"
-                                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                                    : "border-gray-100 text-gray-400 hover:border-gray-200"
+                                    ? "border-[#3A1078] bg-[#3A1078]/10 text-[#3A1078] shadow-sm"
+                                    : "border-[#C5A059]/20 bg-[#F8FAFC] text-[#0F172A]/40 hover:border-[#3A1078]/50 hover:bg-white"
                               }`}
                            >
                               Transferencia
@@ -562,15 +579,15 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                      <button
                         onClick={handleAddService}
                         disabled={newService.client === "" || newService.services.length === 0 || isSubmitting}
-                        className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 ${
+                        className={`w-full py-5 rounded-2xl font-black text-lg shadow-xl shadow-[#3A1078]/20 hover:shadow-2xl transition-all flex items-center justify-center gap-3 ${
                            newService.client === "" || newService.services.length === 0
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              ? "bg-[#E2E8F0] text-[#94A3B8] cursor-not-allowed"
                               : isSubmitting 
-                                 ? "bg-black/70 text-white cursor-wait animate-pulse" 
-                                 : "bg-black text-white hover:bg-gray-900 transform hover:-translate-y-1"
+                                 ? "bg-[#3A1078] text-white cursor-wait animate-pulse" 
+                                 : "bg-[#3A1078] text-white hover:bg-[#88304E] transform hover:-translate-y-1 active:translate-y-0"
                         }`}
                      >
-                        <Check size={20} className={isSubmitting ? "hidden" : ""} />
+                        <Check size={24} className={isSubmitting ? "hidden" : ""} strokeWidth={3} />
                         {isSubmitting ? "Procesando..." : "Confirmar Cobro"}
                      </button>
                   </div>
@@ -579,26 +596,26 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
          </div>
          
          {/* Services List - Modern Card View */}
-         <div className="pt-10">
-            <div className="flex justify-between items-end mb-6">
-               <h2 className="text-2xl font-black text-gray-800">Mis Servicios</h2>
+         <div className="pt-16 pb-12">
+            <div className="flex flex-col sm:flex-row justify-between items-end mb-8 gap-4">
+               <h2 className="text-3xl font-black text-[#0F172A] tracking-tight">Mis Servicios</h2>
                
                {/* Search / Filters Condensed */}
-               <div className="flex gap-2">
-                  <div className="relative group">
-                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-pink-500" size={16} />
+               <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="relative group w-full sm:w-auto">
+                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0F172A]/40 group-focus-within:text-[#3A1078] transition-colors" size={18} />
                      <input 
                         type="text" 
                         placeholder="Buscar..."
                         value={filters.search}
                         onChange={e => setFilters({...filters, search: e.target.value})}
-                        className="pl-9 pr-4 py-2 rounded-xl bg-white border border-gray-200 transition-all duration-200 focus:border-pink-500 focus:ring-4 focus:ring-pink-500/20 outline-none shadow-sm w-32 focus:w-48"
+                        className="w-full sm:w-64 pl-12 pr-6 py-3 rounded-2xl bg-white border border-[#C5A059]/20 transition-all duration-300 focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 outline-none shadow-sm font-medium text-[#0F172A]"
                      />
                   </div>
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                {filteredServices.length === 0 ? (
                   <EmptyState 
                     icon={ClipboardList} 
@@ -611,67 +628,86 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                      
                      if (isEditing) {
                         return (
-                           <div key={service.id} className="bg-white p-6 rounded-[2rem] shadow-xl ring-2 ring-blue-400 animate-pulse-once">
-                              {/* Edit Mode Custom Form needed here or just keep simple inputs */}
-                              <div className="space-y-3">
-                                 <p className="font-bold text-blue-600">Editando servicio...</p>
-                                 <input value={editForm.client} onChange={e => setEditForm({...editForm, client: e.target.value})} className="w-full p-2 border rounded" placeholder="Cliente" />
-                                 <input value={editForm.cost} type="number" onChange={e => setEditForm({...editForm, cost: parseFloat(e.target.value)})} className="w-full p-2 border rounded" placeholder="Costo" />
-                                 <div className="flex gap-2 pt-2">
-                                     <button onClick={() => handleUpdateService(service.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex-1">Guardar</button>
-                                     <button onClick={() => setEditingServiceId(null)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold">Cancelar</button>
+                           <div key={service.id} className="bg-white p-8 rounded-[2.5rem] shadow-xl ring-4 ring-blue-100 animate-pulse-once">
+                              {/* Edit Mode Custom Form */}
+                              <div className="space-y-4">
+                                 <p className="font-bold text-blue-600 flex items-center gap-2">
+                                    <Edit2 size={16} /> Editando servicio...
+                                 </p>
+                                 <div className="space-y-2">
+                                    <label className="text-xs font-bold text-stone-400 uppercase">Cliente</label>
+                                    <input 
+                                       value={editForm.client} 
+                                       onChange={e => setEditForm({...editForm, client: e.target.value})} 
+                                       className="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-blue-400 outline-none" 
+                                    />
+                                 </div>
+                                 <div className="space-y-2">
+                                    <label className="text-xs font-bold text-stone-400 uppercase">Costo Total</label>
+                                    <input 
+                                       value={editForm.cost} 
+                                       type="number" 
+                                       onChange={e => setEditForm({...editForm, cost: parseFloat(e.target.value)})} 
+                                       className="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-blue-400 outline-none font-bold" 
+                                    />
+                                 </div>
+                                 <div className="flex gap-3 pt-4">
+                                     <button onClick={() => handleUpdateService(service.id)} className="bg-stone-800 text-white px-6 py-3 rounded-xl text-sm font-bold flex-1 hover:bg-stone-900 transition-colors">Guardar</button>
+                                     <button onClick={() => setEditingServiceId(null)} className="bg-stone-100 text-stone-600 px-6 py-3 rounded-xl text-sm font-bold hover:bg-stone-200 transition-colors">Cancelar</button>
                                  </div>
                               </div>
                            </div>
                         )
                      }
 
+                     const isCash = service.paymentMethod === 'cash';
+
                      return (
                         <div 
                            key={service.id} 
-                           className={`group bg-white rounded-[2rem] shadow-sm border p-5 relative overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 ${
-                              service.paymentMethod === 'cash' ? 'border-l-[6px] border-l-green-400' : 'border-l-[6px] border-l-blue-400'
-                           }`}
+                           className="group bg-white/60 backdrop-blur-md rounded-[2.5rem] shadow-sm border border-[#C5A059]/20 p-6 relative overflow-hidden transition-all hover:shadow-xl hover:bg-white hover:-translate-y-1"
                         >
-                           <div className="flex justify-between items-start mb-3">
+                           <div className={`absolute top-0 left-0 w-1.5 h-full ${isCash ? 'bg-[#C5A059]' : 'bg-[#3A1078]'}`} />
+                           
+                           <div className="pl-4 flex justify-between items-start mb-5">
                               <div>
-                                 <h4 className="font-bold text-gray-800 text-lg">{service.client}</h4>
-                                 <p className="text-gray-400 text-xs font-medium">{service.date}</p>
+                                 <h4 className="font-bold text-[#0F172A] text-xl mb-1">{service.client}</h4>
+                                 <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wide">{service.date}</p>
                               </div>
                               <div className="text-right">
-                                 <p className="text-2xl font-black text-gray-900">${Number(service.cost).toFixed(2)}</p>
-                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                                    service.paymentMethod === 'cash' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                 <p className="text-3xl font-black text-[#0F172A] tracking-tight">${Number(service.cost).toFixed(2)}</p>
+                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                    isCash ? 'bg-[#C5A059]/10 text-[#C5A059]' : 'bg-[#3A1078]/10 text-[#3A1078]'
                                  }`}>
-                                    {service.paymentMethod === 'transfer' ? 'Transferencia' : 'Efectivo'}
+                                    {isCash ? 'Efectivo' : 'Transferencia'}
                                  </span>
                               </div>
                            </div>
 
-                           <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                           <div className="pl-4 bg-stone-50/50 rounded-2xl p-4 mb-2 border border-stone-100/50">
                               {service.services?.map((s, i) => (
-                                 <div key={i} className="flex justify-between items-center text-sm mb-1 last:mb-0">
-                                    <span className="text-gray-600 font-medium">{s.serviceName}</span>
+                                 <div key={i} className="flex justify-between items-center text-sm mb-2 last:mb-0">
+                                    <span className="text-stone-600 font-semibold">{s.serviceName}</span>
                                  </div>
                               ))}
                               {service.extras && service.extras.length > 0 && (
-                                 <div className="mt-2 text-xs border-t border-gray-200 pt-2 space-y-1">
+                                 <div className="mt-3 text-xs border-t border-stone-200/50 pt-3 space-y-1.5">
                                     {service.extras.map((e, i) => (
-                                       <div key={i} className="flex justify-between text-gray-500">
+                                       <div key={i} className="flex justify-between text-stone-500 font-medium">
                                           <span>+ {e.extraName}</span>
-                                          <span>({e.nailsCount})</span>
+                                          <span className="bg-stone-200/50 px-1.5 rounded text-stone-600">{e.nailsCount}</span>
                                        </div>
                                     ))}
                                  </div>
                               )}
                            </div>
 
-                           <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleEditClick(service)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100">
-                                 <Edit2 size={14} />
+                           <div className="pl-4 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                              <button onClick={() => handleEditClick(service)} className="w-10 h-10 rounded-xl bg-[#3A1078]/10 text-[#3A1078] flex items-center justify-center hover:bg-[#3A1078]/20 hover:scale-110 transition-all shadow-sm">
+                                 <Edit2 size={16} />
                               </button>
-                              <button onClick={() => handleSoftDeleteService(service.id)} className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100">
-                                 <Trash2 size={14} />
+                              <button onClick={() => handleSoftDeleteService(service.id)} className="w-10 h-10 rounded-xl bg-[#88304E]/10 text-[#88304E] flex items-center justify-center hover:bg-[#88304E]/20 hover:scale-110 transition-all shadow-sm">
+                                 <Trash2 size={16} />
                               </button>
                            </div>
                         </div>
@@ -680,8 +716,6 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                )}
             </div>
          </div>
-         
-         <div className="h-10"/> {/* Spacer */}
       </div>
     </div>
   );

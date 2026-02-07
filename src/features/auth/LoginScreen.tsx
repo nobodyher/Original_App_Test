@@ -60,22 +60,22 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-[#e0e5ec] flex items-center justify-center overflow-hidden relative">
-          <div className="absolute top-[-20%] left-[-10%] w-[50vh] h-[50vh] bg-purple-400/30 rounded-full blur-[100px]" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50vh] h-[50vh] bg-pink-400/30 rounded-full blur-[100px]" />
+        <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center overflow-hidden relative">
+          <div className="absolute top-[-20%] left-[-10%] w-[50vh] h-[50vh] bg-[#3A1078]/20 rounded-full blur-[100px]" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[50vh] h-[50vh] bg-[#88304E]/20 rounded-full blur-[100px]" />
           
           <div className="relative z-10 text-center">
-             <div className="inline-flex items-center justify-center p-6 bg-white/20 backdrop-blur-xl rounded-[2rem] shadow-glass border border-white/40 mb-6 animate-pulse">
-                <TrendingUp className="text-purple-600" size={56} />
+             <div className="inline-flex items-center justify-center p-6 bg-white/40 backdrop-blur-xl rounded-[2rem] shadow-glass border border-white/50 mb-6 animate-pulse">
+                <TrendingUp className="text-[#3A1078]" size={56} />
              </div>
-             <p className="text-gray-600 text-lg font-medium tracking-wide">Iniciando sistema...</p>
+             <p className="text-[#0F172A] text-lg font-medium tracking-wide">Iniciando sistema...</p>
           </div>
         </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 overflow-hidden relative selection:bg-purple-100">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 overflow-hidden relative selection:bg-[#88304E]/20">
       <style>{`
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
@@ -84,7 +84,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           100% { transform: translate(0px, 0px) scale(1); }
         }
         .animate-blob {
-          animation: blob 7s infinite;
+          animation: blob 10s infinite;
         }
         .animation-delay-2000 {
           animation-delay: 2s;
@@ -95,10 +95,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       `}</style>
       
       {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-gray-100 to-purple-50 -z-20" />
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-300/30 rounded-full blur-[120px] -z-10 animate-blob" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-pink-300/30 rounded-full blur-[120px] -z-10 animate-blob animation-delay-2000" />
-      <div className="absolute top-[40%] left-[40%] w-[400px] h-[400px] bg-blue-200/30 rounded-full blur-[100px] -z-10 animate-blob animation-delay-4000" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] -z-20" />
+      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#3A1078]/30 rounded-full blur-[120px] -z-10 animate-blob" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#88304E]/30 rounded-full blur-[120px] -z-10 animate-blob animation-delay-2000" />
+      <div className="absolute top-[40%] left-[40%] w-[400px] h-[400px] bg-[#C5A059]/30 rounded-full blur-[100px] -z-10 animate-blob animation-delay-4000" />
 
       <NotificationToast notification={notification} />
 
@@ -107,13 +107,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         
         {/* Header */}
         <div className="text-center mb-16 space-y-4">
-          <div className="inline-flex p-4 rounded-3xl bg-white/30 backdrop-blur-md border border-white/50 shadow-lg mb-4 ring-1 ring-white/60">
-             <TrendingUp className="text-purple-700" size={48} strokeWidth={1.5} />
+          <div className="inline-flex p-4 rounded-3xl bg-white/40 backdrop-blur-md border border-white/60 shadow-sm mb-4 ring-1 ring-white/70">
+             <TrendingUp className="text-[#3A1078]" size={48} strokeWidth={1.5} />
           </div>
-          <h1 className="text-6xl font-black text-gray-800 tracking-tight drop-shadow-sm">
-            Blossom<span className="text-purple-600">Nails</span>
+          <h1 className="text-6xl font-black text-[#0F172A] tracking-tight drop-shadow-sm">
+            Blossom<span className="text-[#88304E]">Nails</span>
           </h1>
-          <p className="text-gray-500 text-xl font-medium tracking-wide uppercase text-opacity-80">
+          <p className="text-[#0F172A]/60 text-xl font-medium tracking-wide uppercase">
             Punto de Venta
           </p>
         </div>
@@ -128,7 +128,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 key={user.id}
                 tabIndex={0}
                 onKeyDown={(e) => handleKeyDown(e, user.id)}
-                className="group relative flex flex-col w-full max-w-[380px] bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden outline-none focus:ring-4 focus:ring-purple-400/50 cursor-pointer"
+                className="group relative flex flex-col w-full max-w-[380px] bg-white/60 backdrop-blur-xl border border-white/50 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden outline-none focus:ring-4 focus:ring-[#3A1078]/30 cursor-pointer"
                 onClick={(e) => {
                   // Ensure focus on click
                   e.currentTarget.focus();
@@ -136,19 +136,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               >
                 {/* User Header / Avatar */}
                 <div className="relative p-8 pb-4 flex flex-col items-center z-10">
-                   <div className={`relative w-24 h-24 rounded-full p-[3px] bg-gradient-to-tr ${user.color} shadow-lg mb-4 group-hover:scale-110 transition-transform duration-500`}>
-                      <div className="w-full h-full rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center border-2 border-transparent">
+                   <div className={`relative w-24 h-24 rounded-full p-[3px] bg-gradient-to-tr from-[#3A1078] to-[#88304E] shadow-md mb-4 group-hover:scale-105 transition-transform duration-500`}>
+                      <div className="w-full h-full rounded-full bg-[#F8FAFC] flex items-center justify-center border-2 border-transparent">
                           {user.icon === "crown" ? (
-                            <Crown className="text-gray-700" size={40} strokeWidth={1.5} />
+                            <Crown className="text-[#C5A059]" size={40} strokeWidth={1.5} />
                           ) : (
-                            <User className="text-gray-700" size={40} strokeWidth={1.5} />
+                            <User className="text-[#3A1078]" size={40} strokeWidth={1.5} />
                           )}
                       </div>
                    </div>
-                   <h3 className="text-2xl font-bold text-gray-800 mb-1">{user.name}</h3>
+                   <h3 className="text-2xl font-bold text-[#0F172A] mb-1">{user.name}</h3>
                    
                    {user.role === "owner" && (
-                    <span className="px-3 py-1 bg-purple-100/50 border border-purple-200 text-purple-700 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                    <span className="px-3 py-1 bg-[#C5A059]/10 border border-[#C5A059]/30 text-[#C5A059] rounded-full text-[10px] font-extrabold uppercase tracking-wider">
                       ADMIN
                     </span>
                    )}
@@ -161,8 +161,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                             key={idx} 
                             className={`w-4 h-4 rounded-full border-2 transition-all duration-300 ${
                                 idx < currentPin.length 
-                                ? "bg-gray-800 border-gray-800 scale-110" 
-                                : "bg-transparent border-gray-300"
+                                ? "bg-[#3A1078] border-[#3A1078] scale-110" 
+                                : "bg-transparent border-[#0F172A]/20"
                             }`}
                         />
                     ))}
@@ -175,16 +175,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                             <button
                                 key={num}
                                 onClick={(e) => {
-                                  e.stopPropagation(); // Prevent re-focusing parent if clicking button? 
-                                  // Actually, we WANT parent to stay focused so typing continues working.
-                                  // But clicking a button might steal focus if we aren't careful.
-                                  // Let's explicitly keep focus on the card if possible or just rely on the card wrapper capturing keys if focused.
-                                  // If button is clicked, it gets focus. Keydown on button propagates to parent? 
-                                  // Yes, event bubbling. So if a button inside is focused, and we type, it should bubble up.
+                                  e.stopPropagation(); 
                                   handlePinEntry(user.id, num.toString())
                                 }}
-                                tabIndex={-1} // Prevent tabbing to individual number buttons to keep Tab navigation clean (user card -> next user card)
-                                className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-gray-700 hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none focus:bg-white/80"
+                                tabIndex={-1} 
+                                className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-[#0F172A] hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none focus:bg-white/80"
                             >
                                 {num}
                             </button>
@@ -194,14 +189,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                         <button
                              onClick={(e) => { e.stopPropagation(); handlePinEntry(user.id, "0"); }}
                              tabIndex={-1}
-                             className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-gray-700 hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none"
+                             className="h-16 rounded-2xl bg-white/50 border border-white/60 shadow-sm text-2xl font-semibold text-[#0F172A] hover:bg-white/80 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none"
                         >
                             0
                         </button>
                         <button
                              onClick={(e) => { e.stopPropagation(); handleBackspace(user.id); }}
                              tabIndex={-1}
-                             className="h-16 rounded-2xl bg-white/30 border border-white/40 shadow-sm text-gray-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none"
+                             className="h-16 rounded-2xl bg-white/30 border border-white/40 shadow-sm text-[#88304E] hover:bg-[#88304E]/10 hover:text-[#88304E] hover:border-[#88304E]/30 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center outline-none"
                         >
                            <span className="text-xl">⌫</span>
                         </button>
@@ -213,8 +208,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                         disabled={currentPin.length < 4}
                          className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all duration-300 ${
                             currentPin.length === 4 
-                            ? `bg-gradient-to-r ${user.color} text-white hover:shadow-purple-500/30 hover:-translate-y-1`
-                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            ? "bg-gradient-to-r from-[#3A1078] to-[#88304E] text-white hover:shadow-xl hover:-translate-y-1"
+                            : "bg-[#E2E8F0] text-[#94A3B8] cursor-not-allowed"
                          }`}
                     >
                         <Lock size={20} strokeWidth={2} />
@@ -226,7 +221,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         </div>
         
         <div className="text-center mt-12">
-            <p className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-gray-500 text-sm font-medium">
+            <p className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-[#0F172A]/60 text-sm font-medium">
                 <Lock size={14} /> Encrypted Security System
             </p>
         </div>

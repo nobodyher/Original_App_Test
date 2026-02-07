@@ -367,16 +367,16 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       
       {/* Header & Filters Section */}
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-50 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#3A1078] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-20 pointer-events-none"></div>
         
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Panel Financiero</h2>
+            <h2 className="text-2xl font-black text-[#0F172A] tracking-tight">Panel Financiero</h2>
             <p className="text-gray-500 font-medium">Resumen de operaciones y rendimiento</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 bg-gray-50/80 p-2 rounded-2xl border border-gray-200/60 backdrop-blur-sm">
-             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-purple-100 transition-all">
+             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-[#3A1078]/20 transition-all">
                 <Search size={18} className="text-gray-400" />
                 <input
                   type="text"
@@ -394,14 +394,14 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   type="date"
                   value={ownerFilters.dateFrom}
                   onChange={(e) => setOwnerFilters({ ...ownerFilters, dateFrom: e.target.value })}
-                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-100 shadow-sm"
+                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3A1078]/20 shadow-sm"
                 />
                 <span className="text-gray-400 font-bold">-</span>
                 <input
                   type="date"
                   value={ownerFilters.dateTo}
                   onChange={(e) => setOwnerFilters({ ...ownerFilters, dateTo: e.target.value })}
-                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-100 shadow-sm"
+                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3A1078]/20 shadow-sm"
                 />
              </div>
 
@@ -410,7 +410,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
              <select
                 value={ownerFilters.paymentMethod}
                 onChange={(e) => setOwnerFilters({ ...ownerFilters, paymentMethod: e.target.value as "all" | PaymentMethod })}
-                className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-100 shadow-sm cursor-pointer"
+                className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3A1078]/20 shadow-sm cursor-pointer"
              >
                 <option value="all">Todos</option>
                 <option value="cash">Efectivo</option>
@@ -431,7 +431,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         
         <div className="mt-4 flex items-center gap-2">
             <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700 transition-colors">
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${ownerFilters.includeDeleted ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${ownerFilters.includeDeleted ? 'bg-[#3A1078] border-[#3A1078]' : 'bg-white border-gray-300'}`}>
                   {ownerFilters.includeDeleted && <Check size={12} className="text-white" />}
               </div>
               <input
@@ -447,8 +447,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
       {/* Premium Stats Cards - Banking Style */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Revenue Card - Emerald Premium */}
-        <div className="bg-gradient-to-br from-[#064e3b] to-[#059669] rounded-[2rem] p-6 text-white shadow-2xl shadow-green-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+        {/* Revenue Card - Oro Champagne Premium */}
+        <div className="bg-gradient-to-br from-[#A08040] to-[#C5A059] rounded-[2rem] p-6 text-white shadow-2xl shadow-yellow-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <DollarSign size={120} />
           </div>
@@ -457,19 +457,19 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
                    <DollarSign size={20} />
                 </div>
-                <span className="font-medium text-emerald-100 text-sm uppercase tracking-wider">Ingresos Brutos</span>
+                <span className="font-medium text-amber-50 text-sm uppercase tracking-wider">Ingresos Brutos</span>
              </div>
              <div>
-                <h3 className="text-4xl font-black tracking-tight mb-1">${totalRevenue.toFixed(2)}</h3>
-                <div className="flex items-center gap-2 text-emerald-200 text-xs font-medium bg-emerald-900/30 w-fit px-3 py-1 rounded-full">
+                <h3 className="text-4xl font-black tracking-tight mb-1 mb-1">${totalRevenue.toFixed(2)}</h3>
+                <div className="flex items-center gap-2 text-amber-100 text-xs font-medium bg-black/20 w-fit px-3 py-1 rounded-full">
                    <span>{filteredServices.length} transacciones</span>
                 </div>
              </div>
           </div>
         </div>
 
-        {/* Expenses Card - Rose Premium */}
-        <div className="bg-gradient-to-br from-[#881337] to-[#e11d48] rounded-[2rem] p-6 text-white shadow-2xl shadow-rose-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+        {/* Expenses Card - Rosa Ojo de Perdiz Premium */}
+        <div className="bg-gradient-to-br from-[#602035] to-[#88304E] rounded-[2rem] p-6 text-white shadow-2xl shadow-rose-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <CreditCard size={120} />
           </div>
@@ -489,8 +489,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
           </div>
         </div>
 
-         {/* Replenishment Card - Amber Premium */}
-         <div className="bg-gradient-to-br from-[#7c2d12] to-[#d97706] rounded-[2rem] p-6 text-white shadow-2xl shadow-orange-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+         {/* Replenishment Card - Slate Premium */}
+         <div className="bg-gradient-to-br from-[#0F172A] to-[#334155] rounded-[2rem] p-6 text-white shadow-2xl shadow-gray-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <Package size={120} />
           </div>
@@ -499,35 +499,35 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
                    <Package size={20} />
                 </div>
-                <span className="font-medium text-orange-100 text-sm uppercase tracking-wider">Reposición</span>
+                <span className="font-medium text-gray-200 text-sm uppercase tracking-wider">Reposición</span>
              </div>
              <div>
                 <h3 className="text-4xl font-black tracking-tight mb-1">${totalReplenishmentCost.toFixed(2)}</h3>
-                <div className="flex items-center gap-2 text-orange-200 text-xs font-medium bg-orange-900/30 w-fit px-3 py-1 rounded-full">
+                <div className="flex items-center gap-2 text-gray-300 text-xs font-medium bg-gray-800/50 w-fit px-3 py-1 rounded-full">
                    <span>Costo materiales</span>
                 </div>
              </div>
           </div>
         </div>
 
-        {/* Net Profit Card - Violet Premium (Highlighted) */}
-        <div className="bg-gray-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-gray-900/30 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ring-4 ring-gray-900/5">
-           <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-purple-900/40"></div>
+        {/* Net Profit Card - Violeta Real Premium */}
+        <div className="bg-gradient-to-br from-[#2A0B55] to-[#3A1078] rounded-[2rem] p-6 text-white shadow-2xl shadow-violet-900/30 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ring-4 ring-violet-900/5">
+           <div className="absolute inset-0 bg-gradient-to-br from-[#3A1078]/20 to-[#240A48]/40"></div>
            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
              <Wallet size={120} />
           </div>
           <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center shadow-lg shadow-violet-500/40">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shadow-lg">
                    <Wallet size={20} className="text-white" />
                 </div>
-                <span className="font-bold text-violet-200 text-sm uppercase tracking-wider">Ganancia Neta</span>
+                <span className="font-bold text-violet-100 text-sm uppercase tracking-wider">Ganancia Neta</span>
              </div>
              <div>
-                <h3 className="text-4xl font-black tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                <h3 className="text-4xl font-black tracking-tight mb-1 text-white">
                    ${netProfit.toFixed(2)}
                 </h3>
-                <div className="flex items-center gap-2 text-violet-300 text-xs font-medium">
+                <div className="flex items-center gap-2 text-violet-200 text-xs font-medium">
                    <span>Después de comisiones y costos</span>
                 </div>
              </div>
@@ -545,12 +545,12 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                <div className="px-8 py-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center bg-gray-50/50 backdrop-blur-xl">
                   <div>
-                     <h3 className="text-xl font-bold text-gray-900">Transacciones Recientes</h3>
+                     <h3 className="text-xl font-bold text-[#0F172A]">Transacciones Recientes</h3>
                      <p className="text-gray-400 text-xs font-medium mt-1">Historial de servicios y pagos</p>
                   </div>
                   <button
                      onClick={handleExportExcel}
-                     className="mt-4 md:mt-0 flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-gray-800 transition shadow-lg shadow-gray-900/10 text-sm font-bold"
+                     className="mt-4 md:mt-0 flex items-center gap-2 bg-[#3A1078] text-white px-5 py-2.5 rounded-xl hover:bg-[#2A0B55] transition shadow-lg shadow-[#3A1078]/10 text-sm font-bold"
                   >
                      <Download size={16} />
                      Exportar Excel
@@ -591,8 +591,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                  <td className="px-6 py-5">
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
                                        service.paymentMethod === 'cash' 
-                                          ? 'bg-green-50 text-green-700 border-green-200' 
-                                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                                          ? 'bg-[#C5A059]/10 text-[#C5A059] border-[#C5A059]/20' 
+                                          : 'bg-[#3A1078]/10 text-[#3A1078] border-[#3A1078]/20'
                                     }`}>
                                        {service.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}
                                     </span>
@@ -607,12 +607,12 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                              className="w-20 text-right px-2 py-1 border rounded text-sm font-bold text-gray-900"
                                              autoFocus
                                           />
-                                          <button onClick={() => handleUpdateServiceCost(service.id, parseFloat(editingServiceCost))} className="text-green-600 hover:scale-110 transition"><Check size={16}/></button>
+                                          <button onClick={() => handleUpdateServiceCost(service.id, parseFloat(editingServiceCost))} className="text-[#C5A059] hover:scale-110 transition"><Check size={16}/></button>
                                           <button onClick={() => setEditingServiceId(null)} className="text-gray-400 hover:text-gray-600 hover:scale-110 transition"><X size={16}/></button>
                                        </div>
                                     ) : (
                                        <div className="flex flex-col items-end">
-                                          <span className="font-black text-gray-900 text-base group-hover:text-purple-600 transition-colors cursor-pointer flex items-center gap-2" onClick={() => { setEditingServiceId(service.id); setEditingServiceCost(service.cost.toString()); }}>
+                                          <span className="font-black text-gray-900 text-base group-hover:text-[#3A1078] transition-colors cursor-pointer flex items-center gap-2" onClick={() => { setEditingServiceId(service.id); setEditingServiceCost(service.cost.toString()); }}>
                                              ${Number(service.cost).toFixed(2)}
                                           </span>
                                           <span className="text-[10px] font-bold text-gray-400">Comisión: ${salonService.calcCommissionAmount(service, users).toFixed(2)}</span>
@@ -623,11 +623,11 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                        {service.deleted ? (
                                           <>
-                                             <button onClick={() => handleRestoreDeletedService(service.id)} className="p-2 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition" title="Restaurar"><CheckCircle size={16}/></button>
-                                             <button onClick={() => handlePermanentlyDeleteService(service.id)} className="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition" title="Borrar Permanente"><Trash2 size={16}/></button>
+                                             <button onClick={() => handleRestoreDeletedService(service.id)} className="p-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] hover:bg-[#C5A059]/20 transition" title="Restaurar"><CheckCircle size={16}/></button>
+                                             <button onClick={() => handlePermanentlyDeleteService(service.id)} className="p-2 rounded-full bg-[#88304E]/10 text-[#88304E] hover:bg-[#88304E]/20 transition" title="Borrar Permanente"><Trash2 size={16}/></button>
                                           </>
                                        ) : (
-                                          <button onClick={() => handleSoftDeleteService(service.id)} className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 transition" title="Eliminar"><Trash2 size={16}/></button>
+                                          <button onClick={() => handleSoftDeleteService(service.id)} className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-[#88304E]/10 hover:text-[#88304E] transition" title="Eliminar"><Trash2 size={16}/></button>
                                        )}
                                     </div>
                                  </td>
@@ -670,7 +670,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             {/* Commissions Section */}
             <div>
                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <Percent size={20} className="text-blue-500" />
+                  <Percent size={20} className="text-[#3A1078]" />
                   Rendimiento del Equipo
                </h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -692,13 +692,13 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                            </div>
                            
                            <div className="space-y-3">
-                              <div className="flex justify-between items-center p-3 rounded-xl bg-blue-50/50 border border-blue-100">
-                                 <span className="text-xs font-bold text-blue-700 uppercase">Comisión Total</span>
-                                 <span className="font-bold text-blue-700">${stat.commission.toFixed(2)}</span>
+                              <div className="flex justify-between items-center p-3 rounded-xl bg-[#3A1078]/5 border border-[#3A1078]/10">
+                                 <span className="text-xs font-bold text-[#3A1078] uppercase">Comisión Total</span>
+                                 <span className="font-bold text-[#3A1078]">${stat.commission.toFixed(2)}</span>
                               </div>
-                              <div className="flex justify-between items-center p-3 rounded-xl bg-orange-50/50 border border-orange-100">
-                                 <span className="text-xs font-bold text-orange-700 uppercase">Pagado</span>
-                                 <span className="font-bold text-orange-700">${stat.commissionPaid.toFixed(2)}</span>
+                              <div className="flex justify-between items-center p-3 rounded-xl bg-[#C5A059]/10 border border-[#C5A059]/20">
+                                 <span className="text-xs font-bold text-[#C5A059] uppercase">Pagado</span>
+                                 <span className="font-bold text-[#C5A059]">${stat.commissionPaid.toFixed(2)}</span>
                               </div>
                               
                               <div className="pt-2 border-t border-gray-100 flex justify-between items-end">
@@ -719,7 +719,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
          <div className="xl:col-span-1">
             <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-6 sticky top-6">
                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                  <div className="w-8 h-8 rounded-full bg-[#88304E]/10 flex items-center justify-center text-[#88304E]">
                      <CreditCard size={16} />
                   </div>
                   Registrar Gasto
@@ -733,7 +733,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                         placeholder="Ej. Recibo de Luz"
                         value={newExpense.description}
                         onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                        className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all outline-none font-medium text-gray-700"
+                        className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 transition-all outline-none font-medium text-gray-700"
                      />
                   </div>
                   
@@ -751,7 +751,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                amount: val === "" ? "" : parseFloat(val) 
                              });
                            }}
-                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all outline-none font-medium text-gray-700"
+                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 transition-all outline-none font-medium text-gray-700"
                         />
                      </div>
                      <div className="space-y-2">
@@ -759,7 +759,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                         <div className="relative">
                            <button
                               onClick={() => setShowCategoryList(!showCategoryList)}
-                              className="w-full h-12 px-2 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-rose-500 focus:outline-none font-medium text-gray-700 text-sm text-left flex items-center justify-between"
+                              className="w-full h-12 px-2 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#3A1078] focus:outline-none font-medium text-gray-700 text-sm text-left flex items-center justify-between"
                            >
                               <span>{newExpense.category}</span>
                               <ChevronDown size={16} className="text-gray-400" />
@@ -774,7 +774,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                           setNewExpense({ ...newExpense, category: cat, userId: "" });
                                           setShowCategoryList(false);
                                        }}
-                                       className="p-3 hover:bg-rose-50 cursor-pointer text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+                                       className="p-3 hover:bg-[#88304E]/10 cursor-pointer text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
                                     >
                                        {cat}
                                     </div>
@@ -820,7 +820,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   <div className="pt-2">
                      <button
                         onClick={handleAddExpense}
-                        className="w-full h-14 rounded-xl bg-gray-900 text-white font-bold text-lg hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-gray-900/20 flex items-center justify-center gap-2"
+                        className="w-full h-14 rounded-xl bg-[#3A1078] text-white font-bold text-lg hover:bg-[#2A0B55] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-violet-900/20 flex items-center justify-center gap-2"
                      >
                         <DollarSign size={20} />
                         Agregar Gasto
@@ -845,7 +845,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                  </div>
                               </div>
                               <div className="flex items-center gap-3">
-                                 <span className="font-bold text-rose-600 block text-right">${expense.amount.toFixed(2)}</span>
+                                 <span className="font-bold text-[#88304E] block text-right">${expense.amount.toFixed(2)}</span>
                                  <button
                                     onClick={() => handleDeleteExpense(expense.id)}
                                     className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"

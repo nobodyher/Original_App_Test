@@ -69,9 +69,9 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
   const [ownerTab, setOwnerTab] = useState<"dashboard" | "analytics" | "config">("dashboard");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F8FAFC]">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-[#3A1078] to-[#240A48] text-white p-6 shadow-lg">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Panel de Administración</h1>
@@ -95,8 +95,8 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
               onClick={() => setOwnerTab("dashboard")}
               className={`flex items-center gap-2 px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
                 ownerTab === "dashboard"
-                  ? "bg-purple-600 text-white shadow-md transform -translate-y-1"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  ? "bg-[#3A1078] text-white shadow-md transform -translate-y-1"
+                  : "bg-white text-[#0F172A] hover:bg-gray-100 border border-transparent hover:border-gray-200"
               }`}
             >
               <LayoutDashboard size={20} />
@@ -106,8 +106,8 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
               onClick={() => setOwnerTab("analytics")}
               className={`flex items-center gap-2 px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
                 ownerTab === "analytics"
-                  ? "bg-purple-600 text-white shadow-md transform -translate-y-1"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  ? "bg-[#3A1078] text-white shadow-md transform -translate-y-1"
+                  : "bg-white text-[#0F172A] hover:bg-gray-100 border border-transparent hover:border-gray-200"
               }`}
             >
               <TrendingUp size={20} />
@@ -117,8 +117,8 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
               onClick={() => setOwnerTab("config")}
               className={`flex items-center gap-2 px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
                 ownerTab === "config"
-                  ? "bg-purple-600 text-white shadow-md transform -translate-y-1"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  ? "bg-[#3A1078] text-white shadow-md transform -translate-y-1"
+                  : "bg-white text-[#0F172A] hover:bg-gray-100 border border-transparent hover:border-gray-200"
               }`}
             >
               <Settings size={20} />
