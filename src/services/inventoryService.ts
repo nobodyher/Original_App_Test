@@ -185,18 +185,20 @@ export const addCatalogService = async (
   name: string,
   category: "manicura" | "pedicura",
   basePrice: number
-): Promise<void> => {
+): Promise<string> => {
   if (!name.trim() || basePrice <= 0) {
     throw new Error("Datos inválidos");
   }
   
-  await addDoc(collection(db, "catalog_services"), {
+  const docRef = await addDoc(collection(db, "catalog_services"), {
     name: name.trim(),
     category,
     basePrice,
     active: true,
     createdAt: serverTimestamp(),
   });
+
+  return docRef.id;
 };
 
 export const updateCatalogService = async (

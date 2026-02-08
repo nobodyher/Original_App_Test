@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import {
   Plus,
   Trash2,
-  Edit2,
   X,
   Check,
   LogOut,
@@ -14,6 +13,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 import NotificationToast from "../../components/ui/NotificationToast";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
 import type {
   AppUser,
   Service,
@@ -48,8 +49,6 @@ interface StaffScreenProps {
     chemicalProducts: ChemicalProduct[],
     total: number
   ) => Promise<void>;
-  updateService: (id: string, data: Partial<Service>) => Promise<void>;
-  softDeleteService: (id: string, userId?: string) => Promise<void>;
 }
 
 const EmptyState = ({ 
@@ -79,8 +78,6 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   showNotification,
   onLogout,
   addService,
-  updateService,
-  softDeleteService,
 }) => {
   const [newService, setNewService] = useState<NewServiceState>({
     date: new Date().toISOString().split("T")[0],
@@ -98,8 +95,6 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
     dateFrom: "",
     dateTo: "",
   });
-  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Service>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter services for current staff user
@@ -228,34 +223,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
     }
   };
 
-  const handleEditClick = (service: Service) => {
-    setEditingServiceId(service.id);
-    setEditForm({ ...service });
-  };
 
-  const handleUpdateService = async (id: string) => {
-    try {
-      await updateService(id, editForm);
-      setEditingServiceId(null);
-      setEditForm({});
-      showNotification("Servicio actualizado");
-    } catch (error) {
-      console.error("Error actualizando servicio:", error);
-      showNotification("Error al actualizar", "error");
-    }
-  };
-
-  const handleSoftDeleteService = async (id: string) => {
-    if (!window.confirm("¿Eliminar este servicio? (Se guardará como historial)"))
-      return;
-    try {
-      await softDeleteService(id, currentUser?.id);
-      showNotification("Servicio eliminado (historial)");
-    } catch (error) {
-      console.error("Error eliminando servicio:", error);
-      showNotification("Error al eliminar", "error");
-    }
-  };
 
   const totalToday = userServices.reduce((sum, s) => sum + s.cost, 0);
 
@@ -293,13 +261,15 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
               </div>
             </div>
             
-            <button
+            <Button
+               variant="secondary"
+               size="sm"
                onClick={onLogout}
-               className="flex items-center gap-2 bg-white border border-[#C5A059]/30 text-[#0F172A] px-5 py-2.5 rounded-2xl transition-all hover:bg-[#F8FAFC] hover:border-[#C5A059]/50 hover:shadow-md text-sm font-bold active:scale-95"
+               className="flex items-center gap-2"
             >
                <LogOut size={18} />
                <span className="hidden sm:inline">Cerrar Turno</span>
-            </button>
+            </Button>
          </div>
       </div>
 
@@ -308,20 +278,20 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
          
          {/* Stats Row */}
          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white/80 backdrop-blur-md rounded-[2rem] shadow-sm border border-[#C5A059]/20 p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
+            <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
                <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
                   <Check size={80} className="text-[#3A1078]" />
                </div>
                <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wider">Servicios Hoy</p>
                <p className="text-5xl font-black text-[#0F172A]">{userServices.length}</p>
-            </div>
-            <div className="bg-white/80 backdrop-blur-md rounded-[2rem] shadow-sm border border-[#C5A059]/20 p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
+            </Card>
+            <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
                <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
                   <TrendingUp size={80} className="text-[#C5A059]" />
                </div>
                <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wider">Ventas Totales</p>
                <p className="text-5xl font-black text-[#0F172A]">${totalToday.toFixed(2)}</p>
-            </div>
+            </Card>
             <div className="bg-gradient-to-br from-[#3A1078] to-[#0F172A] rounded-[2rem] shadow-xl p-6 flex flex-col justify-between h-32 relative overflow-hidden text-white group">
                <div className="absolute right-0 top-0 p-5 opacity-10 group-hover:scale-110 transition-transform">
                   <Crown size={80} className="text-[#C5A059]" />
@@ -338,7 +308,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
             <div className="xl:col-span-8 space-y-6">
                
                {/* 1. Client & Basics Card */}
-               <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-white/60 p-8">
+               <Card className="p-8">
                   <h3 className="text-xl font-bold text-[#0F172A] mb-6 flex items-center gap-3">
                      <span className="w-10 h-10 rounded-2xl bg-[#88304E]/10 flex items-center justify-center text-[#88304E] ring-1 ring-[#88304E]/20">
                         <User size={20} />
@@ -366,10 +336,10 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                         />
                      </div>
                   </div>
-               </div>
+               </Card>
 
                {/* 2. Service Selection Card */}
-               <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-white/60 p-8 relative z-20">
+               <Card className="p-8 relative z-20">
                   <h3 className="text-xl font-bold text-[#0F172A] mb-6 flex items-center gap-3">
                      <span className="w-10 h-10 rounded-2xl bg-[#3A1078]/10 flex items-center justify-center text-[#3A1078] ring-1 ring-[#3A1078]/20">
                         <Plus size={20} />
@@ -435,21 +405,22 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                               </div>
                               <div className="flex items-center gap-6">
                                  <span className="font-black text-[#0F172A] text-lg">${s.servicePrice}</span>
-                                 <button 
+                                 <Button 
+                                    variant="danger"
                                     onClick={() => removeServiceFromList(idx)} 
-                                    className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-[#C5A059]/20 flex items-center justify-center text-[#0F172A]/40 hover:bg-[#88304E]/10 hover:text-[#88304E] hover:border-[#88304E]/30 transition-all active:scale-95"
+                                    className="w-10 h-10 p-0 rounded-xl"
                                  >
                                     <Trash2 size={18} />
-                                 </button>
+                                 </Button>
                               </div>
                            </div>
                         ))}
                      </div>
                   )}
-               </div>
+               </Card>
                
                {/* 3. Extras Card */}
-               <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-white/60 p-8">
+               <Card className="p-8">
                  <button
                     onClick={() => setShowExtrasSelector(!showExtrasSelector)}
                     className="w-full flex justify-between items-center group"
@@ -524,13 +495,13 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                         )}
                     </div>
                  )}
-               </div>
+               </Card>
 
             </div>
 
             {/* Right Column: Total & Pay (4 cols) */}
             <div className="xl:col-span-4">
-               <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-xl border border-[#C5A059]/20 p-8 sticky top-6">
+               <Card className="p-8 sticky top-6">
                   <h3 className="text-xl font-bold text-[#0F172A] mb-8">Resumen</h3>
                   
                   <div className="space-y-5 mb-10">
@@ -576,22 +547,19 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                         </div>
                      </div>
 
-                     <button
+                     <Button
+                        variant="primary"
+                        fullWidth
                         onClick={handleAddService}
                         disabled={newService.client === "" || newService.services.length === 0 || isSubmitting}
-                        className={`w-full py-5 rounded-2xl font-black text-lg shadow-xl shadow-[#3A1078]/20 hover:shadow-2xl transition-all flex items-center justify-center gap-3 ${
-                           newService.client === "" || newService.services.length === 0
-                              ? "bg-[#E2E8F0] text-[#94A3B8] cursor-not-allowed"
-                              : isSubmitting 
-                                 ? "bg-[#3A1078] text-white cursor-wait animate-pulse" 
-                                 : "bg-[#3A1078] text-white hover:bg-[#88304E] transform hover:-translate-y-1 active:translate-y-0"
-                        }`}
+                        isLoading={isSubmitting}
+                        className="py-5 text-lg"
                      >
-                        <Check size={24} className={isSubmitting ? "hidden" : ""} strokeWidth={3} />
-                        {isSubmitting ? "Procesando..." : "Confirmar Cobro"}
-                     </button>
+                        {!isSubmitting && <Check size={24} strokeWidth={3} />}
+                        Confirmar Cobro
+                     </Button>
                   </div>
-               </div>
+               </Card>
             </div>
          </div>
          
@@ -624,48 +592,14 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                   />
                ) : (
                   filteredServices.slice().reverse().map((service) => {
-                     const isEditing = editingServiceId === service.id;
-                     
-                     if (isEditing) {
-                        return (
-                           <div key={service.id} className="bg-white p-8 rounded-[2.5rem] shadow-xl ring-4 ring-blue-100 animate-pulse-once">
-                              {/* Edit Mode Custom Form */}
-                              <div className="space-y-4">
-                                 <p className="font-bold text-blue-600 flex items-center gap-2">
-                                    <Edit2 size={16} /> Editando servicio...
-                                 </p>
-                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-stone-400 uppercase">Cliente</label>
-                                    <input 
-                                       value={editForm.client} 
-                                       onChange={e => setEditForm({...editForm, client: e.target.value})} 
-                                       className="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-blue-400 outline-none" 
-                                    />
-                                 </div>
-                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-stone-400 uppercase">Costo Total</label>
-                                    <input 
-                                       value={editForm.cost} 
-                                       type="number" 
-                                       onChange={e => setEditForm({...editForm, cost: parseFloat(e.target.value)})} 
-                                       className="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-blue-400 outline-none font-bold" 
-                                    />
-                                 </div>
-                                 <div className="flex gap-3 pt-4">
-                                     <button onClick={() => handleUpdateService(service.id)} className="bg-stone-800 text-white px-6 py-3 rounded-xl text-sm font-bold flex-1 hover:bg-stone-900 transition-colors">Guardar</button>
-                                     <button onClick={() => setEditingServiceId(null)} className="bg-stone-100 text-stone-600 px-6 py-3 rounded-xl text-sm font-bold hover:bg-stone-200 transition-colors">Cancelar</button>
-                                 </div>
-                              </div>
-                           </div>
-                        )
-                     }
+
 
                      const isCash = service.paymentMethod === 'cash';
 
                      return (
-                        <div 
+                        <Card 
                            key={service.id} 
-                           className="group bg-white/60 backdrop-blur-md rounded-[2.5rem] shadow-sm border border-[#C5A059]/20 p-6 relative overflow-hidden transition-all hover:shadow-xl hover:bg-white hover:-translate-y-1"
+                           className="group p-6 relative overflow-hidden transition-all hover:shadow-xl hover:bg-white hover:-translate-y-1"
                         >
                            <div className={`absolute top-0 left-0 w-1.5 h-full ${isCash ? 'bg-[#C5A059]' : 'bg-[#3A1078]'}`} />
                            
@@ -702,15 +636,8 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                               )}
                            </div>
 
-                           <div className="pl-4 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                              <button onClick={() => handleEditClick(service)} className="w-10 h-10 rounded-xl bg-[#3A1078]/10 text-[#3A1078] flex items-center justify-center hover:bg-[#3A1078]/20 hover:scale-110 transition-all shadow-sm">
-                                 <Edit2 size={16} />
-                              </button>
-                              <button onClick={() => handleSoftDeleteService(service.id)} className="w-10 h-10 rounded-xl bg-[#88304E]/10 text-[#88304E] flex items-center justify-center hover:bg-[#88304E]/20 hover:scale-110 transition-all shadow-sm">
-                                 <Trash2 size={16} />
-                              </button>
-                           </div>
-                        </div>
+
+                        </Card>
                      )
                   })
                )}

@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+import { LicenseLogin } from "./features/auth/LicenseLogin";
 import { Routes, Route, Navigate } from "react-router-dom";
 import type { Toast, AppUser } from "./types";
 
@@ -20,6 +23,15 @@ import { useSalonData } from "./hooks/useSalonData";
 // Tailwind injected in main.tsx
 
 const App = () => {
+  const [isDeviceAuthorized, setIsDeviceAuthorized] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsDeviceAuthorized(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // ====== Estado ======
   const { currentUser, users, loading, initialized, login, logout } = useAuth();
   const {
@@ -57,9 +69,24 @@ const App = () => {
       });
   }, []);
 
+  if (isDeviceAuthorized === null) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-slate-50">
+              <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-slate-600 font-medium">Verificando licencia...</p>
+              </div>
+          </div>
+      );
+  }
+
+  if (!isDeviceAuthorized) {
+      return <LicenseLogin />;
+  }
+
   if (loading) {
-  return <LoadingScreen />;
-}
+    return <LoadingScreen />;
+  }
 
   return (
     <>
@@ -135,11 +162,9 @@ const App = () => {
               notification={notification}
               showNotification={showNotification}
               onLogout={logout}
-              addService={(user, data, recipes, chemProducts, total) => 
+              addService={(user, data, recipes, chemProducts, total) =>
                 salonService.addService(user, data, recipes, serviceRecipes, consumables, chemProducts, catalogServices, total)
               }
-              updateService={salonService.updateService}
-              softDeleteService={salonService.softDeleteService}
             />
           </ProtectedRoute>
         } />

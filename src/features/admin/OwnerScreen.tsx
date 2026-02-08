@@ -3,6 +3,7 @@ import { LayoutDashboard, TrendingUp, Settings, LogOut } from "lucide-react";
 import OwnerDashboard from "./components/OwnerDashboard";
 import AnalyticsTab from "./components/AnalyticsTab";
 import OwnerConfigTab from "./components/OwnerConfigTab";
+import { Button } from "../../components/ui/Button";
 import type {
   AppUser,
   Service,
@@ -46,7 +47,7 @@ interface OwnerScreenProps {
   deactivateUser: (userId: string) => Promise<void>;
   deleteUserPermanently: (userId: string) => Promise<void>;
 
-  addCatalogService: (name: string, category: "manicura" | "pedicura", price: number) => Promise<void>;
+  addCatalogService: (name: string, category: "manicura" | "pedicura", price: number) => Promise<string>;
   updateCatalogService: (id: string, data: Partial<CatalogService>) => Promise<void>;
   deleteCatalogService: (id: string) => Promise<void>;
 
@@ -77,13 +78,15 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
             <h1 className="text-2xl font-bold">Panel de Administración</h1>
             <p className="opacity-90">Bienvenid@, {props.currentUser?.name}</p>
           </div>
-            <button
+            <Button
+            variant="secondary"
+            size="sm"
             onClick={props.onLogout}
-            className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg hover:bg-white/30 transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm"
+            className="flex items-center gap-2"
           >
             <LogOut size={20} />
             <span>Salir</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -91,39 +94,30 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
         <div className="space-y-6">
           {/* Admin Tabs Navigation */}
           <div className="flex gap-4 border-b-2 border-gray-200 mt-6 mb-10 overflow-x-auto py-2">
-            <button
+            <Button
+              variant={ownerTab === "dashboard" ? "primary" : "ghost"}
               onClick={() => setOwnerTab("dashboard")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-                ownerTab === "dashboard"
-                  ? "bg-[#3A1078] text-white shadow-md transform -translate-y-1"
-                  : "bg-white text-[#0F172A] hover:bg-gray-100 border border-transparent hover:border-gray-200"
-              }`}
+              className="flex items-center gap-2 rounded-lg"
             >
               <LayoutDashboard size={20} />
               Dashboard
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={ownerTab === "analytics" ? "primary" : "ghost"}
               onClick={() => setOwnerTab("analytics")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-                ownerTab === "analytics"
-                  ? "bg-[#3A1078] text-white shadow-md transform -translate-y-1"
-                  : "bg-white text-[#0F172A] hover:bg-gray-100 border border-transparent hover:border-gray-200"
-              }`}
+              className="flex items-center gap-2 rounded-lg"
             >
               <TrendingUp size={20} />
               Analíticas
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={ownerTab === "config" ? "primary" : "ghost"}
               onClick={() => setOwnerTab("config")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-t-lg font-semibold transition whitespace-nowrap ${
-                ownerTab === "config"
-                  ? "bg-[#3A1078] text-white shadow-md transform -translate-y-1"
-                  : "bg-white text-[#0F172A] hover:bg-gray-100 border border-transparent hover:border-gray-200"
-              }`}
+              className="flex items-center gap-2 rounded-lg"
             >
               <Settings size={20} />
               Configuración
-            </button>
+            </Button>
           </div>
 
           {ownerTab === "dashboard" && (

@@ -4,21 +4,15 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 
-// Control global de logs basado en el archivo .env
+// Control global de logs (puedes dejar esto si quieres)
 if (import.meta.env.VITE_ENABLE_LOGS !== 'true') {
   const noOp = () => {};
   console.log = noOp;
   console.debug = noOp;
   console.info = noOp;
-  // Mantener console.warn y console.error por seguridad técnica
 }
 
-// Inject Tailwind CSS globally
-if (typeof document !== "undefined") {
-  const script = document.createElement("script");
-  script.src = "https://cdn.tailwindcss.com";
-  document.head.appendChild(script);
-}
+// HE BORRADO EL BLOQUE "Inject Tailwind CSS globally" AQUÍ
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

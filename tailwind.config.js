@@ -5,7 +5,18 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        // Aquí conectamos Tailwind con nuestras variables CSS
+        brand: {
+          primary: "var(--color-primary)",
+          secondary: "var(--color-secondary)",
+          accent: "var(--color-accent)",
+          dark: "var(--color-text)",
+          bg: "var(--color-background)",
+        }
+      }
+    },
   },
   plugins: [],
 }

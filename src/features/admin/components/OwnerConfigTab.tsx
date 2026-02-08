@@ -53,7 +53,7 @@ interface OwnerConfigTabProps {
   deleteUserPermanently: (userId: string) => Promise<void>;
 
   // Inventory/Catalog Actions
-  addCatalogService: (name: string, category: "manicura" | "pedicura", price: number) => Promise<void>;
+  addCatalogService: (name: string, category: "manicura" | "pedicura", price: number) => Promise<string>;
   updateCatalogService: (id: string, data: Partial<CatalogService>) => Promise<void>;
   deleteCatalogService: (id: string) => Promise<void>;
 
@@ -167,11 +167,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     { id: "materials", label: "Químicos", icon: Beaker, color: "text-[#3A1078]" }, // Using Beaker imported or ensuring it is imported
   ];
 
-  const [newCatalogService, setNewCatalogService] = useState({
-    name: "",
-    category: "manicura" as "manicura" | "pedicura",
-    basePrice: "" as string | number,
-  });
+
 
   const [newConsumable, setNewConsumable] = useState({
     name: "",
@@ -200,6 +196,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+
 
   const [editingStaffItem, setEditingStaffItem] = useState<AppUser | null>(null);
   const [editStaffForm, setEditStaffForm] = useState<Partial<AppUser>>({});
@@ -403,22 +401,40 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     }
   };
 
-  const handleAddCatalogService = async () => {
-    setIsSubmitting(true);
-    try {
-      await addCatalogService(
-        newCatalogService.name,
-        newCatalogService.category,
-        typeof newCatalogService.basePrice === 'string' ? parseFloat(newCatalogService.basePrice) : newCatalogService.basePrice
-      );
+  const handleSaveUnifiedService = async () => {
+    if (!editingServiceItem) return;
 
-      setNewCatalogService({ name: "", category: "manicura", basePrice: "" });
-      showNotification("Servicio agregado al catálogo");
+    try {
+      if (editingServiceItem.id === "new") {
+        // CREACIÓN
+        const newId = await addCatalogService(
+          editServiceForm.name || "",
+          editServiceForm.category || "manicura",
+          editServiceForm.basePrice ? Number(editServiceForm.basePrice) : 0
+        );
+        
+        // Guardar materiales inmediatamente
+        if (selectedMaterials.length > 0 || selectedConsumables.length > 0) {
+            await updateCatalogService(newId, {
+                manualMaterials: selectedMaterials,
+                manualConsumables: selectedConsumables
+            });
+        }
+
+        showNotification("Servicio creado exitosamente");
+      } else {
+        // EDICIÓN
+        await updateCatalogService(editingServiceItem.id, {
+          ...editServiceForm,
+          manualMaterials: selectedMaterials,
+          manualConsumables: selectedConsumables,
+        });
+        showNotification("Servicio actualizado exitosamente");
+      }
+      setEditingServiceItem(null);
     } catch (error: any) {
-      console.error("Error agregando servicio:", error);
-      showNotification(error.message || "Error al agregar", "error");
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error guardando servicio:", error);
+      showNotification(error.message || "Error al guardar", "error");
     }
   };
 
@@ -454,20 +470,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     }
   };
 
-  const handleUpdateServiceWithMaterials = async (id: string, updates: Partial<CatalogService>) => {
-    try {
-      await updateCatalogService(id, {
-        ...updates,
-        manualMaterials: selectedMaterials,
-        manualConsumables: selectedConsumables,
-      });
-      setEditingServiceItem(null);
-      showNotification("Servicio y materiales actualizados");
-    } catch (error) {
-      console.error("Error actualizando servicio:", error);
-      showNotification("Error al actualizar", "error");
-    }
-  };
+
 
   const handleToggleMaterial = (materialId: string) => {
     setSelectedMaterials(prev => 
@@ -598,14 +601,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     setIsSubmitting(true);
     try {
       const yieldPerUnit = parseFloat(newChemicalProduct.yieldPerUnit || newChemicalProduct.yield) || 0;
+      const purchasePrice = parseFloat(newChemicalProduct.purchasePrice) || 0;
+      const totalYield = parseFloat(newChemicalProduct.yield) || 0;
+      const calculatedCost = totalYield > 0 ? purchasePrice / totalYield : 0;
       
       await addChemicalProduct({
         name: newChemicalProduct.name,
         quantity: parseFloat(newChemicalProduct.quantity) || 0,
         unit: newChemicalProduct.unit as "ml" | "L" | "g" | "kg" | "unid",
-        purchasePrice: parseFloat(newChemicalProduct.purchasePrice) || 0,
-        yield: parseFloat(newChemicalProduct.yield) || 0,
-        costPerService: 0,
+        purchasePrice: purchasePrice,
+        yield: totalYield,
+        costPerService: calculatedCost,
         stock: parseFloat(newChemicalProduct.stock || "0") || 0,
         minStock: 0,
         yieldPerUnit: yieldPerUnit,
@@ -632,6 +638,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
   const handleUpdateChemicalProduct = async (id: string, updates: Partial<ChemicalProduct>) => {
     try {
+      const currentProduct = chemicalProducts.find((p) => p.id === id);
+      if (currentProduct) {
+         const newPrice = updates.purchasePrice !== undefined ? updates.purchasePrice : currentProduct.purchasePrice;
+         const newYield = updates.yield !== undefined ? updates.yield : currentProduct.yield;
+         
+         if (updates.purchasePrice !== undefined || updates.yield !== undefined) {
+            updates.costPerService = newYield > 0 ? newPrice / newYield : 0;
+         }
+      }
+
       await updateChemicalProduct(
         id,
         updates,
@@ -730,60 +746,31 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           {/* Services Tab */}
           {activeTab === "services" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <h3 className="text-2xl font-bold text-[#0F172A] mb-6 flex items-center gap-2">
-                <ShoppingCart className="text-[#3A1078]" />
-                Catálogo de Servicios
-              </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-[#F8FAFC] rounded-lg border border-gray-100">
-            <input
-              type="text"
-              placeholder="Nombre del servicio"
-              value={newCatalogService.name}
-              onChange={(e) =>
-                setNewCatalogService({
-                  ...newCatalogService,
-                  name: e.target.value,
-                })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
-            />
-            <select
-              value={newCatalogService.category}
-              onChange={(e) =>
-                setNewCatalogService({
-                  ...newCatalogService,
-                  category: e.target.value as CatalogService["category"],
-                })
-              }
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none text-gray-900 bg-white"
-            >
-              <option value="manicura">Manicura</option>
-              <option value="pedicura">Pedicura</option>
-            </select>
-            <input
-              type="number"
-              step="0.01"
-              placeholder="Precio base $"
-              value={newCatalogService.basePrice}
-              onChange={(e) => {
-                const val = e.target.value;
-                setNewCatalogService({
-                  ...newCatalogService,
-                  basePrice: val === "" ? 0 : parseFloat(val),
-                });
-              }}
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] focus:outline-none text-[#0F172A] bg-white"
-            />
-            <button
-              onClick={handleAddCatalogService}
-              disabled={isSubmitting}
-              className={`bg-[#3A1078] hover:bg-[#240A48] text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold ${
-                isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
-              }`}
-            >
-              Agregar
-            </button>
-          </div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+                  <ShoppingCart className="text-[#3A1078]" />
+                  Catálogo de Servicios
+                </h3>
+                  <button
+                    onClick={() => {
+                        setEditingServiceItem({
+                            id: "new",
+                            name: "",
+                            category: "manicura",
+                            basePrice: 0,
+                            active: true,
+                            createdAt: new Date()
+                        } as any);
+                        setEditServiceForm({ category: "manicura" });
+                        setSelectedMaterials([]);
+                        setSelectedConsumables([]);
+                    }}
+                    className="bg-[#3A1078] hover:bg-[#240A48] text-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold flex items-center gap-2"
+                  >
+                    <Plus size={18} />
+                    Nuevo Servicio
+                  </button>
+              </div>
 
 
 
@@ -916,7 +903,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       ) : (
                         <>
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {cs.name}
+                            <div className="flex items-center gap-2">
+                              {cs.name}
+                              {((cs.manualMaterials?.length ?? 0) > 0 || (cs.manualConsumables?.length ?? 0) > 0) ? (
+                                <div title="Configurado" className="text-emerald-500 bg-emerald-50 p-1 rounded-full">
+                                  <Beaker size={14} />
+                                </div>
+                              ) : (
+                                <div title="Sin receta" className="text-orange-400 bg-orange-50 p-1 rounded-full">
+                                  <AlertTriangle size={14} />
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600 capitalize tracking-wide">
                             {cs.category}
@@ -2057,7 +2055,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#F8FAFC]">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Editar Servicio</h3>
+                <h3 className="text-xl font-bold text-gray-800">
+                    {editingServiceItem.id === "new" ? "Nuevo Servicio" : "Editar Servicio"}
+                </h3>
                 <p className="text-sm text-gray-500">Configuración y materiales</p>
               </div>
               <button 
@@ -2346,14 +2346,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  if (editingServiceItem && editServiceForm) {
-                    handleUpdateServiceWithMaterials(editingServiceItem.id, editServiceForm);
-                  }
-                }}
+                onClick={handleSaveUnifiedService}
                 className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
-                Guardar Cambios
+                {editingServiceItem.id === "new" ? "Crear Servicio" : "Guardar Cambios"}
               </button>
             </div>
           </div>
@@ -2466,6 +2462,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
                       />
                     </div>
+                </div>
+                
+                <div className="mt-2 bg-[#3A1078]/5 p-3 rounded-lg border border-[#3A1078]/10 flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Costo calculado por servicio:</span>
+                    <span className="text-lg font-bold text-[#3A1078]">
+                        ${((editChemicalForm.purchasePrice || 0) / (editChemicalForm.yield || 1)).toFixed(2)}
+                    </span>
                 </div>
               </div>
 
@@ -2829,30 +2832,76 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </div>
               </div>
 
-              {/* Costos */}
+              {/* Costos y Empaque */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
                    <DollarSign size={18} className="text-[#3A1078]" />
-                   Costo Unitario
+                   Costos y Empaque
                 </h4>
 
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Precio Compra (Caja)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={editConsumableForm.purchasePrice ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const newPrice = val === "" ? 0 : parseFloat(val);
+                            const pkgSize = editConsumableForm.packageSize || 1;
+                            const newUnitCost = pkgSize > 0 ? newPrice / pkgSize : 0;
+                            
+                            setEditConsumableForm(prev => ({ 
+                              ...prev, 
+                              purchasePrice: newPrice,
+                              unitCost: parseFloat(newUnitCost.toFixed(4))
+                            }));
+                          }}
+                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none font-semibold"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-600">Unidades por Paquete</label>
+                      <input
+                        type="number"
+                        placeholder="1"
+                        value={editConsumableForm.packageSize ?? ""}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            const newSize = val === "" ? 0 : parseFloat(val);
+                            const price = editConsumableForm.purchasePrice || 0;
+                            const newUnitCost = newSize > 0 ? price / newSize : 0;
+
+                            setEditConsumableForm(prev => ({ 
+                              ...prev, 
+                              packageSize: newSize,
+                              unitCost: parseFloat(newUnitCost.toFixed(4))
+                            }));
+                        }}
+                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
+                      />
+                    </div>
+                </div>
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Costo por {editConsumableForm.unit || "unidad"}</label>
+                  <label className="text-sm font-medium text-gray-600">Costo Unitario (Calculado)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                     <input
                       type="number"
-                      step="0.01"
+                      step="0.0001"
                       value={editConsumableForm.unitCost ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEditConsumableForm(prev => ({ ...prev, unitCost: val === "" ? 0 : parseFloat(val) }));
-                      }}
-                      className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none font-semibold"
+                      disabled
+                      className="w-full pl-8 pr-4 py-2 bg-gray-50 text-gray-500 border border-gray-200 rounded-lg cursor-not-allowed font-semibold"
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                     Este valor se usa para calcular el costo de materiales de los servicios.
+                     Costo por {editConsumableForm.unit || "unidad"} resultante. Se actualizará automáticamente.
                   </p>
                 </div>
               </div>
@@ -3372,6 +3421,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
 
 
+      {/* Slide-over para CREAR Nuevo Servicio */}
+
+      
     </div>
   );
 };
