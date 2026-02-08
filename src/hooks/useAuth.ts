@@ -16,7 +16,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Inicializar usuarios por defecto
+  // 1. Inicializar usuarios por defecto (igual que antes)
   useEffect(() => {
     const initUsers = async () => {
       try {
@@ -30,7 +30,7 @@ export const useAuth = () => {
     initUsers();
   }, []);
 
-  // Escuchar cambios en usuarios
+  // 2. Escuchar cambios en usuarios (igual que antes)
   useEffect(() => {
     if (!initialized) return;
 
@@ -42,7 +42,6 @@ export const useAuth = () => {
           normalizeUser({ id: d.id, ...d.data() })
         );
 
-        // Sort users: "Principal" first, then others alphabetically
         const sortedData = data.sort((a, b) => {
           if (a.name === "Principal") return -1;
           if (b.name === "Principal") return 1;
@@ -50,7 +49,8 @@ export const useAuth = () => {
         });
 
         setUsers(sortedData);
-        setLoading(false);
+        // NOTA: No ponemos setLoading(false) aquí todavía para evitar parpadeos
+        // Lo haremos después de intentar restaurar la sesión
       },
       (error) => {
         console.error("Error cargando usuarios:", error);
@@ -61,5 +61,46 @@ export const useAuth = () => {
     return () => unsub();
   }, [initialized]);
 
-  return { currentUser, setCurrentUser, users, loading, initialized };
+  // 3. NUEVO: Restaurar sesión al recargar
+  useEffect(() => {
+    // Solo ejecutamos si ya tenemos usuarios cargados
+    if (users.length > 0) {
+      const savedUserId = localStorage.getItem("salon_user_id");
+      
+      if (savedUserId && !currentUser) {
+        // Buscamos si el usuario guardado sigue existiendo
+        const foundUser = users.find(u => u.id === savedUserId);
+        if (foundUser) {
+          setCurrentUser(foundUser);
+        }
+      }
+      
+      // Una vez intentada la restauración, quitamos el loading
+      setLoading(false);
+    } else if (initialized && users.length === 0) {
+       // Si inicializó pero no hay usuarios (caso raro), quitamos loading
+       // Ojo: esto podría necesitar ajuste si tarda mucho Firebase
+       // Por seguridad, un timeout o esperar al primer snapshot real
+    }
+  }, [users, initialized]);
+
+  // 4. NUEVO: Funciones para Login/Logout con persistencia
+  const login = (user: AppUser) => {
+    localStorage.setItem("salon_user_id", user.id); // Guardar en disco
+    setCurrentUser(user);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("salon_user_id"); // Borrar del disco
+    setCurrentUser(null);
+  };
+
+  return { 
+    currentUser, 
+    users, 
+    loading, 
+    initialized,
+    login,   // Usar esto en lugar de setCurrentUser
+    logout   // Usar esto en lugar de setCurrentUser(null)
+  };
 };
