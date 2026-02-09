@@ -514,17 +514,25 @@ export const deductInventoryByRecipe = async (
     // Ejecución del Rendimiento
     for (const item of materialsToDeduct) {
       
-      // 1. DETECCIÓN DE TIPO (Polimorfismo)
-      let chemicalId: string;
-      let deductAmount = 0; // 0 indica usar valor por defecto
+      // 1. DETECCIÓN DE TIPO BLINDADA (Polimorfismo Real)
+      let chemicalId: string = "";
+      let deductAmount = 0;
 
       if (typeof item === 'string') {
         // Caso antiguo: ['id1', 'id2']
         chemicalId = item;
-      } else {
-        // Caso nuevo: [{ id: 'id1', quantity: 15 }]
-        chemicalId = item.id;
-        deductAmount = item.quantity || 0;
+      } else if (typeof item === 'object' && item !== null) {
+        // Caso nuevo: Soportamos variaciones de nombres (id vs materialId, quantity vs qty)
+        // Esto arregla el error "undefined"
+        chemicalId = item.id || item.materialId || ""; 
+        deductAmount = item.quantity || item.qty || item.amount || 0;
+      }
+
+      // 🛑 VALIDACIÓN DE SEGURIDAD
+      // Si por alguna razón chemicalId sigue vacía, saltamos para evitar el crash
+      if (!chemicalId) {
+        console.warn("⚠️ Item de material inválido o corrupto encontrado:", item);
+        continue; 
       }
 
       // 2. BUSCAR PRODUCTO
@@ -533,7 +541,7 @@ export const deductInventoryByRecipe = async (
       let productSnap = null;
       
       if (!product) {
-        // Búsqueda fallback por nombre si no hay ID exacto
+        // Búsqueda fallback por nombre (ahora segura porque chemicalId existe)
         const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
         const chemicalProductsRef = collection(db, "chemical_products");
         const allProductsSnap = await getDocs(chemicalProductsRef);
