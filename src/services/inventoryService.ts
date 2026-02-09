@@ -266,10 +266,11 @@ export const initializeMaterialsData = async (): Promise<void> => {
 export const addConsumable = async (
   consumable: Omit<Consumable, "id" | "active">
 ): Promise<void> => {
+  // CORRECCIÓN: Validamos purchasePrice en lugar de unitCost (que ahora es opcional)
    if (
         !consumable.name ||
         !consumable.unit ||
-        consumable.unitCost < 0 ||
+        (consumable.purchasePrice || 0) < 0 || 
         consumable.stockQty < 0 ||
         consumable.minStockAlert < 0
       ) {
@@ -477,77 +478,68 @@ export const calculateTotalReplenishmentCost = (
 
 // ====== Recipe-Based Inventory Deduction ======
 
+// ====== Recipe-Based Inventory Deduction ======
+
 export const deductInventoryByRecipe = async (
   serviceId: string,
   serviceName: string,
   materialRecipes: MaterialRecipe[],
   chemicalProducts: ChemicalProduct[],
-  catalogServices: CatalogService[] = [] // Nuevo parámetro para acceder a manualMaterials
+  catalogServices: CatalogService[] = [] 
 ): Promise<void> => {
   try {
-    // Tarea 2: Sincronización en el Cobro (Staff)
-    // Aplicar regla de prioridad:
-    
     // Buscar servicio en catálogo
     const catalogService = catalogServices.find(
       (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
     );
     
-    let materialsToDeduct: (string | { materialId: string; qty: number })[] = [];
+    // Usamos 'any[]' temporalmente para soportar tanto strings (legacy) como objetos (nuevo)
+    let materialsToDeduct: any[] = [];
     
-    // SI manualMaterials existe (incluso si está vacío), usar SOLO eso
+    // SI manualMaterials existe, usar eso
     if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
-      // PRIORIDAD ALTA: Usar selección manual
       materialsToDeduct = catalogService.manualMaterials;
-      console.log(`⚠️ Usando selección manual (Prioridad Alta) para ${serviceName}`);
-      console.log(`   - Materiales manuales: ${materialsToDeduct.length}`);
+      console.log(`⚠️ Usando selección manual para ${serviceName}: ${materialsToDeduct.length} items`);
     } else {
-      // FALLBACK: Solo si NO existe manualMaterials, buscar en recetas antiguas
-      console.log(`🔍 Usando recetas antiguas (Fallback) para ${serviceName}`);
-      
+      // FALLBACK: Recetas antiguas
+      console.log(`🔍 Usando recetas antiguas para ${serviceName}`);
       const recipe = materialRecipes.find(
         (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
       );
-      
       materialsToDeduct = recipe ? recipe.chemicalIds : [];
-      console.log(`   - Recetas antiguas: ${materialsToDeduct.length}`);
     }
     
-    if (materialsToDeduct.length === 0) {
-      console.log(`⚠️ No se encontraron materiales para: ${serviceName}`);
-      return;
-    }
+    if (materialsToDeduct.length === 0) return;
 
-    // Tarea 3: Ejecución del Rendimiento para cada material
+    // Ejecución del Rendimiento
     for (const item of materialsToDeduct) {
-      // Detección de Tipo
-      const isObject = typeof item === 'object' && item !== null;
-      const chemicalId = isObject ? (item as { materialId: string }).materialId : (item as string);
-      const quantityToDeduct = isObject ? (item as { qty: number }).qty : null;
       
-      // Primero intentar buscar por ID en el array local
+      // 1. DETECCIÓN DE TIPO (Polimorfismo)
+      let chemicalId: string;
+      let deductAmount = 0; // 0 indica usar valor por defecto
+
+      if (typeof item === 'string') {
+        // Caso antiguo: ['id1', 'id2']
+        chemicalId = item;
+      } else {
+        // Caso nuevo: [{ id: 'id1', quantity: 15 }]
+        chemicalId = item.id;
+        deductAmount = item.quantity || 0;
+      }
+
+      // 2. BUSCAR PRODUCTO
       let product = chemicalProducts.find((p) => p.id === chemicalId);
       let productRef = null;
       let productSnap = null;
       
-      // Si no se encuentra por ID, buscar por nombre en Firestore (fallback)
-      // Solo hacer toLowerCase si tenemos un string válido
-      if (!product && typeof chemicalId === 'string') {
-        console.log(`🔍 Buscando producto por nombre: ${chemicalId}`);
-        
-        // Normalizar el nombre para búsqueda (quitar guiones bajos, espacios, minúsculas)
+      if (!product) {
+        // Búsqueda fallback por nombre si no hay ID exacto
         const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
-        
-        // Buscar en todos los productos químicos
         const chemicalProductsRef = collection(db, "chemical_products");
         const allProductsSnap = await getDocs(chemicalProductsRef);
         
-        // Buscar coincidencia por nombre (ignorando mayúsculas y espacios)
         for (const docSnap of allProductsSnap.docs) {
           const data = docSnap.data() as ChemicalProduct;
-          // Validación extra por seguridad
-          if (!data.name) continue;
-          
           const normalizedProductName = data.name.toLowerCase().replace(/_/g, ' ').trim();
           
           if (normalizedProductName === normalizedSearchName || 
@@ -556,70 +548,61 @@ export const deductInventoryByRecipe = async (
             product = { ...data, id: docSnap.id };
             productRef = doc(db, "chemical_products", docSnap.id);
             productSnap = docSnap;
-            console.log(`✅ Producto encontrado por nombre: ${data.name} (ID: ${docSnap.id})`);
             break;
           }
         }
       } else {
-        // Si se encontró por ID, obtener referencia de Firestore
         productRef = doc(db, "chemical_products", chemicalId);
       }
       
       if (!product || !productRef) {
-        console.log(`⚠️ Producto químico no encontrado: ${chemicalId}`);
+        console.warn(`⚠️ Producto no encontrado: ${chemicalId}`);
         continue;
       }
 
-      // Verificar que el documento existe en Firestore
-      if (!productSnap) {
-        productSnap = await getDoc(productRef);
-      }
-
-      if (!productSnap.exists()) {
-        console.log(`⚠️ Producto no existe en Firestore: ${product.name}`);
-        continue;
-      }
+      if (!productSnap) productSnap = await getDoc(productRef);
+      if (!productSnap.exists()) continue;
 
       const currentData = productSnap.data() as ChemicalProduct;
       
-      // Inicializar valores si no existen
+      // 3. CÁLCULO DE STOCK
+      // Si deductAmount viene del servicio (ej: 15ml), usamos eso. 
+      // Si no, usamos 1 (o lo que diga el producto).
+      const amountToSubtract = deductAmount > 0 ? deductAmount : 1;
+
       let currentYieldRemaining = currentData.currentYieldRemaining ?? currentData.yieldPerUnit ?? currentData.yield ?? 1;
       let stock = currentData.stock ?? 0;
-      const yieldPerUnit = currentData.yieldPerUnit ?? currentData.yield ?? 1; // Capacidad total de la botella (ej: 100ml)
+      const yieldPerUnit = currentData.yieldPerUnit ?? currentData.yield ?? 1;
 
-      // Calcular cantidad a descontar
-      // Si hay cantidad específica (objeto), usarla. Si no, usar yieldPerService o 1 (legacy behavior)
-      const deductionAmount = quantityToDeduct !== null 
-        ? quantityToDeduct 
-        : ((currentData as any).yieldPerService || 1);
+      // Restamos la cantidad
+      currentYieldRemaining = currentYieldRemaining - amountToSubtract;
 
-      console.log(`📉 Descontando ${deductionAmount} ${currentData.unit || 'uds'} de ${product.name}`);
-
-      // Aplicar descuento
-      currentYieldRemaining = currentYieldRemaining - deductionAmount;
-
-      // Regla de reposición: Si currentYieldRemaining <= 0
+      // Lógica de reposición (abrir nueva botella si se acaba)
       if (currentYieldRemaining <= 0) {
-        stock = Math.max(0, stock - 1); // Abrir nueva botella
+        // Calculamos cuántas botellas enteras se consumieron (normalmente 1, pero si gastaste 2000ml de golpe...)
+        const bottlesConsumed = Math.ceil(Math.abs(currentYieldRemaining) / yieldPerUnit) || 1; 
         
-        // Resetear rendimiento sumando la capacidad de la nueva botella
-        // Si el descuento fue mayor que el remanente, el saldo negativo se resta de la nueva botella
-        currentYieldRemaining = yieldPerUnit + currentYieldRemaining;
+        stock = Math.max(0, stock - bottlesConsumed); 
         
-        console.log(`🔄 Nueva botella abierta: ${product.name} (Stock restante: ${stock})`);
+        // El remanente es lo que sobra de la nueva botella abierta
+        // Ej: Gasté 1050ml de botellas de 1000ml -> Gasté 1 botella entera y 50ml de la segunda.
+        // Nueva botella (1000) - 50 = 950 restantes.
+        const remainder = Math.abs(currentYieldRemaining) % yieldPerUnit;
+        currentYieldRemaining = remainder === 0 ? yieldPerUnit : (yieldPerUnit - remainder);
+        
+        console.log(`🔄 Reposición: ${product.name} - Stock baja a ${stock}`);
       }
 
-      // Actualizar Firestore
+      // Guardar en Firebase
       await updateDoc(productRef, {
         currentYieldRemaining,
         stock,
       });
 
-      console.log(`✅ Descuento aplicado: ${product.name} (${currentYieldRemaining}/${yieldPerUnit} restantes)`);
+      console.log(`✅ Descuento: ${product.name} (-${amountToSubtract}) | Restante: ${currentYieldRemaining}/${yieldPerUnit}`);
     }
   } catch (error) {
     console.error(`❌ Error al descontar inventario:`, error);
-    // No lanzamos error para no interrumpir el flujo principal
   }
 };
 
