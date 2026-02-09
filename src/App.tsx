@@ -6,7 +6,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import type { Toast, AppUser } from "./types";
 
 import LoadingScreen from "./components/ui/LoadingScreen";
-
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
 import * as salonService from "./services/salonService";
@@ -32,7 +31,7 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-  // ✅ CAMBIO 1: Pasamos la autorización al hook (isDeviceAuthorized puede ser null, lo forzamos a boolean)
+  // ✅ CAMBIO 1: Pasamos la autorización al hook
   const authReady = !!isDeviceAuthorized; 
   const { currentUser, users, loading, initialized, login, logout } = useAuth(authReady);
   
@@ -60,8 +59,8 @@ const App = () => {
     setTimeout(() => setNotification(null), 2800);
   };
 
+  // ✅ CAMBIO 3: Solo inicializar catálogo si estamos autorizados (BLOQUE ÚNICO)
   useEffect(() => {
-    // ✅ CAMBIO 3: Solo inicializar catálogo si estamos autorizados
     if (authReady) {
       inventoryService.initializeCatalog()
         .then((seeded) => {
@@ -69,11 +68,11 @@ const App = () => {
         })
         .catch((error) => {
           console.error("Error al inicializar catálogo", error);
-          // Opcional: silenciar error visual si es solo por recarga
         });
     }
   }, [authReady]);
 
+  // --- Renderizado Condicional ---
 
   if (isDeviceAuthorized === null) {
       return (
