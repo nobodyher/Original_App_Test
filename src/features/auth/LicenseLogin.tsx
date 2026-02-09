@@ -12,20 +12,26 @@ export const LicenseLogin = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // En src/features/auth/LicenseLogin.tsx
+
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // No hacemos nada más, App.tsx detectará el login y cambiará la pantalla
+      
+      // ✅ AGREGA ESTA LÍNEA AQUÍ:
+      // Esto recarga la página para asegurar que la base de datos reconozca la licencia
+      window.location.reload(); 
+
     } catch (err) {
       setError('Licencia no válida o error de conexión.');
       console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      setLoading(false); // Solo quitamos el loading si falló
+    } 
+    // Nota: Si tiene éxito, no quitamos el loading porque la página se va a recargar
   };
 
   return (
