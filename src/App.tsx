@@ -74,17 +74,6 @@ const App = () => {
     }
   }, [authReady]);
 
-  useEffect(() => {
-    // Inicializar catálogo usando el servicio
-    inventoryService.initializeCatalog()
-      .then((seeded) => {
-        if (seeded) showNotification("Catálogo inicializado");
-      })
-      .catch((error) => {
-        console.error("Error al inicializar catálogo", error);
-        showNotification("Error al inicializar catálogo", "error");
-      });
-  }, []);
 
   if (isDeviceAuthorized === null) {
       return (
