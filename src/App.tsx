@@ -32,8 +32,11 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-  // ====== Estado ======
-  const { currentUser, users, loading, initialized, login, logout } = useAuth();
+  // ✅ CAMBIO 1: Pasamos la autorización al hook (isDeviceAuthorized puede ser null, lo forzamos a boolean)
+  const authReady = !!isDeviceAuthorized; 
+  const { currentUser, users, loading, initialized, login, logout } = useAuth(authReady);
+  
+  // ✅ CAMBIO 2: useSalonData solo corre si auth está lista E inicializado
   const {
     services,
     expenses,
@@ -44,7 +47,7 @@ const App = () => {
     materialRecipes,
     serviceRecipes,
     clients,
-  } = useSalonData(initialized);
+  } = useSalonData(initialized && authReady);
 
   const [notification, setNotification] = useState<Toast | null>(null);
 
@@ -56,6 +59,20 @@ const App = () => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 2800);
   };
+
+  useEffect(() => {
+    // ✅ CAMBIO 3: Solo inicializar catálogo si estamos autorizados
+    if (authReady) {
+      inventoryService.initializeCatalog()
+        .then((seeded) => {
+          if (seeded) showNotification("Catálogo inicializado");
+        })
+        .catch((error) => {
+          console.error("Error al inicializar catálogo", error);
+          // Opcional: silenciar error visual si es solo por recarga
+        });
+    }
+  }, [authReady]);
 
   useEffect(() => {
     // Inicializar catálogo usando el servicio

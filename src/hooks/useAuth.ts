@@ -10,14 +10,17 @@ import type { AppUser } from "../types";
 import { normalizeUser } from "../utils/helpers";
 import * as userService from "../services/userService";
 
-export const useAuth = () => {
+// AHORA RECIBE UN ARGUMENTO: enabled
+export const useAuth = (enabled: boolean) => {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // 1. Inicializar usuarios por defecto (igual que antes)
+  // 1. Inicializar usuarios (SOLO SI ESTÁ HABILITADO)
   useEffect(() => {
+    if (!enabled) return; // 🛑 Esperar señal
+
     const initUsers = async () => {
       try {
         await userService.initializeDefaultUsers();
@@ -28,11 +31,11 @@ export const useAuth = () => {
       }
     };
     initUsers();
-  }, []);
+  }, [enabled]);
 
-  // 2. Escuchar cambios en usuarios (igual que antes)
+  // 2. Escuchar cambios (SOLO SI ESTÁ HABILITADO)
   useEffect(() => {
-    if (!initialized) return;
+    if (!enabled || !initialized) return; // 🛑 Esperar señal
 
     const q = query(collection(db, "users"), orderBy("name", "asc"));
     const unsub = onSnapshot(
@@ -49,8 +52,6 @@ export const useAuth = () => {
         });
 
         setUsers(sortedData);
-        // NOTA: No ponemos setLoading(false) aquí todavía para evitar parpadeos
-        // Lo haremos después de intentar restaurar la sesión
       },
       (error) => {
         console.error("Error cargando usuarios:", error);
@@ -59,39 +60,33 @@ export const useAuth = () => {
     );
 
     return () => unsub();
-  }, [initialized]);
+  }, [initialized, enabled]);
 
-  // 3. NUEVO: Restaurar sesión al recargar
+  // 3. Restaurar sesión
   useEffect(() => {
-    // Solo ejecutamos si ya tenemos usuarios cargados
     if (users.length > 0) {
       const savedUserId = localStorage.getItem("salon_user_id");
       
       if (savedUserId && !currentUser) {
-        // Buscamos si el usuario guardado sigue existiendo
         const foundUser = users.find(u => u.id === savedUserId);
         if (foundUser) {
           setCurrentUser(foundUser);
         }
       }
-      
-      // Una vez intentada la restauración, quitamos el loading
       setLoading(false);
-    } else if (initialized && users.length === 0) {
-       // Si inicializó pero no hay usuarios (caso raro), quitamos loading
-       // Ojo: esto podría necesitar ajuste si tarda mucho Firebase
-       // Por seguridad, un timeout o esperar al primer snapshot real
+    } else if (initialized && enabled && users.length === 0) {
+       // Si ya inicializó pero no hay usuarios, dejar de cargar para no bloquear
+       setLoading(false);
     }
-  }, [users, initialized]);
+  }, [users, initialized, enabled]);
 
-  // 4. NUEVO: Funciones para Login/Logout con persistencia
   const login = (user: AppUser) => {
-    localStorage.setItem("salon_user_id", user.id); // Guardar en disco
+    localStorage.setItem("salon_user_id", user.id);
     setCurrentUser(user);
   };
 
   const logout = () => {
-    localStorage.removeItem("salon_user_id"); // Borrar del disco
+    localStorage.removeItem("salon_user_id");
     setCurrentUser(null);
   };
 
@@ -100,7 +95,7 @@ export const useAuth = () => {
     users, 
     loading, 
     initialized,
-    login,   // Usar esto en lugar de setCurrentUser
-    logout   // Usar esto en lugar de setCurrentUser(null)
+    login,
+    logout
   };
 };
