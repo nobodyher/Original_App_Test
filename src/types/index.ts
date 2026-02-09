@@ -83,7 +83,7 @@ export type CatalogService = {
   category: "manicura" | "pedicura";
   basePrice: number;
   active: boolean;
-  manualMaterials?: string[]; // IDs de productos químicos seleccionados manualmente
+  manualMaterials?: { materialId: string; qty: number }[]; // IDs de productos químicos y cantidad de uso
   manualConsumables?: RecipeItem[]; // IDs y cantidades de consumibles seleccionados manualmente
 };
 

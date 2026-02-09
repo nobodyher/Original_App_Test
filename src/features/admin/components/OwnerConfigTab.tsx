@@ -143,7 +143,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   addChemicalProduct,
   updateChemicalProduct,
   deleteChemicalProduct,
-  initializeMaterialsData,
+
 }) => {
   const [activeTab, setActiveTab] = useState<
     "services" | "consumables" | "personal" | "extras" | "materials" | "clients"
@@ -183,9 +183,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     quantity: "",
     unit: "ml",
     purchasePrice: "",
-    yield: "",
     stock: "",
-    yieldPerUnit: "",
+    minStock: "",
   });
 
   const [newUser, setNewUser] = useState({
@@ -211,7 +210,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   // Service Editing State (Slide-over)
   const [editingServiceItem, setEditingServiceItem] = useState<CatalogService | null>(null);
   const [editServiceForm, setEditServiceForm] = useState<Partial<CatalogService>>({});
-  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<{ materialId: string; qty: number }[]>([]);
   const [selectedConsumables, setSelectedConsumables] = useState<{ consumableId: string; qty: number }[]>([]);
   
   // Extras Editing State (Slide-over)
@@ -287,14 +286,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   // Dynamic Cost Calculation for Service Editing
   const totalEstimatedMaterialCost = useMemo(() => {
     // 1. Chemicals Cost
-    const chemicalsCost = selectedMaterials.reduce((total, chemId) => {
-      const chem = chemicalProducts.find((c) => c.id === chemId);
+    // 1. Chemicals Cost
+    const chemicalsCost = selectedMaterials.reduce((total, item) => {
+      const chem = chemicalProducts.find((c) => c.id === item.materialId);
       if (!chem) return total;
-      // Use pre-calculated costPerService OR calculate on the fly
-      // costPerService is usually purchasePrice / yield
-      const cost =
-        chem.costPerService || (chem.purchasePrice || 0) / (chem.yield || 1);
-      return total + (Number.isFinite(cost) ? cost : 0);
+      
+      // Formula: (Price / PackageQty) * UsageQty
+      const unitCost = (chem.purchasePrice || 0) / (chem.quantity || 1);
+      return total + (unitCost * item.qty);
     }, 0);
 
     // 2. Consumables Cost
@@ -473,10 +472,21 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
 
   const handleToggleMaterial = (materialId: string) => {
-    setSelectedMaterials(prev => 
-      prev.includes(materialId)
-        ? prev.filter(id => id !== materialId)
-        : [...prev, materialId]
+    setSelectedMaterials(prev => {
+      const exists = prev.some(m => m.materialId === materialId);
+      if (exists) {
+        return prev.filter(m => m.materialId !== materialId);
+      } else {
+        return [...prev, { materialId, qty: 0 }]; // Default 0 to force user input
+      }
+    });
+  };
+
+  const handleMaterialQtyChange = (materialId: string, qty: number) => {
+    setSelectedMaterials(prev =>
+      prev.map(m =>
+        m.materialId === materialId ? { ...m, qty: Math.max(0, qty) } : m
+      )
     );
   };
 
@@ -600,22 +610,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   const handleAddChemicalProduct = async () => {
     setIsSubmitting(true);
     try {
-      const yieldPerUnit = parseFloat(newChemicalProduct.yieldPerUnit || newChemicalProduct.yield) || 0;
+      const quantity = parseFloat(newChemicalProduct.quantity) || 0;
       const purchasePrice = parseFloat(newChemicalProduct.purchasePrice) || 0;
-      const totalYield = parseFloat(newChemicalProduct.yield) || 0;
-      const calculatedCost = totalYield > 0 ? purchasePrice / totalYield : 0;
+      
+      // Costo por unidad (ml/g) = Precio / Cantidad
+      const costPerUnit = quantity > 0 ? purchasePrice / quantity : 0;
       
       await addChemicalProduct({
         name: newChemicalProduct.name,
-        quantity: parseFloat(newChemicalProduct.quantity) || 0,
-        unit: newChemicalProduct.unit as "ml" | "L" | "g" | "kg" | "unid",
+        quantity: quantity,
+        unit: newChemicalProduct.unit as "ml" | "g" | "unid",
         purchasePrice: purchasePrice,
-        yield: totalYield,
-        costPerService: calculatedCost,
+        yield: quantity, // Yield is now just the total content
+        costPerService: costPerUnit, // Now storing Cost Per Unit
         stock: parseFloat(newChemicalProduct.stock || "0") || 0,
-        minStock: 0,
-        yieldPerUnit: yieldPerUnit,
-        currentYieldRemaining: yieldPerUnit, // Tarea 3: Inicialización
+        minStock: parseFloat(newChemicalProduct.minStock || "0") || 0,
+        yieldPerUnit: 0, // Deprecated
+        currentYieldRemaining: 0, // Deprecated
       });
 
       setNewChemicalProduct({
@@ -623,9 +634,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         quantity: "",
         unit: "ml",
         purchasePrice: "",
-        yield: "",
         stock: "",
-        yieldPerUnit: "",
+        minStock: "",
       });
       showNotification("Producto guardado");
     } catch (error: any) {
@@ -641,10 +651,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       const currentProduct = chemicalProducts.find((p) => p.id === id);
       if (currentProduct) {
          const newPrice = updates.purchasePrice !== undefined ? updates.purchasePrice : currentProduct.purchasePrice;
-         const newYield = updates.yield !== undefined ? updates.yield : currentProduct.yield;
+         const newQuantity = updates.quantity !== undefined ? updates.quantity : currentProduct.quantity;
          
-         if (updates.purchasePrice !== undefined || updates.yield !== undefined) {
-            updates.costPerService = newYield > 0 ? newPrice / newYield : 0;
+         // Sync yield with quantity if quantity is updated
+         if (updates.quantity !== undefined) {
+            updates.yield = updates.quantity;
+         }
+         
+         // Recalculate costPerUnit if price or quantity changes
+         if (updates.purchasePrice !== undefined || updates.quantity !== undefined) {
+            updates.costPerService = newQuantity > 0 ? newPrice / newQuantity : 0;
          }
       }
 
@@ -943,10 +959,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   // Tarea 1: Prioridad de Guardado (Admin) - MATERIALES
                                   // SI manualMaterials existe (incluso si está vacío), NO buscar en recetas antiguas
                                   
-                                  if (cs.manualMaterials !== undefined && cs.manualMaterials !== null) {
+                                  if (cs.manualMaterials && cs.manualMaterials.length > 0) {
                                     // PRIORIDAD ALTA: Usar selección manual
                                     console.log(`⚠️ Usando selección manual (Prioridad Alta) para ${cs.name}`);
-                                    setSelectedMaterials(cs.manualMaterials);
+                                    
+                                    // Handle legacy string[] vs new objects
+                                    const firstItem = cs.manualMaterials[0];
+                                    if (typeof firstItem === 'string') {
+                                        setSelectedMaterials((cs.manualMaterials as unknown as string[]).map(id => ({ materialId: id, qty: 1 })));
+                                    } else {
+                                        setSelectedMaterials(cs.manualMaterials as { materialId: string; qty: number }[]);
+                                    }
                                   } else {
                                     // FALLBACK: Solo si NO existe manualMaterials, buscar en recetas antiguas
                                     console.log(`🔍 Cargando desde recetas antiguas para ${cs.name}`);
@@ -980,7 +1003,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                       }
                                     }
                                     
-                                    setSelectedMaterials(legacyMaterialIds);
+                                    setSelectedMaterials(legacyMaterialIds.map(id => ({ materialId: id, qty: 1 })));
                                   }
                                   
                                   // CONSUMIBLES - Aplicar misma lógica de prioridad
@@ -1216,7 +1239,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <td className="px-4 py-3">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-bold text-gray-900">
+                            <span className={`font-bold ${c.stockQty <= 0 ? "text-red-600" : "text-gray-900"}`}>
                               {c.stockQty} {c.unit}
                             </span>
                             {c.packageSize && (
@@ -1703,24 +1726,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 <Beaker className="text-[#3A1078]" />
                 Inventario de Materiales Químicos
               </h3>
-          {/* Botón de inicialización (solo si no hay datos) */}
-          {chemicalProducts.length === 0 && (
-            <div className="mb-6 p-6 bg-linear-to-r from-[#F8FAFC] to-[#F1F5F9] border-2 border-[#3A1078]/20 rounded-lg">
-              <h4 className="text-lg font-bold text-[#0F172A] mb-2">
-                🚀 Inicialización Requerida
-              </h4>
-              <p className="text-[#0F172A]/70 mb-4">
-                Haz clic en el botón para agregar automáticamente 8 productos
-                químicos y 6 recetas de servicios a Firebase.
-              </p>
-              <button
-                onClick={initializeMaterialsData}
-                className="bg-[#3A1078] hover:bg-[#240A48] text-white px-8 py-3 rounded-xl shadow-sm hover:shadow-md transition-all font-bold text-lg"
-              >
-                ✨ Inicializar Datos de Materiales
-              </button>
-            </div>
-          )}
+
 
           {/* Sección 1: Productos Químicos */}
           <div className="mb-8">
@@ -1784,7 +1790,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             <span className="text-xs text-slate-400 mb-2 uppercase font-bold tracking-wider">Inventario</span>
                             <div className="flex items-center gap-2">
                                 {isLowStock && <AlertTriangle size={18} className="text-[#C5A059] animate-pulse" />}
-                                <span className="text-sm font-semibold text-[#0F172A]">
+                                <span className={`text-sm ${product.stock <= 0 ? "font-bold text-red-600" : "font-semibold text-[#0F172A]"}`}>
                                    Stock: {product.stock} uds. | Uso: {product.currentYieldRemaining || product.yieldPerUnit || product.yield}/{product.yieldPerUnit || product.yield}
                                 </span>
                              </div>
@@ -2141,41 +2147,60 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         .filter(p => p.active)
                         .map((product) => {
                           const isLowStock = product.stock <= product.minStock;
-                          const currentYield = product.currentYieldRemaining || product.yieldPerUnit || product.yield || 0;
-                          const totalYield = product.yieldPerUnit || product.yield || 0;
+
                           
                           return (
-                            <label
+                            <div
                               key={product.id}
-                              className={`flex items-start gap-3 p-4 hover:bg-[#3A1078]/5 cursor-pointer transition-colors ${
-                                selectedMaterials.includes(product.id) ? 'bg-[#3A1078]/10' : ''
+                              className={`flex flex-col p-3 rounded-lg border transition-colors ${
+                                selectedMaterials.some(m => m.materialId === product.id)
+                                  ? 'bg-[#3A1078]/5 border-[#3A1078]/20'
+                                  : 'bg-white border-gray-100 hover:border-[#3A1078]/20'
                               }`}
                             >
-                              <input
-                                type="checkbox"
-                                checked={selectedMaterials.includes(product.id)}
-                                onChange={() => handleToggleMaterial(product.id)}
-                                className="mt-1 w-5 h-5 text-[#3A1078] border-gray-300 rounded focus:ring-[#3A1078] focus:ring-2 cursor-pointer"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <p className="font-semibold text-gray-800 truncate">{product.name}</p>
-                                  {isLowStock && (
-                                    <span className="shrink-0 px-2 py-0.5 bg-[#88304E]/10 text-[#88304E] text-[10px] font-bold rounded-full">
-                                      BAJO STOCK
-                                    </span>
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedMaterials.some(m => m.materialId === product.id)}
+                                  onChange={() => handleToggleMaterial(product.id)}
+                                  className="mt-1 w-5 h-5 text-[#3A1078] border-gray-300 rounded focus:ring-[#3A1078] focus:ring-2 cursor-pointer"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                    <span className="font-semibold text-gray-800 text-sm truncate">{product.name}</span>
+                                    {isLowStock && (
+                                      <span className="shrink-0 px-1.5 py-0.5 bg-[#88304E]/10 text-[#88304E] text-[10px] font-bold rounded-full">
+                                        BAJO
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-500 mb-2">
+                                    Stock: {product.stock} | Pres: {product.quantity} {product.unit}
+                                  </p>
+                                  
+                                  {/* Quantity Input - Only if selected */}
+                                  {selectedMaterials.some(m => m.materialId === product.id) && (
+                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                       <label className="text-xs font-medium text-[#3A1078]">Uso:</label>
+                                       <div className="relative flex-1">
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={selectedMaterials.find(m => m.materialId === product.id)?.qty || 0}
+                                            onChange={(e) => handleMaterialQtyChange(product.id, parseFloat(e.target.value) || 0)}
+                                            className="w-full px-2 py-1 text-sm bg-white border border-[#3A1078]/20 rounded focus:ring-1 focus:ring-[#3A1078] focus:border-[#3A1078] outline-none font-bold text-[#3A1078]"
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                          <span className="absolute right-2 top-1.5 text-xs text-gray-400 pointer-events-none">
+                                            {product.unit}
+                                          </span>
+                                       </div>
+                                    </div>
                                   )}
                                 </div>
-                                <div className="flex flex-col gap-1">
-                                  <p className="text-xs text-gray-600">
-                                    <span className="font-medium">Presentación:</span> {product.quantity} {product.unit}
-                                  </p>
-                                  <p className={`text-xs font-semibold ${isLowStock ? 'text-[#C5A059]' : 'text-[#0F172A]'}`}>
-                                    Stock: {product.stock} uds. | Uso: {currentYield}/{totalYield}
-                                  </p>
-                                </div>
                               </div>
-                            </label>
+                            </div>
                           );
                         })}
                     </div>
@@ -2382,11 +2407,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               
-              {/* Información Básica */}
+              {/* Sección 1: Información e Inventario */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <Package size={18} className="text-purple-600" />
-                   Información del Producto
+                   <Package size={18} className="text-[#3A1078]" />
+                   Información e Inventario
                 </h4>
                 
                 <div className="space-y-2">
@@ -2399,13 +2424,51 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                    <div className="space-y-2">
+                       <label className="text-sm font-bold text-gray-700">Stock Actual</label>
+                       <input
+                         type="number"
+                         value={editChemicalForm.stock ?? ""}
+                         onChange={(e) => {
+                            const val = e.target.value;
+                            setEditChemicalForm(prev => ({ ...prev, stock: val === "" ? 0 : parseFloat(val) }));
+                         }}
+                         className="w-full px-4 py-2 border border-[#C5A059]/20 rounded-lg focus:border-[#C5A059] focus:ring-4 focus:ring-[#C5A059]/20 outline-none transition-all bg-white font-bold text-gray-800"
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <input
+                         type="number"
+                         value={editChemicalForm.minStock ?? ""}
+                         onChange={(e) => {
+                            const val = e.target.value;
+                            setEditChemicalForm(prev => ({ ...prev, minStock: val === "" ? 0 : parseFloat(val) }));
+                         }}
+                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#C5A059] outline-none transition-all bg-white"
+                       />
+                    </div>
+                </div>
+              </div>
+
+              {/* Sección 2: Características y Costos */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <DollarSign size={18} className="text-green-600" />
+                   Características y Costos
+                </h4>
+
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Cantidad</label>
+                      <label className="text-sm font-medium text-gray-600">Contenido Neto</label>
                       <input
                         type="number"
                         value={editChemicalForm.quantity ?? ""}
-                        onChange={(e) => setEditChemicalForm(prev => ({ ...prev, quantity: parseFloat(e.target.value) }))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditChemicalForm(prev => ({ ...prev, quantity: val === "" ? 0 : parseFloat(val) }));
+                        }}
                         className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
                       />
                    </div>
@@ -2416,127 +2479,35 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, unit: e.target.value as ChemicalProduct["unit"] }))}
                         className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
                       >
-                         <option value="ml">ml</option>
-                         <option value="L">Litros</option>
-                         <option value="g">Gramos</option>
-                         <option value="kg">Kilos</option>
-                         <option value="unid">Unidades</option>
+                         <option value="ml">Mililitros (ml)</option>
+                         <option value="g">Gramos (g)</option>
+                         <option value="unid">Unidades (u)</option>
                       </select>
                    </div>
                 </div>
-              </div>
 
-              {/* Costos y Rendimiento */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <ShoppingCart size={18} className="text-green-600" />
-                   Costos y Rendimiento
-                </h4>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Precio de Compra</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={editChemicalForm.purchasePrice ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setEditChemicalForm(prev => ({ ...prev, purchasePrice: val === "" ? 0 : parseFloat(val) }));
-                          }}
-                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Rendimiento (Servicios)</label>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-600">Precio de Compra (Por envase)</label>
+                   <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                       <input
                         type="number"
-                        value={editChemicalForm.yield ?? ""}
+                        step="0.01"
+                        value={editChemicalForm.purchasePrice ?? ""}
                         onChange={(e) => {
                           const val = e.target.value;
-                          setEditChemicalForm(prev => ({ ...prev, yield: val === "" ? 0 : parseFloat(val) }));
+                          setEditChemicalForm(prev => ({ ...prev, purchasePrice: val === "" ? 0 : parseFloat(val) }));
                         }}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
+                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none font-semibold"
                       />
-                    </div>
+                   </div>
                 </div>
                 
-                <div className="mt-2 bg-[#3A1078]/5 p-3 rounded-lg border border-[#3A1078]/10 flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-600">Costo calculado por servicio:</span>
+                <div className="mt-2 bg-[#3A1078]/5 p-3 rounded-lg border border-[#3A1078]/10 flex justify-between items-center animate-in fade-in duration-300">
+                    <span className="text-sm font-medium text-gray-600">Costo real:</span>
                     <span className="text-lg font-bold text-[#3A1078]">
-                        ${((editChemicalForm.purchasePrice || 0) / (editChemicalForm.yield || 1)).toFixed(2)}
+                        ${((editChemicalForm.purchasePrice || 0) / (editChemicalForm.quantity || 1)).toFixed(4)} por {editChemicalForm.unit}
                     </span>
-                </div>
-              </div>
-
-              {/* Inventario */}
-              {/* Rendimiento por Unidad */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <Percent size={18} className="text-purple-600" />
-                   Rendimiento por Unidad
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Usos por Unidad</label>
-                      <input
-                        type="number"
-                        value={editChemicalForm.yieldPerUnit ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setEditChemicalForm(prev => ({ ...prev, yieldPerUnit: val === "" ? 0 : parseFloat(val) }));
-                        }}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Usos Restantes</label>
-                      <input
-                        type="number"
-                        value={editChemicalForm.currentYieldRemaining ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setEditChemicalForm(prev => ({ ...prev, currentYieldRemaining: val === "" ? 0 : parseFloat(val) }));
-                        }}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
-                      />
-                    </div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <AlertTriangle size={18} className="text-orange-500" />
-                   Gestión de Inventario
-                </h4>
-
-                <div className="grid grid-cols-2 gap-4 bg-[#C5A059]/5 p-4 rounded-xl border border-[#C5A059]/20">
-                    <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700">Stock Actual</label>
-                       <input
-                         type="number"
-                         value={editChemicalForm.stock ?? ""}
-                         onChange={(e) => {
-                           const val = e.target.value;
-                           setEditChemicalForm(prev => ({ ...prev, stock: val === "" ? 0 : parseFloat(val) }));
-                         }}
-                         className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:border-[#C5A059] focus:ring-4 focus:ring-[#C5A059]/20 outline-none transition-all bg-white font-bold text-gray-800"
-                       />
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-sm font-medium text-gray-600">Stock Mínimo (Alerta)</label>
-                       <input
-                         type="number"
-                         value={editChemicalForm.minStock ?? ""}
-                         onChange={(e) => {
-                           const val = e.target.value;
-                           setEditChemicalForm(prev => ({ ...prev, minStock: val === "" ? 0 : parseFloat(val) }));
-                         }}
-                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#C5A059] outline-none transition-all bg-white"
-                       />
-                    </div>
                 </div>
               </div>
 
@@ -2578,7 +2549,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#F8FAFC]">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Agregar Producto Químico</h3>
+                <h3 className="text-xl font-bold text-gray-800">Agregar Producto</h3>
                 <p className="text-sm text-gray-500">Nuevo producto para el inventario</p>
               </div>
               <button 
@@ -2591,30 +2562,61 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               
-              {/* Información Básica */}
+              {/* Sección 1: Información e Inventario */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <Beaker size={18} className="text-[#3A1078]" />
-                   Información del Producto
+                   <Package size={18} className="text-[#3A1078]" />
+                   Información e Inventario
                 </h4>
                 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-600">Nombre del Producto</label>
                   <input
                     type="text"
-                    placeholder="ej. Gel Constructor, Top Coat, Base Coat"
+                    placeholder="ej. Gel Constructor, Top Coat"
                     value={newChemicalProduct.name}
                     onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                    <div className="space-y-2">
+                       <label className="text-sm font-bold text-gray-700">Stock Actual</label>
+                       <input
+                         type="number"
+                         placeholder="0"
+                         value={newChemicalProduct.stock}
+                         onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, stock: e.target.value }))}
+                         className="w-full px-4 py-2 border border-[#C5A059]/20 rounded-lg focus:border-[#C5A059] focus:ring-4 focus:ring-[#C5A059]/20 outline-none transition-all bg-white font-bold text-gray-800"
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <input
+                         type="number"
+                         placeholder="0"
+                         value={newChemicalProduct.minStock}
+                         onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, minStock: e.target.value }))}
+                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-[#C5A059] outline-none transition-all bg-white"
+                       />
+                    </div>
+                </div>
+              </div>
+
+              {/* Sección 2: Características y Costos */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                   <DollarSign size={18} className="text-green-600" />
+                   Características y Costos
+                </h4>
+
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Cantidad</label>
+                      <label className="text-sm font-medium text-gray-600">Contenido Neto</label>
                       <input
                         type="number"
-                        placeholder="100"
+                        placeholder="ej. 1000"
                         value={newChemicalProduct.quantity}
                         onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, quantity: e.target.value }))}
                         className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
@@ -2623,105 +2625,37 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                    <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-600">Unidad</label>
                       <select
-                        value={newChemicalProduct.unit}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewChemicalProduct(prev => ({ ...prev, unit: e.target.value as ChemicalProduct["unit"] }))}
+                        value={newChemicalProduct.unit || "ml"}
+                        onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, unit: e.target.value }))}
                         className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
                       >
-                         <option value="ml">ml</option>
-                         <option value="L">Litros</option>
-                         <option value="g">Gramos</option>
-                         <option value="kg">Kilos</option>
-                         <option value="unid">Unidades</option>
+                         <option value="ml">Mililitros (ml)</option>
+                         <option value="g">Gramos (g)</option>
+                         <option value="unid">Unidades (u)</option>
                       </select>
                    </div>
                 </div>
-              </div>
 
-              {/* Costos y Rendimiento */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <DollarSign size={18} className="text-[#3A1078]" />
-                   Costos y Rendimiento
-                </h4>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Precio de Compra</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={newChemicalProduct.purchasePrice}
-                          onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, purchasePrice: e.target.value }))}
-                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none font-semibold"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Rendimiento Total</label>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium text-gray-600">Precio de Compra (Por envase)</label>
+                   <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                       <input
                         type="number"
-                        placeholder="50"
-                        value={newChemicalProduct.yield}
-                        onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, yield: e.target.value }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={newChemicalProduct.purchasePrice}
+                        onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, purchasePrice: e.target.value }))}
+                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none font-semibold"
                       />
-                    </div>
+                   </div>
                 </div>
-                
-                <div className="bg-[#3A1078]/5 border border-[#3A1078]/20 rounded-lg p-3">
-                  <p className="text-xs text-gray-600">
-                    <span className="font-semibold">Rendimiento:</span> Número total de servicios que se pueden realizar con todo el producto
-                  </p>
-                </div>
-              </div>
 
-              {/* Rendimiento por Unidad */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <Percent size={18} className="text-purple-600" />
-                   Rendimiento por Unidad
-                </h4>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Usos por Unidad (Botella/Paquete)</label>
-                  <input
-                    type="number"
-                    placeholder="25"
-                    value={newChemicalProduct.yieldPerUnit}
-                    onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, yieldPerUnit: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
-                  />
-                </div>
-                
-                <div className="bg-[#3A1078]/5 border border-[#3A1078]/20 rounded-lg p-3">
-                  <p className="text-xs text-gray-600">
-                    <span className="font-semibold">Ejemplo:</span> Si una botella de 100ml rinde para 25 servicios, ingresa 25
-                  </p>
-                </div>
-              </div>
-
-              {/* Inventario */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <AlertTriangle size={18} className="text-orange-500" />
-                   Inventario Inicial
-                </h4>
-
-                <div className="space-y-2 bg-[#C5A059]/5 p-4 rounded-xl border border-[#C5A059]/20">
-                  <label className="text-sm font-bold text-gray-700">Stock Inicial (Unidades)</label>
-                  <input
-                    type="number"
-                    placeholder="5"
-                    value={newChemicalProduct.stock}
-                    onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, stock: e.target.value }))}
-                    className="w-full px-4 py-2 border border-[#C5A059]/20 rounded-lg focus:border-[#C5A059] focus:ring-4 focus:ring-[#C5A059]/20 outline-none transition-all bg-white font-bold text-gray-800"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Número de botellas/paquetes que tienes en inventario
-                  </p>
+                <div className="mt-2 bg-[#3A1078]/5 p-3 rounded-lg border border-[#3A1078]/10 flex justify-between items-center animate-in fade-in duration-300">
+                    <span className="text-sm font-medium text-gray-600">Costo real:</span>
+                    <span className="text-lg font-bold text-[#3A1078]">
+                        ${((parseFloat(newChemicalProduct.purchasePrice) || 0) / (parseFloat(newChemicalProduct.quantity) || 1)).toFixed(4)} por {newChemicalProduct.unit}
+                    </span>
                 </div>
               </div>
 
@@ -2736,9 +2670,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     quantity: "",
                     unit: "ml",
                     purchasePrice: "",
-                    yield: "",
                     stock: "",
-                    yieldPerUnit: "",
+                    minStock: "",
                   });
                 }}
                 className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
@@ -2757,9 +2690,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       quantity: "",
                       unit: "ml",
                       purchasePrice: "",
-                      yield: "",
                       stock: "",
-                      yieldPerUnit: "",
+                      minStock: "",
                     });
                   } finally {
                     setIsSubmitting(false);
@@ -2822,13 +2754,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
                 <div className="space-y-2">
                    <label className="text-sm font-medium text-gray-600">Unidad de Medida</label>
-                   <input
-                     type="text"
-                     placeholder="ej. Caja, Paquete, Unidad"
-                     value={editConsumableForm.unit || ""}
+                   <select
+                     value={editConsumableForm.unit || "ml"}
                      onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
-                   />
+                     className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-[#3A1078]/20 focus:border-[#3A1078] outline-none"
+                   >
+                     <option value="">Seleccionar...</option>
+                     <option value="ml">Mililitros (ml)</option>
+                     <option value="g">Gramos (g)</option>
+                     <option value="u">Unidades (u)</option>
+                   </select>
                 </div>
               </div>
 

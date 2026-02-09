@@ -426,12 +426,28 @@ export const calculateTotalReplenishmentCost = (
     if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
       let serviceCost = 0;
       
-      for (const materialId of catalogService.manualMaterials) {
+      for (const item of catalogService.manualMaterials) {
+        // Handle polymorphic item type
+        const isObject = typeof item === 'object' && item !== null;
+        // Si es objeto, usar materialId. Si es string, usar item directamente
+        const materialId = isObject ? (item as { materialId: string }).materialId : (item as string);
+        
         const product = chemicalProducts.find(p => p.id === materialId);
+        
         if (product) {
-          const yieldPerUnit = product.yieldPerUnit || product.yield || 1;
-          const costPerUse = (product.purchasePrice || 0) / yieldPerUnit;
-          serviceCost += costPerUse;
+          // El rendimiento total del producto (ej: 150ml)
+          const yieldTotal = product.quantity || product.yield || 1;
+          
+          // Costo por unidad de medida (ej: Precio / 150ml = Costo por ml)
+          const costPerUnitMeasure = (product.purchasePrice || 0) / yieldTotal;
+          
+          // Cantidad usada en este servicio
+          // Si es objeto, usar qty (ej: 5ml). Si es string, asumir 1 unidad (servicio completo o lo que sea por defecto)
+          const qtyUsed = isObject ? (item as { qty: number }).qty : 1;
+          
+          const costForThisService = costPerUnitMeasure * qtyUsed;
+          
+          serviceCost += costForThisService;
         }
       }
       
@@ -477,7 +493,7 @@ export const deductInventoryByRecipe = async (
       (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
     );
     
-    let materialsToDeduct: string[] = [];
+    let materialsToDeduct: (string | { materialId: string; qty: number })[] = [];
     
     // SI manualMaterials existe (incluso si está vacío), usar SOLO eso
     if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
@@ -503,14 +519,20 @@ export const deductInventoryByRecipe = async (
     }
 
     // Tarea 3: Ejecución del Rendimiento para cada material
-    for (const chemicalId of materialsToDeduct) {
+    for (const item of materialsToDeduct) {
+      // Detección de Tipo
+      const isObject = typeof item === 'object' && item !== null;
+      const chemicalId = isObject ? (item as { materialId: string }).materialId : (item as string);
+      const quantityToDeduct = isObject ? (item as { qty: number }).qty : null;
+      
       // Primero intentar buscar por ID en el array local
       let product = chemicalProducts.find((p) => p.id === chemicalId);
       let productRef = null;
       let productSnap = null;
       
       // Si no se encuentra por ID, buscar por nombre en Firestore (fallback)
-      if (!product) {
+      // Solo hacer toLowerCase si tenemos un string válido
+      if (!product && typeof chemicalId === 'string') {
         console.log(`🔍 Buscando producto por nombre: ${chemicalId}`);
         
         // Normalizar el nombre para búsqueda (quitar guiones bajos, espacios, minúsculas)
@@ -523,6 +545,9 @@ export const deductInventoryByRecipe = async (
         // Buscar coincidencia por nombre (ignorando mayúsculas y espacios)
         for (const docSnap of allProductsSnap.docs) {
           const data = docSnap.data() as ChemicalProduct;
+          // Validación extra por seguridad
+          if (!data.name) continue;
+          
           const normalizedProductName = data.name.toLowerCase().replace(/_/g, ' ').trim();
           
           if (normalizedProductName === normalizedSearchName || 
@@ -560,15 +585,27 @@ export const deductInventoryByRecipe = async (
       // Inicializar valores si no existen
       let currentYieldRemaining = currentData.currentYieldRemaining ?? currentData.yieldPerUnit ?? currentData.yield ?? 1;
       let stock = currentData.stock ?? 0;
-      const yieldPerUnit = currentData.yieldPerUnit ?? currentData.yield ?? 1;
+      const yieldPerUnit = currentData.yieldPerUnit ?? currentData.yield ?? 1; // Capacidad total de la botella (ej: 100ml)
 
-      // Aplicar fórmula: currentYieldRemaining = currentYieldRemaining - 1
-      currentYieldRemaining = currentYieldRemaining - 1;
+      // Calcular cantidad a descontar
+      // Si hay cantidad específica (objeto), usarla. Si no, usar yieldPerService o 1 (legacy behavior)
+      const deductionAmount = quantityToDeduct !== null 
+        ? quantityToDeduct 
+        : ((currentData as any).yieldPerService || 1);
+
+      console.log(`📉 Descontando ${deductionAmount} ${currentData.unit || 'uds'} de ${product.name}`);
+
+      // Aplicar descuento
+      currentYieldRemaining = currentYieldRemaining - deductionAmount;
 
       // Regla de reposición: Si currentYieldRemaining <= 0
       if (currentYieldRemaining <= 0) {
         stock = Math.max(0, stock - 1); // Abrir nueva botella
-        currentYieldRemaining = yieldPerUnit; // Resetear rendimiento
+        
+        // Resetear rendimiento sumando la capacidad de la nueva botella
+        // Si el descuento fue mayor que el remanente, el saldo negativo se resta de la nueva botella
+        currentYieldRemaining = yieldPerUnit + currentYieldRemaining;
+        
         console.log(`🔄 Nueva botella abierta: ${product.name} (Stock restante: ${stock})`);
       }
 
@@ -578,7 +615,7 @@ export const deductInventoryByRecipe = async (
         stock,
       });
 
-      console.log(`✅ Descuento aplicado: ${product.name} (${currentYieldRemaining}/${yieldPerUnit})`);
+      console.log(`✅ Descuento aplicado: ${product.name} (${currentYieldRemaining}/${yieldPerUnit} restantes)`);
     }
   } catch (error) {
     console.error(`❌ Error al descontar inventario:`, error);
