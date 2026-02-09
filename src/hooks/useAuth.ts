@@ -10,16 +10,17 @@ import type { AppUser } from "../types";
 import { normalizeUser } from "../utils/helpers";
 import * as userService from "../services/userService";
 
-// AHORA RECIBE UN ARGUMENTO: enabled
 export const useAuth = (enabled: boolean) => {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  // NUEVO: Flag para saber si Firebase ya nos respondió al menos una vez
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // 1. Inicializar usuarios (SOLO SI ESTÁ HABILITADO)
   useEffect(() => {
-    if (!enabled) return; // 🛑 Esperar señal
+    if (!enabled) return; 
 
     const initUsers = async () => {
       try {
@@ -35,7 +36,7 @@ export const useAuth = (enabled: boolean) => {
 
   // 2. Escuchar cambios (SOLO SI ESTÁ HABILITADO)
   useEffect(() => {
-    if (!enabled || !initialized) return; // 🛑 Esperar señal
+    if (!enabled || !initialized) return; 
 
     const q = query(collection(db, "users"), orderBy("name", "asc"));
     const unsub = onSnapshot(
@@ -52,6 +53,8 @@ export const useAuth = (enabled: boolean) => {
         });
 
         setUsers(sortedData);
+        // ✅ CLAVE: Marcamos que ya recibimos datos reales
+        setDataLoaded(true);
       },
       (error) => {
         console.error("Error cargando usuarios:", error);
@@ -62,23 +65,24 @@ export const useAuth = (enabled: boolean) => {
     return () => unsub();
   }, [initialized, enabled]);
 
-  // 3. Restaurar sesión
+  // 3. Restaurar sesión (LÓGICA CORREGIDA)
   useEffect(() => {
-    if (users.length > 0) {
-      const savedUserId = localStorage.getItem("salon_user_id");
-      
-      if (savedUserId && !currentUser) {
-        const foundUser = users.find(u => u.id === savedUserId);
-        if (foundUser) {
-          setCurrentUser(foundUser);
+    // Solo procedemos si YA recibimos datos de Firebase (dataLoaded)
+    if (dataLoaded) {
+      if (users.length > 0) {
+        const savedUserId = localStorage.getItem("salon_user_id");
+        
+        if (savedUserId && !currentUser) {
+          const foundUser = users.find(u => u.id === savedUserId);
+          if (foundUser) {
+            setCurrentUser(foundUser);
+          }
         }
       }
+      // Solo ahora quitamos el loading. ¡Adiós al flash!
       setLoading(false);
-    } else if (initialized && enabled && users.length === 0) {
-       // Si ya inicializó pero no hay usuarios, dejar de cargar para no bloquear
-       setLoading(false);
     }
-  }, [users, initialized, enabled]);
+  }, [users, dataLoaded]); // Dependemos de dataLoaded, no de initialized
 
   const login = (user: AppUser) => {
     localStorage.setItem("salon_user_id", user.id);
