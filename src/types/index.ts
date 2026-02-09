@@ -154,6 +154,14 @@ export type MaterialRecipe = {
   active: boolean;
 };
 
+export type MaterialInput = string | {
+  id?: string;
+  materialId?: string;
+  quantity?: number;
+  qty?: number;
+  amount?: number;
+};
+
 export type Client = {
   id: string;
   name: string;

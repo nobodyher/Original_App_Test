@@ -18,6 +18,7 @@ import type {
   MaterialRecipe,
   ServiceRecipe,
   ServiceItem,
+  MaterialInput,
 } from "../types";
 
 // Collection names
@@ -364,16 +365,13 @@ export const deductConsumables = async (
     // PRIORIDAD 1: manualConsumables (selección manual del admin)
     if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {
       itemsToDeduct = catalogService.manualConsumables;
-      console.log(`⚠️ Usando consumibles manuales (Prioridad Alta) para ${serviceName}`);
-      console.log(`   - Consumibles manuales: ${itemsToDeduct.length}`);
     } else {
       // PRIORIDAD 2: serviceRecipes (recetas antiguas, fallback)
-      console.log(`🔍 Usando receta de consumibles (Fallback) para ${serviceName}`);
       const recipe = serviceRecipes.find(r => r.serviceId === serviceId);
       itemsToDeduct = recipe?.items || [];
       
       if (itemsToDeduct.length === 0) {
-        console.log(`⚠️ No se encontró receta de consumibles para ${serviceName}`);
+        // console.warn(`⚠️ No se encontró receta de consumibles para ${serviceName}`);
       }
     }
     
@@ -391,9 +389,10 @@ export const deductConsumables = async (
           lastDeducted: new Date().toISOString(),
         });
         
+        
         // Log con información de rendimiento
-        const servicesRemaining = newQty; // Asumiendo 1 unidad por servicio
-        console.log(`✅ Descuento: ${consumable.name} (-${item.qty} ${consumable.unit}) → Stock: ${newQty} (${servicesRemaining} servicios restantes)`);
+        // const servicesRemaining = newQty; // Asumiendo 1 unidad por servicio
+        // console.log(`✅ Descuento: ${consumable.name} (-${item.qty} ${consumable.unit}) → Stock: ${newQty} (${servicesRemaining} servicios restantes)`);
         
         // Alerta de stock bajo
         if (newQty <= consumable.minStockAlert) {
@@ -453,7 +452,7 @@ export const calculateTotalReplenishmentCost = (
       }
       
       totalCost += serviceCost;
-      console.log(`💰 Costo calculado para ${service.serviceName}: $${serviceCost.toFixed(2)} (${catalogService.manualMaterials.length} materiales)`);
+      // console.log(`💰 Costo calculado para ${service.serviceName}: $${serviceCost.toFixed(2)} (${catalogService.manualMaterials.length} materiales)`);
       
     } else {
       // PRIORIDAD 2: Fallback a receta antigua
@@ -463,20 +462,18 @@ export const calculateTotalReplenishmentCost = (
 
       if (recipe) {
         totalCost += recipe.totalCost;
-        console.log(`💰 Costo de receta para ${service.serviceName}: $${recipe.totalCost.toFixed(2)}`);
+        // console.log(`💰 Costo de receta para ${service.serviceName}: $${recipe.totalCost.toFixed(2)}`);
       } else {
         const serviceName = service.serviceName.toLowerCase();
         const defaultCost = serviceName.includes("pedicure") || serviceName.includes("pedicura") ? 0.5 : 0.33;
         totalCost += defaultCost;
-        console.log(`💰 Costo por defecto para ${service.serviceName}: $${defaultCost.toFixed(2)}`);
+        // console.log(`💰 Costo por defecto para ${service.serviceName}: $${defaultCost.toFixed(2)}`);
       }
     }
   }
 
   return totalCost;
 };
-
-// ====== Recipe-Based Inventory Deduction ======
 
 // ====== Recipe-Based Inventory Deduction ======
 
@@ -493,16 +490,16 @@ export const deductInventoryByRecipe = async (
       (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
     );
     
-    // Usamos 'any[]' temporalmente para soportar tanto strings (legacy) como objetos (nuevo)
-    let materialsToDeduct: any[] = [];
+    // Usamos MaterialInput[] para soportar tanto strings (legacy) como objetos (nuevo)
+    let materialsToDeduct: MaterialInput[] = [];
     
     // SI manualMaterials existe, usar eso
     if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
       materialsToDeduct = catalogService.manualMaterials;
-      console.log(`⚠️ Usando selección manual para ${serviceName}: ${materialsToDeduct.length} items`);
+      // console.log(`⚠️ Usando selección manual para ${serviceName}: ${materialsToDeduct.length} items`);
     } else {
       // FALLBACK: Recetas antiguas
-      console.log(`🔍 Usando recetas antiguas para ${serviceName}`);
+      // console.log(`🔍 Usando recetas antiguas para ${serviceName}`);
       const recipe = materialRecipes.find(
         (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
       );
@@ -534,7 +531,7 @@ export const deductInventoryByRecipe = async (
         console.warn("⚠️ Item de material inválido o corrupto encontrado:", item);
         continue; 
       }
-
+      
       // 2. BUSCAR PRODUCTO
       let product = chemicalProducts.find((p) => p.id === chemicalId);
       let productRef = null;
@@ -598,7 +595,7 @@ export const deductInventoryByRecipe = async (
         const remainder = Math.abs(currentYieldRemaining) % yieldPerUnit;
         currentYieldRemaining = remainder === 0 ? yieldPerUnit : (yieldPerUnit - remainder);
         
-        console.log(`🔄 Reposición: ${product.name} - Stock baja a ${stock}`);
+        // console.log(`🔄 Reposición: ${product.name} - Stock baja a ${stock}`);
       }
 
       // Guardar en Firebase
@@ -607,7 +604,7 @@ export const deductInventoryByRecipe = async (
         stock,
       });
 
-      console.log(`✅ Descuento: ${product.name} (-${amountToSubtract}) | Restante: ${currentYieldRemaining}/${yieldPerUnit}`);
+      // console.log(`✅ Descuento: ${product.name} (-${amountToSubtract}) | Restante: ${currentYieldRemaining}/${yieldPerUnit}`);
     }
   } catch (error) {
     console.error(`❌ Error al descontar inventario:`, error);

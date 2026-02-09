@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función auxiliar para verificar si el usuario está logueado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Regla: Solo usuarios autenticados pueden leer/escribir
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+   
+  }
+}
