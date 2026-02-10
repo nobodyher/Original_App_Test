@@ -28,6 +28,7 @@ import type {
   PaymentMethod,
   Toast,
 } from "../../../types";
+import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import * as salonService from "../../../services/salonService";
 import * as inventoryService from "../../../services/inventoryService";
 
@@ -98,13 +99,22 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     setServicesPage(1);
     setExpensesPage(1);
   }, [ownerFilters]);
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editingServiceCost, setEditingServiceCost] = useState("");
+
+  // Confirmation Modal State
+  // Confirmation Modal State
+  type DashboardAction = {
+    type: 'soft_delete_service' | 'permanent_delete_service' | 'delete_expense';
+    id: string;
+  } | null;
+
+  const [actionToConfirm, setActionToConfirm] = useState<DashboardAction>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Local wrappers for actions with UI feedback
   const handleUpdateServiceCost = async (serviceId: string, newCost: number) => {
@@ -119,39 +129,70 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     }
   };
 
-  const handleSoftDeleteService = async (serviceId: string) => {
-    if (
-      !window.confirm(
-        "¿Eliminar temporalmente este servicio? (Se guardará como historial)"
-      )
-    )
-      return;
+  const handleSoftDeleteService = (serviceId: string) => {
+    setActionToConfirm({ type: 'soft_delete_service', id: serviceId });
+  };
 
+  const handlePermanentlyDeleteService = (serviceId: string) => {
+    setActionToConfirm({ type: 'permanent_delete_service', id: serviceId });
+  };
+
+  const handleDeleteExpense = (id: string) => {
+    setActionToConfirm({ type: 'delete_expense', id });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!actionToConfirm) return;
+
+    setIsSubmitting(true);
     try {
-      await softDeleteService(serviceId, currentUser?.id);
-      showNotification("Servicio eliminado temporalmente");
+      switch (actionToConfirm.type) {
+        case 'soft_delete_service':
+          await softDeleteService(actionToConfirm.id, currentUser?.id);
+          showNotification("Servicio eliminado temporalmente");
+          break;
+        case 'permanent_delete_service':
+          await permanentlyDeleteService(actionToConfirm.id);
+          showNotification("Servicio eliminado permanentemente");
+          break;
+        case 'delete_expense':
+          await deleteExpense(actionToConfirm.id);
+          showNotification("Gasto eliminado");
+          break;
+      }
+      setActionToConfirm(null);
     } catch (error) {
-      console.error("Error eliminando servicio:", error);
-      showNotification("Error al eliminar", "error");
+      console.error("Error en acción de confirmación:", error);
+      showNotification("Error al procesar la acción", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handlePermanentlyDeleteService = async (serviceId: string) => {
-    if (
-      !window.confirm(
-        "¿Eliminar permanentemente este servicio? Esta acción no se puede deshacer."
-      )
-    )
-      return;
-
-    try {
-      await permanentlyDeleteService(serviceId);
-      showNotification("Servicio eliminado permanentemente");
-    } catch (error) {
-      console.error("Error eliminando servicio:", error);
-      showNotification("Error al eliminar", "error");
+  const getModalProps = () => {
+    if (!actionToConfirm) return { title: "", message: "" };
+    switch (actionToConfirm.type) {
+      case 'soft_delete_service':
+        return { 
+          title: "Eliminar Transacción", 
+          message: "¿Estás seguro de que deseas eliminar esta transacción? Esto afectará los cálculos de ingresos totales y podrá ser restaurada desde el historial." 
+        };
+      case 'permanent_delete_service':
+        return { 
+          title: "Eliminar Permanentemente", 
+          message: "¿Eliminar permanentemente este servicio? Esta acción no se puede deshacer." 
+        };
+      case 'delete_expense':
+        return { 
+          title: "Eliminar Gasto", 
+          message: "¿Eliminar este gasto? Se recalcularán los totales." 
+        };
+      default:
+        return { title: "Confirmar", message: "¿Estás seguro?" };
     }
   };
+
+
 
   const handleRestoreDeletedService = async (serviceId: string) => {
     try {
@@ -188,16 +229,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     }
   };
 
-  const handleDeleteExpense = async (id: string) => {
-    if (!window.confirm("¿Eliminar este gasto?")) return;
-    try {
-      await deleteExpense(id);
-      showNotification("Gasto eliminado");
-    } catch (error) {
-      console.error("Error eliminando gasto:", error);
-      showNotification("Error al eliminar", "error");
-    }
-  };
+
 
   const filteredServices = useMemo(() => {
     return services.filter((s) => {
@@ -263,6 +295,16 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
   const totalRevenue = useMemo(
     () => filteredServices.reduce((sum, s) => sum + s.cost, 0),
+    [filteredServices]
+  );
+
+  const totalCash = useMemo(
+    () => filteredServices.filter(s => s.paymentMethod === 'cash').reduce((sum, s) => sum + s.cost, 0),
+    [filteredServices]
+  );
+
+  const totalTransfer = useMemo(
+    () => filteredServices.filter(s => s.paymentMethod === 'transfer').reduce((sum, s) => sum + s.cost, 0),
     [filteredServices]
   );
   
@@ -367,16 +409,16 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       
       {/* Header & Filters Section */}
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#3A1078] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-20 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-20 pointer-events-none"></div>
         
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
-            <h2 className="text-2xl font-black text-[#0F172A] tracking-tight">Panel Financiero</h2>
+            <h2 className="text-2xl font-black text-neutral-900 tracking-tight">Panel Financiero</h2>
             <p className="text-gray-500 font-medium">Resumen de operaciones y rendimiento</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 bg-gray-50/80 p-2 rounded-2xl border border-gray-200/60 backdrop-blur-sm">
-             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-[#3A1078]/20 transition-all">
+             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-primary-600/20 transition-all">
                 <Search size={18} className="text-gray-400" />
                 <input
                   type="text"
@@ -394,14 +436,14 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   type="date"
                   value={ownerFilters.dateFrom}
                   onChange={(e) => setOwnerFilters({ ...ownerFilters, dateFrom: e.target.value })}
-                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3A1078]/20 shadow-sm"
+                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm"
                 />
                 <span className="text-gray-400 font-bold">-</span>
                 <input
                   type="date"
                   value={ownerFilters.dateTo}
                   onChange={(e) => setOwnerFilters({ ...ownerFilters, dateTo: e.target.value })}
-                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3A1078]/20 shadow-sm"
+                  className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm"
                 />
              </div>
 
@@ -410,7 +452,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
              <select
                 value={ownerFilters.paymentMethod}
                 onChange={(e) => setOwnerFilters({ ...ownerFilters, paymentMethod: e.target.value as "all" | PaymentMethod })}
-                className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3A1078]/20 shadow-sm cursor-pointer"
+                className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm cursor-pointer"
              >
                 <option value="all">Todos</option>
                 <option value="cash">Efectivo</option>
@@ -431,7 +473,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         
         <div className="mt-4 flex items-center gap-2">
             <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700 transition-colors">
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${ownerFilters.includeDeleted ? 'bg-[#3A1078] border-[#3A1078]' : 'bg-white border-gray-300'}`}>
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${ownerFilters.includeDeleted ? 'bg-primary-600 border-primary-600' : 'bg-white border-gray-300'}`}>
                   {ownerFilters.includeDeleted && <Check size={12} className="text-white" />}
               </div>
               <input
@@ -448,7 +490,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       {/* Premium Stats Cards - Banking Style */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Revenue Card - Oro Champagne Premium */}
-        <div className="bg-gradient-to-br from-[#A08040] to-[#C5A059] rounded-[2rem] p-6 text-white shadow-2xl shadow-yellow-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+        <div className="bg-gradient-to-br from-primary-600 to-primary-400 rounded-[2rem] p-6 text-white shadow-2xl shadow-yellow-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <DollarSign size={120} />
           </div>
@@ -461,15 +503,32 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
              </div>
              <div>
                 <h3 className="text-4xl font-black tracking-tight mb-1 mb-1">${totalRevenue.toFixed(2)}</h3>
-                <div className="flex items-center gap-2 text-amber-100 text-xs font-medium bg-black/20 w-fit px-3 py-1 rounded-full">
+                <div className="flex items-center gap-2 text-amber-100 text-xs font-medium bg-black/20 w-fit px-3 py-1 rounded-full mb-3">
                    <span>{filteredServices.length} transacciones</span>
+                </div>
+                
+                {/* Desglose por método de pago */}
+                <div className="bg-black/10 rounded-xl p-2 flex items-center justify-between gap-2 backdrop-blur-sm border border-white/5">
+                    <div className="flex items-center gap-1.5">
+                        <div className="p-1 rounded-full bg-green-500/20 text-green-100">
+                             <DollarSign size={10} />
+                        </div>
+                        <span className="text-xs font-bold text-white/90">${totalCash.toFixed(0)}</span>
+                    </div>
+                    <div className="w-px h-3 bg-white/20"></div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="p-1 rounded-full bg-blue-500/20 text-blue-100">
+                             <CreditCard size={10} />
+                        </div>
+                        <span className="text-xs font-bold text-white/90">${totalTransfer.toFixed(0)}</span>
+                    </div>
                 </div>
              </div>
           </div>
         </div>
 
         {/* Expenses Card - Rosa Ojo de Perdiz Premium */}
-        <div className="bg-gradient-to-br from-[#602035] to-[#88304E] rounded-[2rem] p-6 text-white shadow-2xl shadow-rose-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+        <div className="bg-gradient-to-br from-primary-700 to-primary-700 rounded-[2rem] p-6 text-white shadow-2xl shadow-rose-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <CreditCard size={120} />
           </div>
@@ -490,7 +549,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
          {/* Replenishment Card - Slate Premium */}
-         <div className="bg-gradient-to-br from-[#0F172A] to-[#334155] rounded-[2rem] p-6 text-white shadow-2xl shadow-gray-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+         <div className="bg-gradient-to-br from-neutral-900 to-neutral-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-gray-900/20 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
              <Package size={120} />
           </div>
@@ -511,8 +570,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Net Profit Card - Violeta Real Premium */}
-        <div className="bg-gradient-to-br from-[#2A0B55] to-[#3A1078] rounded-[2rem] p-6 text-white shadow-2xl shadow-violet-900/30 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ring-4 ring-violet-900/5">
-           <div className="absolute inset-0 bg-gradient-to-br from-[#3A1078]/20 to-[#240A48]/40"></div>
+        <div className="bg-gradient-to-br from-primary-700 to-primary-600 rounded-[2rem] p-6 text-white shadow-2xl shadow-violet-900/30 relative overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ring-4 ring-violet-900/5">
+           <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-primary-700/40"></div>
            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
              <Wallet size={120} />
           </div>
@@ -545,12 +604,12 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                <div className="px-8 py-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center bg-gray-50/50 backdrop-blur-xl">
                   <div>
-                     <h3 className="text-xl font-bold text-[#0F172A]">Transacciones Recientes</h3>
+                     <h3 className="text-xl font-bold text-neutral-900">Transacciones Recientes</h3>
                      <p className="text-gray-400 text-xs font-medium mt-1">Historial de servicios y pagos</p>
                   </div>
                   <button
                      onClick={handleExportExcel}
-                     className="mt-4 md:mt-0 flex items-center gap-2 bg-[#3A1078] text-white px-5 py-2.5 rounded-xl hover:bg-[#2A0B55] transition shadow-lg shadow-[#3A1078]/10 text-sm font-bold"
+                     className="mt-4 md:mt-0 flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl hover:bg-primary-700 transition shadow-lg shadow-primary-600/10 text-sm font-bold"
                   >
                      <Download size={16} />
                      Exportar Excel
@@ -591,8 +650,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                  <td className="px-6 py-5">
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
                                        service.paymentMethod === 'cash' 
-                                          ? 'bg-[#C5A059]/10 text-[#C5A059] border-[#C5A059]/20' 
-                                          : 'bg-[#3A1078]/10 text-[#3A1078] border-[#3A1078]/20'
+                                          ? 'bg-primary-400/10 text-primary-400 border-primary-400/20' 
+                                          : 'bg-primary-600/10 text-primary-600 border-primary-600/20'
                                     }`}>
                                        {service.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}
                                     </span>
@@ -607,12 +666,12 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                              className="w-20 text-right px-2 py-1 border rounded text-sm font-bold text-gray-900"
                                              autoFocus
                                           />
-                                          <button onClick={() => handleUpdateServiceCost(service.id, parseFloat(editingServiceCost))} className="text-[#C5A059] hover:scale-110 transition"><Check size={16}/></button>
+                                          <button onClick={() => handleUpdateServiceCost(service.id, parseFloat(editingServiceCost))} className="text-primary-400 hover:scale-110 transition"><Check size={16}/></button>
                                           <button onClick={() => setEditingServiceId(null)} className="text-gray-400 hover:text-gray-600 hover:scale-110 transition"><X size={16}/></button>
                                        </div>
                                     ) : (
                                        <div className="flex flex-col items-end">
-                                          <span className="font-black text-gray-900 text-base group-hover:text-[#3A1078] transition-colors cursor-pointer flex items-center gap-2" onClick={() => { setEditingServiceId(service.id); setEditingServiceCost(service.cost.toString()); }}>
+                                          <span className="font-black text-gray-900 text-base group-hover:text-primary-600 transition-colors cursor-pointer flex items-center gap-2" onClick={() => { setEditingServiceId(service.id); setEditingServiceCost(service.cost.toString()); }}>
                                              ${Number(service.cost).toFixed(2)}
                                           </span>
                                           <span className="text-[10px] font-bold text-gray-400">Comisión: ${salonService.calcCommissionAmount(service, users).toFixed(2)}</span>
@@ -623,11 +682,11 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                        {service.deleted ? (
                                           <>
-                                             <button onClick={() => handleRestoreDeletedService(service.id)} className="p-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] hover:bg-[#C5A059]/20 transition" title="Restaurar"><CheckCircle size={16}/></button>
-                                             <button onClick={() => handlePermanentlyDeleteService(service.id)} className="p-2 rounded-full bg-[#88304E]/10 text-[#88304E] hover:bg-[#88304E]/20 transition" title="Borrar Permanente"><Trash2 size={16}/></button>
+                                             <button onClick={() => handleRestoreDeletedService(service.id)} className="p-2 rounded-full bg-primary-400/10 text-primary-400 hover:bg-primary-400/20 transition" title="Restaurar"><CheckCircle size={16}/></button>
+                                             <button onClick={() => handlePermanentlyDeleteService(service.id)} className="p-2 rounded-full bg-primary-700/10 text-primary-700 hover:bg-primary-700/20 transition" title="Borrar Permanente"><Trash2 size={16}/></button>
                                           </>
                                        ) : (
-                                          <button onClick={() => handleSoftDeleteService(service.id)} className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-[#88304E]/10 hover:text-[#88304E] transition" title="Eliminar"><Trash2 size={16}/></button>
+                                          <button onClick={() => handleSoftDeleteService(service.id)} className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-primary-700/10 hover:text-primary-700 transition" title="Eliminar"><Trash2 size={16}/></button>
                                        )}
                                     </div>
                                  </td>
@@ -670,7 +729,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             {/* Commissions Section */}
             <div>
                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <Percent size={20} className="text-[#3A1078]" />
+                  <Percent size={20} className="text-primary-600" />
                   Rendimiento del Equipo
                </h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -692,13 +751,13 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                            </div>
                            
                            <div className="space-y-3">
-                              <div className="flex justify-between items-center p-3 rounded-xl bg-[#3A1078]/5 border border-[#3A1078]/10">
-                                 <span className="text-xs font-bold text-[#3A1078] uppercase">Comisión Total</span>
-                                 <span className="font-bold text-[#3A1078]">${stat.commission.toFixed(2)}</span>
+                              <div className="flex justify-between items-center p-3 rounded-xl bg-primary-600/5 border border-primary-600/10">
+                                 <span className="text-xs font-bold text-primary-600 uppercase">Comisión Total</span>
+                                 <span className="font-bold text-primary-600">${stat.commission.toFixed(2)}</span>
                               </div>
-                              <div className="flex justify-between items-center p-3 rounded-xl bg-[#C5A059]/10 border border-[#C5A059]/20">
-                                 <span className="text-xs font-bold text-[#C5A059] uppercase">Pagado</span>
-                                 <span className="font-bold text-[#C5A059]">${stat.commissionPaid.toFixed(2)}</span>
+                              <div className="flex justify-between items-center p-3 rounded-xl bg-primary-400/10 border border-primary-400/20">
+                                 <span className="text-xs font-bold text-primary-400 uppercase">Pagado</span>
+                                 <span className="font-bold text-primary-400">${stat.commissionPaid.toFixed(2)}</span>
                               </div>
                               
                               <div className="pt-2 border-t border-gray-100 flex justify-between items-end">
@@ -719,7 +778,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
          <div className="xl:col-span-1">
             <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-6 sticky top-6">
                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#88304E]/10 flex items-center justify-center text-[#88304E]">
+                  <div className="w-8 h-8 rounded-full bg-primary-700/10 flex items-center justify-center text-primary-700">
                      <CreditCard size={16} />
                   </div>
                   Registrar Gasto
@@ -733,7 +792,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                         placeholder="Ej. Recibo de Luz"
                         value={newExpense.description}
                         onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                        className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 transition-all outline-none font-medium text-gray-700"
+                        className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-primary-600 focus:ring-4 focus:ring-primary-600/10 transition-all outline-none font-medium text-gray-700"
                      />
                   </div>
                   
@@ -751,7 +810,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                amount: val === "" ? "" : parseFloat(val) 
                              });
                            }}
-                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 transition-all outline-none font-medium text-gray-700"
+                           className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-primary-600 focus:ring-4 focus:ring-primary-600/10 transition-all outline-none font-medium text-gray-700"
                         />
                      </div>
                      <div className="space-y-2">
@@ -759,7 +818,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                         <div className="relative">
                            <button
                               onClick={() => setShowCategoryList(!showCategoryList)}
-                              className="w-full h-12 px-2 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#3A1078] focus:outline-none font-medium text-gray-700 text-sm text-left flex items-center justify-between"
+                              className="w-full h-12 px-2 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-primary-600 focus:outline-none font-medium text-gray-700 text-sm text-left flex items-center justify-between"
                            >
                               <span>{newExpense.category}</span>
                               <ChevronDown size={16} className="text-gray-400" />
@@ -774,7 +833,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                           setNewExpense({ ...newExpense, category: cat, userId: "" });
                                           setShowCategoryList(false);
                                        }}
-                                       className="p-3 hover:bg-[#88304E]/10 cursor-pointer text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+                                       className="p-3 hover:bg-primary-700/10 cursor-pointer text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
                                     >
                                        {cat}
                                     </div>
@@ -820,7 +879,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                   <div className="pt-2">
                      <button
                         onClick={handleAddExpense}
-                        className="w-full h-14 rounded-xl bg-[#3A1078] text-white font-bold text-lg hover:bg-[#2A0B55] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-violet-900/20 flex items-center justify-center gap-2"
+                        className="w-full h-14 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-violet-900/20 flex items-center justify-center gap-2"
                      >
                         <DollarSign size={20} />
                         Agregar Gasto
@@ -845,7 +904,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                                  </div>
                               </div>
                               <div className="flex items-center gap-3">
-                                 <span className="font-bold text-[#88304E] block text-right">${expense.amount.toFixed(2)}</span>
+                                 <span className="font-bold text-primary-700 block text-right">${expense.amount.toFixed(2)}</span>
                                  <button
                                     onClick={() => handleDeleteExpense(expense.id)}
                                     className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
@@ -886,6 +945,15 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             </div>
          </div>
       </div>
+       {/* Confirmation Modal */}
+       <ConfirmationModal
+        isOpen={!!actionToConfirm}
+        onClose={() => setActionToConfirm(null)}
+        onConfirm={handleConfirmAction}
+        title={getModalProps().title}
+        message={getModalProps().message}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 };

@@ -64,15 +64,30 @@ interface OwnerScreenProps {
   deleteChemicalProduct: (id: string) => Promise<void>;
 
   initializeMaterialsData: () => Promise<void>;
+  deleteClient: (clientId: string) => Promise<void>;
 }
+
+import { DashboardSkeleton } from "../../components/ui/Skeleton";
+
+// ... (existing imports)
 
 const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
   const [ownerTab, setOwnerTab] = useState<"dashboard" | "analytics" | "config">("dashboard");
+  const [isTabLoading, setIsTabLoading] = useState(false);
+
+  // Effect to trigger loading state on tab change
+  React.useEffect(() => {
+    setIsTabLoading(true);
+    const timer = setTimeout(() => {
+      setIsTabLoading(false);
+    }, 500); // 500ms transition
+    return () => clearTimeout(timer);
+  }, [ownerTab]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-neutral-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#3A1078] to-[#240A48] text-white p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-primary-600 to-neutral-900 text-white p-6 shadow-lg">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Panel de Administración</h1>
@@ -120,59 +135,68 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
             </Button>
           </div>
 
-          {ownerTab === "dashboard" && (
-            <OwnerDashboard
-              services={props.services}
-              expenses={props.expenses}
-              users={props.users}
-              currentUser={props.currentUser}
-              materialRecipes={props.materialRecipes}
-              catalogServices={props.catalogServices}
-              chemicalProducts={props.chemicalProducts}
-              showNotification={props.showNotification}
-              addExpense={props.addExpense}
-              deleteExpense={props.deleteExpense}
-              updateServiceCost={props.updateServiceCost}
-              softDeleteService={props.softDeleteService}
-              permanentlyDeleteService={props.permanentlyDeleteService}
-              restoreDeletedService={props.restoreDeletedService}
-            />
-          )}
+          {/* Content Area with Skeleton Loading */}
+          {isTabLoading ? (
+             <DashboardSkeleton />
+          ) : (
+            <>
+              {ownerTab === "dashboard" && (
+                <OwnerDashboard
+                  services={props.services}
+                  expenses={props.expenses}
+                  users={props.users}
+                  currentUser={props.currentUser}
+                  materialRecipes={props.materialRecipes}
+                  catalogServices={props.catalogServices}
+                  chemicalProducts={props.chemicalProducts}
+                  showNotification={props.showNotification}
+                  addExpense={props.addExpense}
+                  deleteExpense={props.deleteExpense}
+                  updateServiceCost={props.updateServiceCost}
+                  softDeleteService={props.softDeleteService}
+                  permanentlyDeleteService={props.permanentlyDeleteService}
+                  restoreDeletedService={props.restoreDeletedService}
+                />
+              )}
 
-          {ownerTab === "analytics" && (
-            <AnalyticsTab services={props.services} />
-          )}
+              {ownerTab === "analytics" && (
+                <AnalyticsTab services={props.services} />
+              )}
 
-          {ownerTab === "config" && (
-            <OwnerConfigTab
-              users={props.users}
-              catalogServices={props.catalogServices}
-              catalogExtras={props.catalogExtras}
-              materialRecipes={props.materialRecipes}
-              serviceRecipes={props.serviceRecipes}
-              consumables={props.consumables}
-              chemicalProducts={props.chemicalProducts}
-              clients={props.clients}
-              showNotification={props.showNotification}
-              createNewUser={props.createNewUser}
-              updateUser={props.updateUser}
-              updateUserCommission={props.updateUserCommission}
-              deactivateUser={props.deactivateUser}
-              deleteUserPermanently={props.deleteUserPermanently}
-              addCatalogService={props.addCatalogService}
-              updateCatalogService={props.updateCatalogService}
-              deleteCatalogService={props.deleteCatalogService}
-              addExtra={props.addExtra}
-              updateExtra={props.updateExtra}
-              deleteExtra={props.deleteExtra}
-              addConsumable={props.addConsumable}
-              updateConsumable={props.updateConsumable}
-              deleteConsumable={props.deleteConsumable}
-              addChemicalProduct={props.addChemicalProduct}
-              updateChemicalProduct={props.updateChemicalProduct}
-              deleteChemicalProduct={props.deleteChemicalProduct}
-              initializeMaterialsData={props.initializeMaterialsData}
-            />
+              {ownerTab === "config" && (
+                <OwnerConfigTab
+                  users={props.users}
+                  catalogServices={props.catalogServices}
+                  catalogExtras={props.catalogExtras}
+                  materialRecipes={props.materialRecipes}
+                  serviceRecipes={props.serviceRecipes}
+                  consumables={props.consumables}
+                  chemicalProducts={props.chemicalProducts}
+                  clients={props.clients}
+                  currentUser={props.currentUser}
+                  showNotification={props.showNotification}
+                  createNewUser={props.createNewUser}
+                  updateUser={props.updateUser}
+                  updateUserCommission={props.updateUserCommission}
+                  deactivateUser={props.deactivateUser}
+                  deleteUserPermanently={props.deleteUserPermanently}
+                  addCatalogService={props.addCatalogService}
+                  updateCatalogService={props.updateCatalogService}
+                  deleteCatalogService={props.deleteCatalogService}
+                  addExtra={props.addExtra}
+                  updateExtra={props.updateExtra}
+                  deleteExtra={props.deleteExtra}
+                  addConsumable={props.addConsumable}
+                  updateConsumable={props.updateConsumable}
+                  deleteConsumable={props.deleteConsumable}
+                  addChemicalProduct={props.addChemicalProduct}
+                  updateChemicalProduct={props.updateChemicalProduct}
+                  deleteChemicalProduct={props.deleteChemicalProduct}
+                  initializeMaterialsData={props.initializeMaterialsData}
+                  deleteClient={props.deleteClient}
+                />
+              )}
+            </>
           )}
         </div>
       </div>

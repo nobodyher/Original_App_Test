@@ -237,26 +237,26 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   if (!currentUser) return null;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 relative selection:bg-[#88304E]/20">
+    <div className="min-h-screen bg-neutral-50 pb-20 relative selection:bg-primary-700/20">
       {/* Ambient Background Blobs (Subtle) */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#3A1078]/10 rounded-full blur-[120px] opacity-60" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#88304E]/10 rounded-full blur-[120px] opacity-60" />
+          <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-primary-600/10 rounded-full blur-[120px] opacity-60" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-primary-700/10 rounded-full blur-[120px] opacity-60" />
       </div>
 
       <NotificationToast notification={notification} />
       
       {/* Header with Glassmorphism */}
-      <div className="relative z-10 overflow-hidden bg-white/70 backdrop-blur-xl border-b border-[#C5A059]/20 pb-12 pt-8 px-6 shadow-sm">
+      <div className="relative z-10 overflow-hidden bg-white/70 backdrop-blur-xl border-b border-primary-400/20 pb-12 pt-8 px-6 shadow-sm">
          <div className="relative max-w-7xl mx-auto flex justify-between items-end">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                 <div className={`w-12 h-12 rounded-full bg-gradient-to-tr from-[#3A1078] to-[#88304E] flex items-center justify-center shadow-sm`}>
+                 <div className={`w-12 h-12 rounded-full bg-gradient-to-tr from-primary-600 to-primary-700 flex items-center justify-center shadow-sm`}>
                     <User className="text-white" size={24} />
                  </div>
                  <div>
-                    <p className="text-[#0F172A]/60 font-bold uppercase tracking-wider text-xs">Panel de Staff</p>
-                    <h1 className="text-3xl font-black text-[#0F172A] tracking-tight leading-none">Hola, {currentUser.name}</h1>
+                    <p className="text-neutral-900/60 font-bold uppercase tracking-wider text-xs">Panel de Staff</p>
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight leading-none">Hola, {currentUser.name}</h1>
                  </div>
               </div>
             </div>
@@ -280,24 +280,24 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
                <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
-                  <Check size={80} className="text-[#3A1078]" />
+                  <Check size={80} className="text-primary-600" />
                </div>
-               <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wider">Servicios Hoy</p>
-               <p className="text-5xl font-black text-[#0F172A]">{userServices.length}</p>
+               <p className="text-neutral-900/50 text-xs font-bold uppercase tracking-wider">Servicios Hoy</p>
+               <p className="text-5xl font-black text-neutral-900">{userServices.length}</p>
             </Card>
             <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-all">
                <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
-                  <TrendingUp size={80} className="text-[#C5A059]" />
+                  <TrendingUp size={80} className="text-primary-400" />
                </div>
-               <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wider">Ventas Totales</p>
-               <p className="text-5xl font-black text-[#0F172A]">${totalToday.toFixed(2)}</p>
+               <p className="text-neutral-900/50 text-xs font-bold uppercase tracking-wider">Ventas Totales</p>
+               <p className="text-5xl font-black text-neutral-900">${totalToday.toFixed(2)}</p>
             </Card>
-            <div className="bg-gradient-to-br from-[#3A1078] to-[#0F172A] rounded-[2rem] shadow-xl p-6 flex flex-col justify-between h-32 relative overflow-hidden text-white group">
+            <div className="bg-gradient-to-br from-primary-600 to-neutral-900 rounded-[2rem] shadow-xl p-6 flex flex-col justify-between h-32 relative overflow-hidden text-white group">
                <div className="absolute right-0 top-0 p-5 opacity-10 group-hover:scale-110 transition-transform">
-                  <Crown size={80} className="text-[#C5A059]" />
+                  <Crown size={80} className="text-primary-400" />
                </div>
                <p className="text-white/60 text-xs font-bold uppercase tracking-wider">Tu Comisión Est.</p>
-               <p className="text-5xl font-black text-[#F8FAFC]">${finalTotalCommission.toFixed(2)}</p>
+               <p className="text-5xl font-black text-neutral-50">${finalTotalCommission.toFixed(2)}</p>
             </div>
          </div>
 
@@ -309,30 +309,30 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                
                {/* 1. Client & Basics Card */}
                <Card className="p-8">
-                  <h3 className="text-xl font-bold text-[#0F172A] mb-6 flex items-center gap-3">
-                     <span className="w-10 h-10 rounded-2xl bg-[#88304E]/10 flex items-center justify-center text-[#88304E] ring-1 ring-[#88304E]/20">
+                  <h3 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                     <span className="w-10 h-10 rounded-2xl bg-primary-700/10 flex items-center justify-center text-primary-700 ring-1 ring-primary-700/20">
                         <User size={20} />
                      </span>
                      Datos del Cliente
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#0F172A]/50 uppercase ml-1">Fecha</label>
+                        <label className="text-xs font-bold text-neutral-900/50 uppercase ml-1">Fecha</label>
                         <input
                            type="date"
                            value={newService.date}
                            onChange={(e) => setNewService({ ...newService, date: e.target.value })}
-                           className="w-full h-14 px-5 rounded-2xl bg-[#F8FAFC] border border-[#C5A059]/20 transition-all duration-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 outline-none font-semibold text-[#0F172A]"
+                           className="w-full h-14 px-5 rounded-2xl bg-neutral-50 border border-primary-400/20 transition-all duration-200 focus:bg-white focus:border-primary-600 focus:ring-4 focus:ring-primary-600/10 outline-none font-semibold text-neutral-900"
                         />
                      </div>
                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#0F172A]/50 uppercase ml-1">Cliente</label>
+                        <label className="text-xs font-bold text-neutral-900/50 uppercase ml-1">Cliente</label>
                         <input
                            type="text"
                            placeholder="Nombre del cliente"
                            value={newService.client}
                            onChange={(e) => setNewService({ ...newService, client: e.target.value })}
-                           className="w-full h-14 px-5 rounded-2xl bg-[#F8FAFC] border border-[#C5A059]/20 transition-all duration-200 focus:bg-white focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 outline-none font-semibold text-[#0F172A] placeholder-stone-400"
+                           className="w-full h-14 px-5 rounded-2xl bg-neutral-50 border border-primary-400/20 transition-all duration-200 focus:bg-white focus:border-primary-600 focus:ring-4 focus:ring-primary-600/10 outline-none font-semibold text-neutral-900 placeholder-stone-400"
                         />
                      </div>
                   </div>
@@ -340,8 +340,8 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
                {/* 2. Service Selection Card */}
                <Card className="p-8 relative z-20">
-                  <h3 className="text-xl font-bold text-[#0F172A] mb-6 flex items-center gap-3">
-                     <span className="w-10 h-10 rounded-2xl bg-[#3A1078]/10 flex items-center justify-center text-[#3A1078] ring-1 ring-[#3A1078]/20">
+                  <h3 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                     <span className="w-10 h-10 rounded-2xl bg-primary-600/10 flex items-center justify-center text-primary-600 ring-1 ring-primary-600/20">
                         <Plus size={20} />
                      </span>
                      Seleccionar Servicios
@@ -355,8 +355,8 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                           onClick={() => setNewService({ ...newService, category: cat })}
                           className={`flex-shrink-0 px-8 py-4 rounded-2xl border font-bold transition-all duration-300 active:scale-95 ${
                              newService.category === cat
-                                ? "border-[#3A1078] bg-[#3A1078] text-white shadow-lg shadow-[#3A1078]/20"
-                                : "border-[#C5A059]/30 bg-white text-[#0F172A]/60 hover:border-[#3A1078]/50 hover:text-[#0F172A]"
+                                ? "border-primary-600 bg-primary-600 text-white shadow-lg shadow-primary-600/20"
+                                : "border-primary-400/30 bg-white text-neutral-900/60 hover:border-primary-600/50 hover:text-neutral-900"
                           }`}
                        >
                           {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -368,11 +368,11 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                   <div className="relative mb-8">
                      <button
                         onClick={() => setShowServiceList(!showServiceList)}
-                        className="w-full h-16 pl-6 pr-12 rounded-2xl bg-[#F8FAFC] border-2 border-dashed border-[#C5A059]/40 text-[#0F172A]/70 font-bold text-left hover:bg-white hover:border-[#3A1078]/50 focus:border-[#3A1078] focus:bg-white transition-all cursor-pointer flex items-center"
+                        className="w-full h-16 pl-6 pr-12 rounded-2xl bg-neutral-50 border-2 border-dashed border-primary-400/40 text-neutral-900/70 font-bold text-left hover:bg-white hover:border-primary-600/50 focus:border-primary-600 focus:bg-white transition-all cursor-pointer flex items-center"
                      >
                         + Añadir servicio al carrito...
                      </button>
-                     <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-[#C5A059]">
+                     <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-primary-400">
                         <ChevronDown size={24} />
                      </div>
                      {showServiceList && (
@@ -398,13 +398,13 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                   {newService.services.length > 0 && (
                      <div className="space-y-4">
                         {newService.services.map((s, idx) => (
-                           <div key={idx} className="flex justify-between items-center bg-white p-5 rounded-2xl border border-[#C5A059]/20 shadow-sm transition-colors group hover:shadow-md">
+                           <div key={idx} className="flex justify-between items-center bg-white p-5 rounded-2xl border border-primary-400/20 shadow-sm transition-colors group hover:shadow-md">
                               <div className="flex items-center gap-4">
-                                 <div className="w-1.5 h-12 rounded-full bg-[#3A1078] group-hover:h-14 transition-all duration-300"></div>
-                                 <p className="font-bold text-[#0F172A] text-lg">{s.serviceName}</p>
+                                 <div className="w-1.5 h-12 rounded-full bg-primary-600 group-hover:h-14 transition-all duration-300"></div>
+                                 <p className="font-bold text-neutral-900 text-lg">{s.serviceName}</p>
                               </div>
                               <div className="flex items-center gap-6">
-                                 <span className="font-black text-[#0F172A] text-lg">${s.servicePrice}</span>
+                                 <span className="font-black text-neutral-900 text-lg">${s.servicePrice}</span>
                                  <Button 
                                     variant="danger"
                                     onClick={() => removeServiceFromList(idx)} 
@@ -425,14 +425,14 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                     onClick={() => setShowExtrasSelector(!showExtrasSelector)}
                     className="w-full flex justify-between items-center group"
                  > 
-                    <h3 className="text-xl font-bold text-[#0F172A] flex items-center gap-3">
-                        <span className="w-10 h-10 rounded-2xl bg-[#C5A059]/10 flex items-center justify-center text-[#C5A059] ring-1 ring-[#C5A059]/20">
+                    <h3 className="text-xl font-bold text-neutral-900 flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-2xl bg-primary-400/10 flex items-center justify-center text-primary-400 ring-1 ring-primary-400/20">
                             <Crown size={20} />
                         </span>
                         Extras & Decoración
                     </h3>
-                    <div className="p-2 rounded-full bg-[#F8FAFC] group-hover:bg-white transition-colors">
-                        <ChevronDown size={24} className={`text-[#C5A059] transition-transform duration-300 ${showExtrasSelector ? "rotate-180" : ""}`} />
+                    <div className="p-2 rounded-full bg-neutral-50 group-hover:bg-white transition-colors">
+                        <ChevronDown size={24} className={`text-primary-400 transition-transform duration-300 ${showExtrasSelector ? "rotate-180" : ""}`} />
                     </div>
                  </button>
 
@@ -447,17 +447,17 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                                  return (
                                     <div 
                                        key={extra.id} 
-                                       className={`p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${isActive ? 'border-[#C5A059]/30 bg-[#C5A059]/10' : 'border-[#C5A059]/20 bg-white hover:border-[#C5A059]/40'}`}
+                                       className={`p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${isActive ? 'border-primary-400/30 bg-primary-400/10' : 'border-primary-400/20 bg-white hover:border-primary-400/40'}`}
                                     >
                                        <div className="flex justify-between items-start mb-3">
-                                          <p className={`font-bold text-sm leading-tight ${isActive ? 'text-[#0F172A]' : 'text-[#0F172A]/70'}`}>{extra.name}</p>
-                                           <span className="text-xs font-bold bg-white px-2 py-1 rounded-lg border border-[#C5A059]/20 shadow-sm text-[#0F172A]/60">
+                                          <p className={`font-bold text-sm leading-tight ${isActive ? 'text-neutral-900' : 'text-neutral-900/70'}`}>{extra.name}</p>
+                                           <span className="text-xs font-bold bg-white px-2 py-1 rounded-lg border border-primary-400/20 shadow-sm text-neutral-900/60">
                                               ${extra.priceSuggested || extra.price || 0}
                                            </span>
                                        </div>
                                        
-                                       <div className="flex items-center justify-between mt-2 bg-white/70 rounded-xl p-1.5 border border-[#C5A059]/20">
-                                          <span className="text-[10px] uppercase font-bold text-[#0F172A]/50 pl-2">Uñas:</span>
+                                       <div className="flex items-center justify-between mt-2 bg-white/70 rounded-xl p-1.5 border border-primary-400/20">
+                                          <span className="text-[10px] uppercase font-bold text-neutral-900/50 pl-2">Uñas:</span>
                                           <input
                                              type="number"
                                              min={0}
@@ -465,7 +465,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                                              value={current?.nailsCount ?? 0}
                                              onClick={(e) => e.stopPropagation()}
                                              onChange={(e) => updateExtraNailsCount(extra.id, parseInt(e.target.value || "0", 10))}
-                                             className="w-12 text-center font-black text-[#0F172A] bg-transparent border-b-2 border-[#C5A059]/30 focus:border-[#C5A059] focus:outline-none p-1"
+                                             className="w-12 text-center font-black text-neutral-900 bg-transparent border-b-2 border-primary-400/30 focus:border-primary-400 focus:outline-none p-1"
                                           />
                                        </div>
                                     </div>
@@ -478,14 +478,14 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                         {newService.extras.length > 0 && (
                            <div className="space-y-3">
                               {newService.extras.map((e, idx) => (
-                                 <div key={idx} className="flex justify-between items-center text-sm p-4 bg-[#C5A059]/10 rounded-2xl border border-[#C5A059]/20">
+                                 <div key={idx} className="flex justify-between items-center text-sm p-4 bg-primary-400/10 rounded-2xl border border-primary-400/20">
                                     <div className="flex flex-col">
-                                       <span className="font-bold text-[#0F172A] text-base">{e.extraName}</span>
-                                       <span className="text-[#C5A059] text-xs font-bold uppercase tracking-wide">{e.nailsCount} uñas × ${e.pricePerNail}</span>
+                                       <span className="font-bold text-neutral-900 text-base">{e.extraName}</span>
+                                       <span className="text-primary-400 text-xs font-bold uppercase tracking-wide">{e.nailsCount} uñas × ${e.pricePerNail}</span>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                       <span className="font-bold text-[#0F172A] text-lg">${e.totalPrice.toFixed(2)}</span>
-                                       <button onClick={() => removeExtraFromList(idx)} className="text-[#0F172A]/30 hover:text-[#88304E] transition-colors p-2 hover:bg-[#88304E]/10 rounded-lg">
+                                       <span className="font-bold text-neutral-900 text-lg">${e.totalPrice.toFixed(2)}</span>
+                                       <button onClick={() => removeExtraFromList(idx)} className="text-neutral-900/30 hover:text-primary-700 transition-colors p-2 hover:bg-primary-700/10 rounded-lg">
                                           <X size={18} />
                                        </button>
                                     </div>
@@ -502,34 +502,34 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
             {/* Right Column: Total & Pay (4 cols) */}
             <div className="xl:col-span-4">
                <Card className="p-8 sticky top-6">
-                  <h3 className="text-xl font-bold text-[#0F172A] mb-8">Resumen</h3>
+                  <h3 className="text-xl font-bold text-neutral-900 mb-8">Resumen</h3>
                   
                   <div className="space-y-5 mb-10">
                      <div className="flex justify-between text-base">
-                        <span className="text-[#0F172A]/60 font-medium">Servicios ({newService.services.length})</span>
-                        <span className="font-bold text-[#0F172A]">${newService.services.reduce((acc, s) => acc + s.servicePrice, 0).toFixed(2)}</span>
+                        <span className="text-neutral-900/60 font-medium">Servicios ({newService.services.length})</span>
+                        <span className="font-bold text-neutral-900">${newService.services.reduce((acc, s) => acc + s.servicePrice, 0).toFixed(2)}</span>
                      </div>
                      <div className="flex justify-between text-base">
-                        <span className="text-[#0F172A]/60 font-medium">Extras ({newService.extras.length})</span>
-                        <span className="font-bold text-[#0F172A]">${newService.extras.reduce((acc, e) => acc + e.totalPrice, 0).toFixed(2)}</span>
+                        <span className="text-neutral-900/60 font-medium">Extras ({newService.extras.length})</span>
+                        <span className="font-bold text-neutral-900">${newService.extras.reduce((acc, e) => acc + e.totalPrice, 0).toFixed(2)}</span>
                      </div>
-                     <div className="h-px bg-[#C5A059]/20 my-4" />
+                     <div className="h-px bg-primary-400/20 my-4" />
                      <div className="flex justify-between items-center">
-                        <span className="text-xl font-bold text-[#0F172A]">Total</span>
-                        <span className="text-4xl font-black text-[#0F172A] tracking-tight">${totalCost.toFixed(2)}</span>
+                        <span className="text-xl font-bold text-neutral-900">Total</span>
+                        <span className="text-4xl font-black text-neutral-900 tracking-tight">${totalCost.toFixed(2)}</span>
                      </div>
                   </div>
 
                   <div className="space-y-6">
                      <div>
-                        <label className="block text-xs font-bold text-[#0F172A]/50 uppercase mb-3 ml-1">Método de Pago</label>
+                        <label className="block text-xs font-bold text-neutral-900/50 uppercase mb-3 ml-1">Método de Pago</label>
                         <div className="grid grid-cols-2 gap-3">
                            <button
                               onClick={() => setNewService({ ...newService, paymentMethod: "cash" })}
                               className={`py-4 rounded-2xl border font-bold text-sm transition-all duration-300 active:scale-95 ${
                                  newService.paymentMethod === "cash"
-                                    ? "border-[#C5A059] bg-[#C5A059]/10 text-[#C5A059] shadow-sm"
-                                    : "border-[#C5A059]/20 bg-[#F8FAFC] text-[#0F172A]/40 hover:border-[#C5A059]/50 hover:bg-white"
+                                    ? "border-primary-400 bg-primary-400/10 text-primary-400 shadow-sm"
+                                    : "border-primary-400/20 bg-neutral-50 text-neutral-900/40 hover:border-primary-400/50 hover:bg-white"
                               }`}
                            >
                               Efectivo
@@ -538,8 +538,8 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                               onClick={() => setNewService({ ...newService, paymentMethod: "transfer" })}
                               className={`py-4 rounded-2xl border font-bold text-sm transition-all duration-300 active:scale-95 ${
                                  newService.paymentMethod === "transfer"
-                                    ? "border-[#3A1078] bg-[#3A1078]/10 text-[#3A1078] shadow-sm"
-                                    : "border-[#C5A059]/20 bg-[#F8FAFC] text-[#0F172A]/40 hover:border-[#3A1078]/50 hover:bg-white"
+                                    ? "border-primary-600 bg-primary-600/10 text-primary-600 shadow-sm"
+                                    : "border-primary-400/20 bg-neutral-50 text-neutral-900/40 hover:border-primary-600/50 hover:bg-white"
                               }`}
                            >
                               Transferencia
@@ -566,18 +566,18 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
          {/* Services List - Modern Card View */}
          <div className="pt-16 pb-12">
             <div className="flex flex-col sm:flex-row justify-between items-end mb-8 gap-4">
-               <h2 className="text-3xl font-black text-[#0F172A] tracking-tight">Mis Servicios</h2>
+               <h2 className="text-3xl font-black text-neutral-900 tracking-tight">Mis Servicios</h2>
                
                {/* Search / Filters Condensed */}
                <div className="flex gap-2 w-full sm:w-auto">
                   <div className="relative group w-full sm:w-auto">
-                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0F172A]/40 group-focus-within:text-[#3A1078] transition-colors" size={18} />
+                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-900/40 group-focus-within:text-primary-600 transition-colors" size={18} />
                      <input 
                         type="text" 
                         placeholder="Buscar..."
                         value={filters.search}
                         onChange={e => setFilters({...filters, search: e.target.value})}
-                        className="w-full sm:w-64 pl-12 pr-6 py-3 rounded-2xl bg-white border border-[#C5A059]/20 transition-all duration-300 focus:border-[#3A1078] focus:ring-4 focus:ring-[#3A1078]/10 outline-none shadow-sm font-medium text-[#0F172A]"
+                        className="w-full sm:w-64 pl-12 pr-6 py-3 rounded-2xl bg-white border border-primary-400/20 transition-all duration-300 focus:border-primary-600 focus:ring-4 focus:ring-primary-600/10 outline-none shadow-sm font-medium text-neutral-900"
                      />
                   </div>
                </div>
@@ -601,17 +601,17 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                            key={service.id} 
                            className="group p-6 relative overflow-hidden transition-all hover:shadow-xl hover:bg-white hover:-translate-y-1"
                         >
-                           <div className={`absolute top-0 left-0 w-1.5 h-full ${isCash ? 'bg-[#C5A059]' : 'bg-[#3A1078]'}`} />
+                           <div className={`absolute top-0 left-0 w-1.5 h-full ${isCash ? 'bg-primary-400' : 'bg-primary-600'}`} />
                            
                            <div className="pl-4 flex justify-between items-start mb-5">
                               <div>
-                                 <h4 className="font-bold text-[#0F172A] text-xl mb-1">{service.client}</h4>
-                                 <p className="text-[#0F172A]/50 text-xs font-bold uppercase tracking-wide">{service.date}</p>
+                                 <h4 className="font-bold text-neutral-900 text-xl mb-1">{service.client}</h4>
+                                 <p className="text-neutral-900/50 text-xs font-bold uppercase tracking-wide">{service.date}</p>
                               </div>
                               <div className="text-right">
-                                 <p className="text-3xl font-black text-[#0F172A] tracking-tight">${Number(service.cost).toFixed(2)}</p>
+                                 <p className="text-3xl font-black text-neutral-900 tracking-tight">${Number(service.cost).toFixed(2)}</p>
                                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                                    isCash ? 'bg-[#C5A059]/10 text-[#C5A059]' : 'bg-[#3A1078]/10 text-[#3A1078]'
+                                    isCash ? 'bg-primary-400/10 text-primary-400' : 'bg-primary-600/10 text-primary-600'
                                  }`}>
                                     {isCash ? 'Efectivo' : 'Transferencia'}
                                  </span>

@@ -9,6 +9,7 @@ import LoadingScreen from "./components/ui/LoadingScreen";
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
 import * as salonService from "./services/salonService";
+import { deleteClient } from "./services/salonService"; // Added deleteClient import
 import * as inventoryService from "./services/inventoryService";
 import * as expenseService from "./services/expenseService";
 
@@ -95,87 +96,90 @@ const App = () => {
 
   return (
     <>
-      <Routes>
-        <Route path="/login" element={
-          currentUser ? <Navigate to={currentUser.role === 'owner' ? '/admin' : '/staff'} replace /> : 
-          <LoginScreen 
-            users={users} 
-            loading={loading} 
-            onLogin={login} 
-            showNotification={showNotification} 
-            notification={notification}
-          />
-        } />
-        
-        <Route path="/admin" element={
-          <ProtectedRoute currentUser={currentUser} allowedRole="owner">
-             <OwnerScreen 
-                users={users}
+      <div className="animate-fade-in-up">
+        <Routes>
+          <Route path="/login" element={
+            currentUser ? <Navigate to={currentUser.role === 'owner' ? '/admin' : '/staff'} replace /> : 
+            <LoginScreen 
+              users={users} 
+              loading={loading} 
+              onLogin={login} 
+              showNotification={showNotification} 
+              notification={notification}
+            />
+          } />
+          
+          <Route path="/admin" element={
+            <ProtectedRoute currentUser={currentUser} allowedRole="owner">
+               <OwnerScreen 
+                  users={users}
+                  currentUser={currentUser!}
+                  services={services}
+                  expenses={expenses}
+                  catalogServices={catalogServices}
+                  catalogExtras={catalogExtras}
+                  materialRecipes={materialRecipes}
+                  serviceRecipes={serviceRecipes}
+                  consumables={consumables}
+                  chemicalProducts={chemicalProducts}
+                  clients={clients}
+                  showNotification={showNotification}
+                  addExpense={expenseService.addExpense}
+                  deleteExpense={expenseService.deleteExpense}
+                  updateServiceCost={salonService.updateServiceCost}
+                  softDeleteService={salonService.softDeleteServiceAdmin}
+                  permanentlyDeleteService={salonService.permanentlyDeleteService}
+                  restoreDeletedService={salonService.restoreDeletedService}
+                  createNewUser={userService.createNewUser}
+                  updateUser={userService.updateUser}
+                  updateUserCommission={userService.updateUserCommission}
+                  deactivateUser={userService.deactivateUser}
+                  deleteUserPermanently={userService.deleteUserPermanently}
+                  addCatalogService={inventoryService.addCatalogService}
+                  updateCatalogService={inventoryService.updateCatalogService}
+                  deleteCatalogService={inventoryService.deleteCatalogService}
+                  addExtra={inventoryService.addExtra}
+                  updateExtra={inventoryService.updateExtra}
+                  deleteExtra={inventoryService.deleteExtra}
+                  addConsumable={inventoryService.addConsumable}
+                  updateConsumable={inventoryService.updateConsumable}
+                  deleteConsumable={inventoryService.deleteConsumable}
+                  addChemicalProduct={inventoryService.addChemicalProduct}
+                  updateChemicalProduct={inventoryService.updateChemicalProduct}
+                  deleteChemicalProduct={inventoryService.deleteChemicalProduct}
+                  initializeMaterialsData={inventoryService.initializeMaterialsData}
+                  deleteClient={salonService.deleteClient}
+                  onLogout={() => {
+                    logout();
+                    showNotification("Sesión cerrada correctamente", "info");
+                  }}
+                />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/staff" element={
+            <ProtectedRoute currentUser={currentUser} allowedRole="staff">
+              <StaffScreen
                 currentUser={currentUser!}
                 services={services}
-                expenses={expenses}
                 catalogServices={catalogServices}
                 catalogExtras={catalogExtras}
                 materialRecipes={materialRecipes}
-                serviceRecipes={serviceRecipes}
-                consumables={consumables}
                 chemicalProducts={chemicalProducts}
-                clients={clients}
+                consumables={consumables}
+                notification={notification}
                 showNotification={showNotification}
-                addExpense={expenseService.addExpense}
-                deleteExpense={expenseService.deleteExpense}
-                updateServiceCost={salonService.updateServiceCost}
-                softDeleteService={salonService.softDeleteServiceAdmin}
-                permanentlyDeleteService={salonService.permanentlyDeleteService}
-                restoreDeletedService={salonService.restoreDeletedService}
-                createNewUser={userService.createNewUser}
-                updateUser={userService.updateUser}
-                updateUserCommission={userService.updateUserCommission}
-                deactivateUser={userService.deactivateUser}
-                deleteUserPermanently={userService.deleteUserPermanently}
-                addCatalogService={inventoryService.addCatalogService}
-                updateCatalogService={inventoryService.updateCatalogService}
-                deleteCatalogService={inventoryService.deleteCatalogService}
-                addExtra={inventoryService.addExtra}
-                updateExtra={inventoryService.updateExtra}
-                deleteExtra={inventoryService.deleteExtra}
-                addConsumable={inventoryService.addConsumable}
-                updateConsumable={inventoryService.updateConsumable}
-                deleteConsumable={inventoryService.deleteConsumable}
-                addChemicalProduct={inventoryService.addChemicalProduct}
-                updateChemicalProduct={inventoryService.updateChemicalProduct}
-                deleteChemicalProduct={inventoryService.deleteChemicalProduct}
-                initializeMaterialsData={inventoryService.initializeMaterialsData}
-                onLogout={() => {
-                  logout();
-                  showNotification("Sesión cerrada correctamente", "info");
-                }}
+                onLogout={logout}
+                addService={(user, data, recipes, chemProducts, total) =>
+                  salonService.addService(user, data, recipes, serviceRecipes, consumables, chemProducts, catalogServices, total)
+                }
               />
-          </ProtectedRoute>
-        } />
+            </ProtectedRoute>
+          } />
 
-        <Route path="/staff" element={
-          <ProtectedRoute currentUser={currentUser} allowedRole="staff">
-            <StaffScreen
-              currentUser={currentUser!}
-              services={services}
-              catalogServices={catalogServices}
-              catalogExtras={catalogExtras}
-              materialRecipes={materialRecipes}
-              chemicalProducts={chemicalProducts}
-              consumables={consumables}
-              notification={notification}
-              showNotification={showNotification}
-              onLogout={logout}
-              addService={(user, data, recipes, chemProducts, total) =>
-                salonService.addService(user, data, recipes, serviceRecipes, consumables, chemProducts, catalogServices, total)
-              }
-            />
-          </ProtectedRoute>
-        } />
-
-        <Route path="*" element={<Navigate to={currentUser ? (currentUser.role === 'owner' ? '/admin' : '/staff') : '/login'} replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to={currentUser ? (currentUser.role === 'owner' ? '/admin' : '/staff') : '/login'} replace />} />
+        </Routes>
+      </div>
       <NotificationToast notification={notification} />
     </>
   );

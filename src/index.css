@@ -4,22 +4,22 @@
 
 @layer base {
   :root {
-    /* --- TEMA ACTUAL: Blossom Nails (Morado/Rosa) --- */
+    /* --- TEMA ACTUAL: Earth Luxury (Tierra/Lujo) --- */
     
-    /* Color Principal (El morado oscuro) */
-    --color-primary: #3A1078;
+    /* Color Principal (Base Tierra) */
+    --color-primary: #885f43; 
     
-    /* Color Secundario (El rosa fuerte) */
-    --color-secondary: #88304E;
+    /* Color Secundario (Texto Soft Black) */
+    --color-secondary: #1d1d1b;
     
-    /* Color de Acento (El dorado de la corona) */
-    --color-accent: #C5A059;
+    /* Color de Acento (Tierra Claro) */
+    --color-accent: #c39a7c;
     
-    /* Fondo de la app (Gris muy claro) */
-    --color-background: #F8FAFC;
+    /* Fondo de la app (Off-white cálido) */
+    --color-background: #f9f8f6;
     
-    /* Texto principal (Azul muy oscuro casi negro) */
-    --color-text: #0F172A;
+    /* Texto principal (Soft Black) */
+    --color-text: #1d1d1b;
     
     /* Tamaño de fuente base (Tu ajuste anterior) */
     font-size: 14px;
