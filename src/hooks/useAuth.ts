@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-} from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import type { AppUser } from "../types";
 import { normalizeUser } from "../utils/helpers";
@@ -20,7 +15,7 @@ export const useAuth = (enabled: boolean) => {
 
   // 1. Inicializar usuarios (SOLO SI ESTÁ HABILITADO)
   useEffect(() => {
-    if (!enabled) return; 
+    if (!enabled) return;
 
     const initUsers = async () => {
       try {
@@ -36,14 +31,14 @@ export const useAuth = (enabled: boolean) => {
 
   // 2. Escuchar cambios (SOLO SI ESTÁ HABILITADO)
   useEffect(() => {
-    if (!enabled || !initialized) return; 
+    if (!enabled || !initialized) return;
 
     const q = query(collection(db, "users"), orderBy("name", "asc"));
     const unsub = onSnapshot(
       q,
       (snap) => {
         const data = snap.docs.map((d) =>
-          normalizeUser({ id: d.id, ...d.data() })
+          normalizeUser({ id: d.id, ...d.data() }),
         );
 
         const sortedData = data.sort((a, b) => {
@@ -59,7 +54,7 @@ export const useAuth = (enabled: boolean) => {
       (error) => {
         console.error("Error cargando usuarios:", error);
         setLoading(false);
-      }
+      },
     );
 
     return () => unsub();
@@ -70,10 +65,10 @@ export const useAuth = (enabled: boolean) => {
     // Solo procedemos si YA recibimos datos de Firebase (dataLoaded)
     if (dataLoaded) {
       if (users.length > 0) {
-        const savedUserId = localStorage.getItem("salon_user_id");
-        
+        const savedUserId = sessionStorage.getItem("salon_user_id");
+
         if (savedUserId && !currentUser) {
-          const foundUser = users.find(u => u.id === savedUserId);
+          const foundUser = users.find((u) => u.id === savedUserId);
           if (foundUser) {
             setCurrentUser(foundUser);
           }
@@ -85,21 +80,21 @@ export const useAuth = (enabled: boolean) => {
   }, [users, dataLoaded]); // Dependemos de dataLoaded, no de initialized
 
   const login = (user: AppUser) => {
-    localStorage.setItem("salon_user_id", user.id);
+    sessionStorage.setItem("salon_user_id", user.id);
     setCurrentUser(user);
   };
 
   const logout = () => {
-    localStorage.removeItem("salon_user_id");
+    sessionStorage.removeItem("salon_user_id");
     setCurrentUser(null);
   };
 
-  return { 
-    currentUser, 
-    users, 
-    loading, 
+  return {
+    currentUser,
+    users,
+    loading,
     initialized,
     login,
-    logout
+    logout,
   };
 };
