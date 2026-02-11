@@ -12,6 +12,8 @@ import {
   Plus,
   Beaker,
   User,
+  Menu,
+  PanelLeftClose,
 } from "lucide-react";
 import OwnerDashboard from "./components/OwnerDashboard";
 import HistoryTab from "./components/HistoryTab";
@@ -103,6 +105,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
   >("dashboard");
   const [adminSubTab, setAdminSubTab] = useState<ConfigTab>("services");
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   // Trigger loading state on view change
@@ -113,6 +116,11 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
   }, [currentView, adminSubTab]);
 
   const handleAdminClick = () => {
+    if (!isSidebarOpen) {
+      setIsSidebarOpen(true);
+      setIsAdminOpen(true);
+      return;
+    }
     setIsAdminOpen(!isAdminOpen);
   };
 
@@ -127,106 +135,124 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
     { id: "personal", label: "Personal", icon: Users },
     { id: "extras", label: "Extras", icon: Plus },
     { id: "materials", label: "Químicos", icon: Beaker },
-    { id: "clients", label: "Clientes", icon: User },
-  ] as const;
+  ];
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar - Fixed Left */}
-      <aside className="w-72 bg-surface border-r border-border flex flex-col shadow-sm relative z-20 shrink-0 transition-all duration-300">
+    <div className="flex h-screen bg-bg-main overflow-hidden">
+      <aside
+        className={`${isSidebarOpen ? "w-72" : "w-20"} bg-surface border-r border-border flex flex-col shadow-sm relative z-20 shrink-0 transition-all duration-300 ease-in-out`}
+      >
         {/* Sidebar Header */}
-        <div className="h-24 flex items-center px-8 border-b border-border">
-          <div>
-            <h1 className="text-xl font-black text-text-main tracking-tight">
-              Nombre<span className="text-primary-500">Local</span>
-            </h1>
-            <p className="text-xs text-text-muted font-medium uppercase tracking-wider mt-1">
-              Panel de Control
-            </p>
-          </div>
+        <div
+          className={`h-24 flex items-center ${isSidebarOpen ? "px-8 justify-between" : "px-0 justify-center"} border-b border-border transition-all duration-300`}
+        >
+          {isSidebarOpen && (
+            <div>
+              <h1 className="text-xl font-black text-text-main tracking-tight">
+                Nombre<span className="text-primary-500">Local</span>
+              </h1>
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wider mt-1">
+                Panel de Control
+              </p>
+            </div>
+          )}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="text-text-dim hover:text-text-main p-2 transition-colors rounded-lg hover:bg-surface-highlight"
+          >
+            {isSidebarOpen ? <PanelLeftClose size={20} /> : <Menu size={20} />}
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto overflow-x-hidden">
           {/* Dashboard */}
           <button
             onClick={() => setCurrentView("dashboard")}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
+            className={`w-full flex items-center ${isSidebarOpen ? "justify-start px-4 gap-4" : "justify-center px-2 gap-0"} py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
               currentView === "dashboard"
                 ? "bg-primary-900/20 text-primary-500 border-r-2 border-primary-500 rounded-r-none"
                 : "text-text-muted hover:bg-surface-highlight hover:text-text-main"
             }`}
+            title={!isSidebarOpen ? "Dashboard" : undefined}
           >
             <LayoutDashboard
               size={20}
               strokeWidth={currentView === "dashboard" ? 2 : 1.5}
               className={`transition-colors duration-200 ${currentView === "dashboard" ? "text-primary-500" : "text-text-dim group-hover:text-text-main"}`}
             />
-            Dashboard
+            {isSidebarOpen && <span>Dashboard</span>}
           </button>
 
           {/* History */}
           <button
             onClick={() => setCurrentView("history")}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
+            className={`w-full flex items-center ${isSidebarOpen ? "justify-start px-4 gap-4" : "justify-center px-2 gap-0"} py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
               currentView === "history"
                 ? "bg-primary-900/20 text-primary-500 border-r-2 border-primary-500 rounded-r-none"
                 : "text-text-muted hover:bg-surface-highlight hover:text-text-main"
             }`}
+            title={!isSidebarOpen ? "Historial" : undefined}
           >
             <Calendar
               size={20}
               strokeWidth={currentView === "history" ? 2 : 1.5}
               className={`transition-colors duration-200 ${currentView === "history" ? "text-primary-500" : "text-text-dim group-hover:text-text-main"}`}
             />
-            Historial
+            {isSidebarOpen && <span>Historial</span>}
           </button>
 
           {/* Analytics */}
           <button
             onClick={() => setCurrentView("analytics")}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
+            className={`w-full flex items-center ${isSidebarOpen ? "justify-start px-4 gap-4" : "justify-center px-2 gap-0"} py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
               currentView === "analytics"
                 ? "bg-primary-900/20 text-primary-500 border-r-2 border-primary-500 rounded-r-none"
                 : "text-text-muted hover:bg-surface-highlight hover:text-text-main"
             }`}
+            title={!isSidebarOpen ? "Analíticas" : undefined}
           >
             <TrendingUp
               size={20}
               strokeWidth={currentView === "analytics" ? 2 : 1.5}
               className={`transition-colors duration-200 ${currentView === "analytics" ? "text-primary-500" : "text-text-dim group-hover:text-text-main"}`}
             />
-            Analíticas
+            {isSidebarOpen && <span>Analíticas</span>}
           </button>
 
           {/* Administration (Accordion) */}
           <div className="pt-2">
             <button
               onClick={handleAdminClick}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
+              className={`w-full flex items-center ${isSidebarOpen ? "justify-between px-4" : "justify-center px-2"} py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
                 currentView === "admin"
                   ? "text-primary-500 bg-primary-900/20 border-r-2 border-primary-500 rounded-r-none"
                   : "text-text-muted hover:bg-surface-highlight hover:text-text-main"
               }`}
+              title={!isSidebarOpen ? "Administración" : undefined}
             >
-              <div className="flex items-center gap-4">
+              <div
+                className={`flex items-center ${isSidebarOpen ? "gap-4" : "gap-0"}`}
+              >
                 <Settings
                   size={20}
                   strokeWidth={currentView === "admin" ? 2 : 1.5}
                   className={`transition-colors duration-200 ${currentView === "admin" ? "text-primary-500" : "text-text-dim group-hover:text-text-main"}`}
                 />
-                Administración
+                {isSidebarOpen && <span>Administración</span>}
               </div>
-              <ChevronDown
-                size={16}
-                className={`text-text-dim transition-transform duration-300 ${isAdminOpen ? "rotate-180" : ""}`}
-              />
+              {isSidebarOpen && (
+                <ChevronDown
+                  size={16}
+                  className={`text-text-dim transition-transform duration-300 ${isAdminOpen ? "rotate-180" : ""}`}
+                />
+              )}
             </button>
 
             {/* Animated Submenu */}
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out space-y-1 ${
-                isAdminOpen
+                isAdminOpen && isSidebarOpen
                   ? "max-h-96 opacity-100 mt-2"
                   : "max-h-0 opacity-0 mt-0"
               }`}
@@ -260,31 +286,45 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
         </nav>
 
         {/* Sidebar Footer - User Profile */}
-        <div className="p-4 mt-auto border-t border-border bg-surface">
-          <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-highlight transition-all duration-300 cursor-pointer group border border-transparent hover:border-border">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary-600 to-primary-800 p-[2px] shadow-sm">
+        <div className="p-4 mt-auto border-t border-border bg-surface flex flex-col gap-2">
+          <div
+            className={`flex items-center ${
+              isSidebarOpen ? "gap-3 px-3" : "gap-0 justify-center px-0"
+            } py-3 rounded-xl bg-surface-highlight/30 border border-border transition-all duration-300`}
+          >
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary-600 to-primary-800 p-[2px] shadow-sm flex-shrink-0">
               <div className="w-full h-full rounded-full bg-surface-highlight flex items-center justify-center">
                 <span className="font-bold text-primary-500 text-xs">
                   {props.currentUser?.name?.substring(0, 2).toUpperCase()}
                 </span>
               </div>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-bold text-text-main truncate group-hover:text-primary-500 transition-colors">
-                {props.currentUser?.name}
-              </p>
-              <p className="text-xs text-text-muted truncate">Propietario</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-text-dim hover:text-danger hover:bg-danger/10 p-2 h-8 w-8 rounded-full"
-              onClick={props.onLogout}
-              title="Cerrar Sesión"
-            >
-              <LogOut size={16} />
-            </Button>
+
+            {isSidebarOpen && (
+              <div className="flex-1 overflow-hidden transition-all duration-300 delay-100">
+                <p className="text-sm font-bold text-text-main truncate">
+                  {props.currentUser?.name}
+                </p>
+                <p className="text-xs text-text-muted truncate">Propietario</p>
+              </div>
+            )}
           </div>
+
+          <button
+            onClick={props.onLogout}
+            className={`flex items-center justify-center py-2.5 rounded-lg text-sm transition-all duration-200 group border border-red-500/20 text-red-400 hover:bg-red-500/10 ${
+              isSidebarOpen ? "w-full gap-3 px-4" : "w-10 h-10 mx-auto"
+            }`}
+            title="Cerrar Sesión"
+          >
+            <LogOut
+              size={20}
+              className="text-red-400 group-hover:text-red-300 transition-colors"
+            />
+            {isSidebarOpen && (
+              <span className="font-medium">Cerrar Sesión</span>
+            )}
+          </button>
         </div>
       </aside>
 

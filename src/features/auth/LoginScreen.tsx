@@ -99,12 +99,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
         {/* STEP 1: User Selection */}
         {!selectedUser && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-center max-w-3xl mx-auto animate-in zoom-in-95 duration-500">
+          <div className="flex flex-wrap justify-center gap-6 max-w-5xl mx-auto animate-in zoom-in-95 duration-500">
             {activeUsers.map((user) => (
               <button
                 key={user.id}
                 onClick={() => handleUserClick(user)}
-                className="group relative flex flex-col items-center p-6 rounded-2xl bg-surface/30 border border-white/5 hover:bg-surface/50 hover:border-primary-500/30 transition-all duration-300 hover:scale-105 active:scale-95 text-left w-full h-full"
+                className="w-40 sm:w-48 group relative flex flex-col items-center p-6 rounded-2xl bg-surface/30 border border-white/5 hover:bg-surface/50 hover:border-primary-500/30 transition-all duration-300 hover:scale-105 active:scale-95 text-left h-full"
               >
                 <div className="relative w-24 h-24 rounded-full p-[3px] bg-gradient-to-tr from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 mb-4 group-hover:shadow-primary-500/40 transition-shadow">
                   <div className="w-full h-full rounded-full bg-surface-highlight flex items-center justify-center border-2 border-surface overflow-hidden">

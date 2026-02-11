@@ -636,7 +636,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                     isSubmitting
                   }
                   isLoading={isSubmitting}
-                  className="py-5 text-lg"
+                  className="py-5 text-lg border-2 border-primary-500 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:bg-primary-400 hover:border-primary-400 hover:text-black transition-all duration-300"
                 >
                   {!isSubmitting && <Check size={24} strokeWidth={3} />}
                   Confirmar Cobro
