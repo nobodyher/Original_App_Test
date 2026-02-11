@@ -1,4 +1,4 @@
-import type { DocumentData } from "firebase/firestore";
+import type { DocumentData, Timestamp } from "firebase/firestore";
 
 export type Role = "owner" | "staff";
 
@@ -33,6 +33,7 @@ export type ExtraItem = {
 export type Service = {
   id: string;
   date: string;
+  timestamp?: Timestamp;
   client: string;
   services?: ServiceItem[];
   extras?: ExtraItem[];
@@ -91,18 +92,18 @@ export type Consumable = {
   id: string;
   name: string;
   unit: string;
-  
+
   // Inventory tracking
-  stockQty: number;              // Cantidad actual en stock
-  minStockAlert: number;         // Alerta de stock mínimo
-  
+  stockQty: number; // Cantidad actual en stock
+  minStockAlert: number; // Alerta de stock mínimo
+
   // Purchase information
-  purchasePrice: number;         // Precio de compra del paquete completo
-  packageSize: number;           // Cantidad en el paquete (ej: 50 pares, 100 unidades)
-  
+  purchasePrice: number; // Precio de compra del paquete completo
+  packageSize: number; // Cantidad en el paquete (ej: 50 pares, 100 unidades)
+
   // Legacy field (keep for backward compatibility)
-  unitCost?: number;             // Deprecated: use purchasePrice/packageSize instead
-  
+  unitCost?: number; // Deprecated: use purchasePrice/packageSize instead
+
   active: boolean;
   category?: string;
 };
@@ -154,13 +155,15 @@ export type MaterialRecipe = {
   active: boolean;
 };
 
-export type MaterialInput = string | {
-  id?: string;
-  materialId?: string;
-  quantity?: number;
-  qty?: number;
-  amount?: number;
-};
+export type MaterialInput =
+  | string
+  | {
+      id?: string;
+      materialId?: string;
+      quantity?: number;
+      qty?: number;
+      amount?: number;
+    };
 
 export type Client = {
   id: string;

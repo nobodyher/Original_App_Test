@@ -81,10 +81,4 @@ export const EXTRAS_CATALOG: CatalogExtra[] = [
   },
 ];
 
-// ✅ NUEVO: Costos fijos de recetas por categoría
-export const RECIPE_COSTS = {
-  manicura: 0.33,
-  pedicura: 0.5,
-  "Manicura completa": 0.33,
-  "Pedicura completa": 0.5,
-};
+

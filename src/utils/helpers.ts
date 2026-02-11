@@ -1,13 +1,10 @@
 import type { DocumentData } from "firebase/firestore";
 import type { AppUser } from "../types";
-import { RECIPE_COSTS } from "../constants/catalog";
-
 export const clamp = (n: number, min: number, max: number) =>
   Math.min(max, Math.max(min, n));
 
-export const getRecipeCost = (category?: string): number => {
-  if (!category) return 0;
-  return (RECIPE_COSTS as Record<string, number>)[category] || 0;
+export const getRecipeCost = (_category?: string): number => {
+  return 0; // Legacy cost removed
 };
 
 export const normalizeUser = (u: DocumentData & { id: string }): AppUser => {

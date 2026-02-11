@@ -36,6 +36,8 @@ import type {
 import { deleteClient } from "../../../services/salonService";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 
+export type ConfigTab = 'services' | 'consumables' | 'personal' | 'extras' | 'materials' | 'clients';
+
 interface OwnerConfigTabProps {
   users: AppUser[];
   catalogServices: CatalogService[];
@@ -47,6 +49,10 @@ interface OwnerConfigTabProps {
   clients: Client[];
   currentUser: AppUser | null;
   showNotification: (message: string, type?: Toast["type"]) => void;
+
+  // Optional controlled props
+  initialTab?: ConfigTab;
+  hideNavigation?: boolean;
 
   // User Actions
   createNewUser: (data: Omit<AppUser, "id">) => Promise<void>;
@@ -76,34 +82,7 @@ interface OwnerConfigTabProps {
   deleteClient: (clientId: string) => Promise<void>;
 }
 
-const TableSkeleton = () => (
-  <div className="animate-in fade-in duration-300 w-full">
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-100">
-          <tr>
-            {[1, 2, 3, 4].map((i) => (
-              <th key={i} className="px-6 py-4">
-                <div className="h-4 w-24 bg-gray-200 rounded animate-skeleton"></div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {[1, 2, 3, 4, 5].map((row) => (
-            <tr key={row}>
-              {[1, 2, 3, 4].map((col) => (
-                <td key={col} className="px-6 py-4">
-                  <div className="h-4 w-full bg-gray-100 rounded animate-skeleton"></div>
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
+
 
 const EmptyState = ({ 
   icon: Icon, 
@@ -115,9 +94,9 @@ const EmptyState = ({
   message: string 
 }) => (
   <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
-    <Icon size={64} className="text-gray-200 mb-4" strokeWidth={1.5} />
-    <h3 className="text-lg font-bold text-gray-400 mb-2">{title}</h3>
-    <p className="text-sm text-gray-400 max-w-xs mx-auto">{message}</p>
+    <Icon size={64} className="text-gray-700/50 mb-4" strokeWidth={1.5} />
+    <h3 className="text-sm font-bold text-text-main mb-2">{title}</h3>
+    <p className="text-sm text-text-muted max-w-xs mx-auto">{message}</p>
   </div>
 );
 
@@ -132,9 +111,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   clients,
   currentUser,
   showNotification,
+  initialTab,
+  hideNavigation = false,
   createNewUser,
   updateUser,
-  // deactivateUser, // Removed as we use updateUser for toggling status
+  // deactivateUser: // Removed as we use updateUser for toggling status
   deleteUserPermanently,
   addCatalogService,
   updateCatalogService,
@@ -150,18 +131,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   deleteChemicalProduct,
 
 }) => {
-  const [activeTab, setActiveTab] = useState<
-    "services" | "consumables" | "personal" | "extras" | "materials" | "clients"
-  >("services");
+  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab || "services");
 
-  // Skeleton Loading State
-  const [isTableLoading, setIsTableLoading] = useState(false);
-
+  // Sync internal state with prop changes
   React.useEffect(() => {
-     setIsTableLoading(true);
-     const timer = setTimeout(() => setIsTableLoading(false), 600);
-     return () => clearTimeout(timer);
-  }, [activeTab]);
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
 
   const tabs = [
     { id: "services", label: "Catálogo", icon: ShoppingCart, color: "text-primary-600" },
@@ -235,6 +213,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   // Search States for Service Editor
   const [materialSearch, setMaterialSearch] = useState("");
   const [consumableSearch, setConsumableSearch] = useState("");
+  
+  // Service Form Tabs
+  const [serviceFormTab, setServiceFormTab] = useState<'info' | 'chemicals' | 'consumables'>('info');
+
+  // Reset tab when opening a service
+  React.useEffect(() => {
+    if (editingServiceItem) {
+      setServiceFormTab('info');
+    }
+  }, [editingServiceItem]);
   
   // Extras Editing State (Slide-over)
   const [editingExtraItem, setEditingExtraItem] = useState<CatalogExtra | null>(null);
@@ -739,14 +727,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   return (
     <div className="space-y-6">
       {lowStockConsumables.length > 0 && (
-        <div className="bg-linear-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-6">
+        <div className="bg-linear-to-r from-orange-900/10 to-red-900/10 border border-orange-500/30 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="text-orange-600" size={32} />
             <div>
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-bold text-text-main">
                 ⚠️ Alertas de Stock Bajo
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-muted">
                 {lowStockConsumables.length} consumible(s) necesitan reposición
               </p>
             </div>
@@ -755,10 +743,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             {lowStockConsumables.map((c) => (
               <div
                 key={c.id}
-                className="bg-white rounded-lg p-4 border-2 border-orange-200"
+                className="bg-surface-highlight rounded-lg p-4 border border-orange-500/20"
               >
-                <p className="font-bold text-gray-800">{c.name}</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-bold text-text-main">{c.name}</p>
+                <p className="text-sm text-text-muted">
                   Stock actual: <span className="font-bold">{c.stockQty}</span>{" "}
                   {c.unit} (mínimo: {c.minStockAlert})
                 </p>
@@ -772,43 +760,41 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
       {/* Main Tab Layout */}
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar Navigation */}
-        <nav className="lg:w-64 shrink-0 space-y-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as "services" | "consumables" | "personal" | "extras" | "materials" | "clients")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-in-out hover:pl-5 font-medium text-left relative overflow-hidden group ${
-                  isActive
-                    ? "bg-white shadow-sm text-primary-600"
-                    : "text-neutral-900 hover:bg-neutral-50 hover:text-primary-600"
-                }`}
-              >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary-600 rounded-r-full shadow-[0_0_10px_#885f43] animate-in slide-in-from-left-1"></div>
-                )}
-
-                <Icon
-                  size={20}
-                  className={isActive ? tab.color : "text-gray-400 group-hover:text-primary-600"}
-                />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+        {/* Sidebar Navigation - Conditionally Rendered */}
+        {!hideNavigation && (
+          <nav className="lg:w-64 shrink-0 space-y-2">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as ConfigTab)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-in-out hover:pl-5 font-medium text-left relative overflow-hidden group ${
+                    isActive
+                      ? "bg-surface-highlight text-primary-500 border border-border"
+                      : "text-text-main hover:bg-surface-highlight hover:text-primary-600"
+                  }`}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-600" />
+                  )}
+                  <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
 
         {/* Content Area */}
-        <div className={`flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[600px] relative ${activeTab === 'clients' ? 'p-5' : 'p-8'}`}>
+        <div className={`flex-1 bg-surface rounded-2xl shadow-none border border-border min-h-[600px] relative ${activeTab === 'clients' ? 'p-5' : 'p-8'}`}>
 
           {/* Services Tab */}
           {activeTab === "services" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-text-main flex items-center gap-2">
                   <ShoppingCart className="text-primary-600" />
                   Catálogo de Servicios
                 </h3>
@@ -821,14 +807,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             basePrice: 0,
                             active: true,
                             createdAt: new Date().toISOString()
-                        } as any);
+                        } as unknown as CatalogService);
                         setEditServiceForm({ category: "manicura" });
                         setSelectedMaterials([]);
                         setSelectedConsumables([]);
                         setMaterialSearch("");
                         setConsumableSearch("");
                     }}
-                    className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold flex items-center gap-2"
+                    className="bg-primary-500 hover:bg-primary-400 text-black font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out flex items-center gap-2"
                   >
                     <Plus size={18} />
                     Nuevo Servicio
@@ -837,33 +823,34 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
 
 
-          {isTableLoading ? (
-             <TableSkeleton />
-          ) : (
+
           <>
-          <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
+          <div className="bg-surface rounded-xl shadow-none border border-border">
             <table className="w-full">
-              <thead className="bg-neutral-50 border-b border-gray-100">
+              <thead className="bg-surface-highlight border-b border-border">
                 <tr>
                   <th className="w-10 px-4 py-3"></th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
                     Nombre
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
                     Categoría
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
                     Precio Base
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
+                    Costo Material
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-border">
                 {paginatedServices.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
@@ -878,11 +865,30 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   paginatedServices.map((cs) => {
                   const isEditing = editingCatalogService === cs.id;
 
+                  // Calcular costo total de materiales y consumibles
+                  const materialsCost = (cs.manualMaterials || []).reduce((sum, m) => {
+                      const id = typeof m === 'string' ? m : m.materialId;
+                      const qty = typeof m === 'string' ? 1 : m.qty;
+                      const p = chemicalProducts.find(cp => cp.id === id);
+                      return sum + (p?.costPerService || 0) * qty;
+                  }, 0);
+
+                  const consumablesCost = (cs.manualConsumables || []).reduce((sum, c) => {
+                      const item = consumables.find(i => i.id === c.consumableId);
+                      if (!item) return sum;
+                      const uCost = (item.purchasePrice && item.packageSize) 
+                          ? item.purchasePrice / item.packageSize 
+                          : (item.unitCost || 0);
+                      return sum + (uCost * c.qty);
+                  }, 0);
+                  
+                  const totalMaterialCost = materialsCost + consumablesCost;
+
                   return (
                     <tr
                       key={cs.id}
-                      className={`group transition-colors duration-200 even:bg-slate-50/30 hover:bg-gray-100/80 ${
-                        !cs.active ? "opacity-60 bg-gray-50" : ""
+                      className={`group transition-colors duration-200 hover:bg-surface-highlight ${
+                        !cs.active ? "opacity-60 bg-surface-highlight" : ""
                       }`}
                     >
                       <td className="w-4"></td>
@@ -893,14 +899,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               type="text"
                               defaultValue={cs.name}
                               id={`edit-service-name-${cs.id}`}
-                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                              className="w-full px-4 py-2 bg-surface-highlight border border-border rounded-xl text-sm font-medium text-text-main transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                             />
                           </td>
                           <td className="px-6 py-4">
                             <select
                               defaultValue={cs.category}
                               id={`edit-service-category-${cs.id}`}
-                              className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none appearance-none bg-white"
+                              className="w-full px-4 py-2 bg-surface-highlight border border-border rounded-xl text-sm text-text-main transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none appearance-none"
                             >
                               <option value="manicura">Manicura</option>
                               <option value="pedicura">Pedicura</option>
@@ -912,8 +918,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               step="0.01"
                               defaultValue={cs.basePrice}
                               id={`edit-service-price-${cs.id}`}
-                              className="w-32 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 transition-all duration-200 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+                              className="w-32 px-4 py-2 bg-surface-highlight border border-border rounded-xl text-sm font-bold text-text-main transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                             />
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-gray-400">-</span>
                           </td>
                           <td className="px-6 py-4">
                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -949,14 +958,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   basePrice,
                                 });
                               }}
-                              className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-sm"
+                              className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors shadow-sm"
                               title="Guardar"
                             >
                               <Save size={18} strokeWidth={2.5} />
                             </button>
                             <button
                               onClick={() => setEditingCatalogService(null)}
-                              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"
+                              className="p-2 rounded-xl bg-surface-highlight text-gray-400 hover:bg-surface-highlight/80 transition-colors"
                               title="Cancelar"
                             >
                               <X size={18} strokeWidth={2.5} />
@@ -965,25 +974,36 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         </>
                       ) : (
                         <>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-text-main">
                             <div className="flex items-center gap-2">
                               {cs.name}
                               {((cs.manualMaterials?.length ?? 0) > 0 || (cs.manualConsumables?.length ?? 0) > 0) ? (
-                                <div title="Configurado" className="text-emerald-500 bg-emerald-50 p-1 rounded-full">
+                                <div title="Configurado" className="text-emerald-500 bg-emerald-500/10 p-1 rounded-full">
                                   <Beaker size={14} />
                                 </div>
                               ) : (
-                                <div title="Sin receta" className="text-orange-400 bg-orange-50 p-1 rounded-full">
+                                <div title="Sin receta" className="text-orange-400 bg-orange-500/10 p-1 rounded-full">
                                   <AlertTriangle size={14} />
                                 </div>
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-600 capitalize tracking-wide">
+                          <td className="px-6 py-4 text-sm text-text-muted capitalize tracking-wide">
                             {cs.category}
                           </td>
-                          <td className="px-6 py-4 text-sm font-bold text-gray-900 font-mono">
+                          <td className="px-6 py-4 text-sm font-bold text-text-main font-mono">
                             ${cs.basePrice.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4">
+                              {totalMaterialCost > 0 ? (
+                                <div className="flex flex-col" title={`Químicos: $${materialsCost.toFixed(2)} | Desechables: $${consumablesCost.toFixed(2)}`}>
+                                    <span className="text-sm font-bold text-text-muted">
+                                        ${totalMaterialCost.toFixed(2)}
+                                    </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                           </td>
                           <td className="px-6 py-4">
                             <span
@@ -997,7 +1017,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="flex items-center gap-2">
                               <button
                               onClick={() => {
                                   setEditingServiceItem(cs);
@@ -1083,7 +1103,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                     }
                                   }
                                 }}
-                                className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 hover:scale-110 active:scale-90"
+                                className="p-2 rounded-lg text-primary-500 hover:bg-primary-500/10 transition-all duration-200 hover:scale-110 active:scale-90"
                                 title="Editar"
                               >
                                 <Edit2 size={16} />
@@ -1092,11 +1112,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                 onClick={() =>
                                   handleToggleCatalogService(cs.id, cs.active)
                                 }
-                                className={`p-2 rounded-lg transition-colors ${
-                                  cs.active
-                                    ? "text-slate-400 hover:text-primary-400 hover:bg-primary-400/10"
-                                    : "text-slate-400 hover:text-primary-600 hover:bg-primary-600/10"
-                                } transition-all duration-200 hover:scale-110 active:scale-90`}
+                                className={`p-2 rounded-lg text-primary-700 hover:bg-primary-700/10 transition-all duration-200 hover:scale-110 active:scale-90`}
                                 title={cs.active ? "Desactivar" : "Activar"}
                               >
                                 {cs.active ? (
@@ -1109,7 +1125,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                {currentUser?.role === 'owner' && (
                                   <button
                                     onClick={() => handleDeleteCatalogService(cs.id)}
-                                    className="p-2 rounded-lg text-slate-400 hover:text-primary-700 hover:bg-primary-700/10 transition-all duration-200 hover:scale-110 active:scale-90"
+                                    className="p-2 rounded-lg text-primary-700 hover:bg-primary-700/10 transition-all duration-200 hover:scale-110 active:scale-90"
                                     title="Eliminar"
                                   >
                                     <Trash2 size={16} />
@@ -1128,15 +1144,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
 
           {/* Catalog Operations Pagination */}
-          <div className="flex justify-between items-center px-4 py-3 border-t border-gray-100 mt-2">
-            <div className="text-sm text-gray-500 font-medium">
+          <div className="flex justify-between items-center px-4 py-3 border-t border-border mt-2">
+            <div className="text-sm text-text-muted font-medium">
               Mostrando {Math.min((servicesPage - 1) * ITEMS_PER_PAGE + 1, catalogServices.length)} - {Math.min(servicesPage * ITEMS_PER_PAGE, catalogServices.length)} de {catalogServices.length} servicios
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setServicesPage((p) => Math.max(1, p - 1))}
                 disabled={servicesPage === 1}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -1146,92 +1162,56 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <button
                 onClick={() => setServicesPage((p) => (p * ITEMS_PER_PAGE < catalogServices.length ? p + 1 : p))}
                 disabled={servicesPage * ITEMS_PER_PAGE >= catalogServices.length}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 <ChevronRight size={18} />
               </button>
             </div>
           </div>
           </>
-          )}
         </div>
-        )}
+      )}
+
 
           {activeTab === "consumables" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-text-main flex items-center gap-2">
                   <Package className="text-primary-600" />
                   Inventario de Consumibles
                 </h3>
                 <button
-                  onClick={async () => {
-                    setIsSubmitting(true);
-                    try {
-                      const { migrateConsumables } = await import('../../../services/consumablesMigration');
-                      const result = await migrateConsumables();
-                      
-                      console.log('📦 Migración de Consumibles:');
-                      console.log(result.message);
-                      result.details.forEach(d => console.log(d));
-                      
-                      showNotification(result.message, result.success ? 'success' : 'error');
-                      
-                      // Reload page to see updated consumables
-                      if (result.success) {
-                        setTimeout(() => window.location.reload(), 1500);
-                      }
-                    } catch (error) {
-                      console.error('Error en migración:', error);
-                      const message = error instanceof Error ? error.message : "Error desconocido";
-                      showNotification(`Error: ${message}`, 'error');
-                    } finally {
-                      setIsSubmitting(false);
-                    }
-                  }}
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-600 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  onClick={() => setAddingConsumableItem(true)}
+                  className="bg-primary-500 hover:bg-primary-400 text-black font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out flex items-center gap-2"
                 >
-                  <Sparkles size={18} />
-                  {isSubmitting ? 'Migrando...' : 'Migrar Datos'}
+                  <PlusCircle size={18} />
+                  Nuevo Consumible
                 </button>
               </div>
-          {/* Botón para agregar nuevo consumible */}
-          <div className="mb-6">
-            <button
-              onClick={() => setAddingConsumableItem(true)}
-              className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-600 text-white px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ease-out font-bold flex items-center justify-center gap-3 group"
-            >
-              <PlusCircle size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-              Agregar Nuevo Consumible
-            </button>
-          </div>
 
 
-          {isTableLoading ? (
-             <TableSkeleton />
-          ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-100 shadow-sm bg-white">
+
+          <div className="bg-surface rounded-xl shadow-none border border-border">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-neutral-50">
+              <thead className="bg-surface-highlight border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-main">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-main">
                     Stock
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-main">
                     Costo Base
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-main">
                     Costo/Servicio
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-main">
                     Rendimiento
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-main">
                     Acciones
                   </th>
                 </tr>
@@ -1271,7 +1251,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   return (
                     <tr
                       key={c.id}
-                      className={`border-b hover:bg-neutral-50 transition-all duration-200 ${ 
+                      className={`border-b hover:bg-surface-highlight border-border transition-all duration-200 ${ 
                         isLowStock ? "bg-primary-400/5" : ""
                       }`}
                     >
@@ -1279,7 +1259,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Package size={16} className="text-primary-600" />
-                          <span className="text-sm font-medium text-neutral-900">{c.name}</span>
+                          <span className="text-sm font-medium text-text-main">{c.name}</span>
                           {isLowStock && (
                             <span className="px-2 py-0.5 text-xs font-semibold text-primary-400 bg-primary-400/10 rounded-full">
                               BAJO STOCK
@@ -1292,17 +1272,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <td className="px-4 py-3">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className={`font-bold ${c.stockQty <= 0 ? "text-red-600" : "text-gray-900"}`}>
+                            <span className={`font-bold ${c.stockQty <= 0 ? "text-red-500" : "text-text-main"}`}>
                               {c.stockQty} {c.unit}
                             </span>
                             {c.packageSize && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-text-muted">
                                 / {c.packageSize}
                               </span>
                             )}
                           </div>
                           {c.packageSize && (
-                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div className="w-full bg-surface-highlight rounded-full h-2 overflow-hidden border border-border">
                               <div
                                 className={`h-full ${progressColor} transition-all duration-300 rounded-full`}
                                 style={{ width: `${stockPercentage}%` }}
@@ -1316,10 +1296,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <td className="px-4 py-3">
                         {c.purchasePrice && c.packageSize ? (
                           <div className="text-sm">
-                            <div className="font-semibold text-gray-900">
+                            <div className="font-semibold text-text-main">
                               ${c.purchasePrice.toFixed(2)}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-text-muted">
                               {c.packageSize} {c.unit}
                             </div>
                           </div>
@@ -1333,7 +1313,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         <div className="text-sm font-semibold text-primary-600">
                           ${costPerUnit.toFixed(3)}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-text-muted">
                           por {c.unit}
                         </div>
                       </td>
@@ -1341,10 +1321,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       {/* Rendimiento */}
                       <td className="px-4 py-3">
                         <div className="text-sm">
-                          <div className="font-bold text-neutral-900">
+                          <div className="font-bold text-text-main">
                             {c.stockQty} servicios
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-text-muted">
                             restantes
                           </div>
                         </div>
@@ -1357,7 +1337,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             setEditingConsumableItem(c);
                             setEditConsumableForm(c);
                           }}
-                          className="p-2 rounded-lg text-primary-600 hover:bg-primary-600/10 transition-all duration-200 hover:scale-110 active:scale-90"
+                          className="p-2 rounded-lg text-primary-500 hover:bg-primary-500/10 transition-all duration-200 hover:scale-110 active:scale-90"
                           title="Editar"
                         >
                           <Edit2 size={18} />
@@ -1383,14 +1363,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
           {/* Consumables Pagination */}
           <div className="flex justify-between items-center px-4 py-3 mt-4">
-             <div className="text-sm text-gray-500 font-medium">
+             <div className="text-sm text-text-muted font-medium">
               Mostrando {Math.min((consumablesPage - 1) * ITEMS_PER_PAGE + 1, consumables.length)} - {Math.min(consumablesPage * ITEMS_PER_PAGE, consumables.length)} de {consumables.length} consumibles
              </div>
              <div className="flex gap-2">
               <button
                 onClick={() => setConsumablesPage((p) => Math.max(1, p - 1))}
                 disabled={consumablesPage === 1}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -1400,26 +1380,27 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <button
                 onClick={() => setConsumablesPage((p) => (p * ITEMS_PER_PAGE < consumables.length ? p + 1 : p))}
                 disabled={consumablesPage * ITEMS_PER_PAGE >= consumables.length}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 <ChevronRight size={18} />
               </button>
              </div>
           </div>
           </div>
-          )}
         </div>
-        )}
+
+      )}
+
 
           {activeTab === "personal" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <h3 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-text-main mb-6 flex items-center gap-2">
                   <Users className="text-primary-600" />
                   Gestión de Personal
                 </h3>
           {/* Crear nuevo usuario */}
-          <div className="mb-8 p-6 bg-neutral-50 rounded-lg border-2 border-gray-100">
-            <h4 className="text-lg font-bold text-neutral-900 mb-4">
+          <div className="mb-8 p-6 bg-surface-highlight/50 rounded-lg border border-border">
+            <h4 className="text-lg font-bold text-text-main mb-4">
               Crear Nuevo Usuario
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -1430,7 +1411,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 onChange={(e) =>
                   setNewUser({ ...newUser, name: e.target.value })
                 }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 bg-surface-highlight border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:outline-none text-text-main placeholder-text-muted"
               />
               <input
                 type="password"
@@ -1439,7 +1420,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 onChange={(e) =>
                   setNewUser({ ...newUser, pin: e.target.value })
                 }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 bg-surface-highlight border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:outline-none text-text-main placeholder-text-muted"
               />
               <input
                 type="number"
@@ -1449,14 +1430,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 onChange={(e) =>
                   setNewUser({ ...newUser, commissionPct: e.target.value })
                 }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 bg-surface-highlight border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:outline-none text-text-main placeholder-text-muted"
               />
               <select
                 value={newUser.color}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                       setNewUser({ ...newUser, color: e.target.value })
                     }
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 bg-surface-highlight border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:outline-none text-text-main"
               >
                 <option value="from-blue-500 to-blue-600">Azul</option>
                 <option value="from-pink-500 to-pink-600">Rosa</option>
@@ -1467,7 +1448,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <button
                 onClick={handleCreateNewUser}
                 disabled={isSubmitting}
-                className={`bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out font-semibold flex items-center justify-center ${
+                className={`bg-primary-500 hover:bg-primary-400 text-black font-bold px-6 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out flex items-center justify-center ${
                   isSubmitting ? "opacity-60 cursor-wait animate-pulse pointer-events-none" : "cursor-pointer hover:-translate-y-0.5 active:scale-95 active:shadow-inner"
                 }`}
               >
@@ -1479,9 +1460,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
           {/* Lista de usuarios */}
           {/* Lista de usuarios - Diseño Cards */}
-          {isTableLoading ? (
-             <TableSkeleton />
-          ) : (
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {users.filter((u) => u.role === "staff").length === 0 ? (
                 <div className="col-span-full">
@@ -1499,35 +1478,35 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   key={user.id}
                   className={`rounded-2xl shadow-sm border p-6 flex flex-col items-center text-center transition-all hover:shadow-md group relative ${
                     user.active 
-                      ? "bg-white border-slate-100 hover:bg-gray-100/80 hover:border-primary-600/20" 
-                      : "bg-primary-700/5 border-primary-700/20 hover:bg-primary-700/10"
+                      ? "bg-surface border-border hover:bg-surface-highlight/80 hover:border-primary-600/20" 
+                      : "bg-surface-highlight border-primary-700/20 hover:bg-primary-700/10"
                   } ${!user.active ? "opacity-90 grayscale-[0.2]" : ""}`}
                 >
                   {/* Status Badge Top Right */}
                   <div className="absolute top-4 right-4">
                     <span
-                      className={`w-3 h-3 rounded-full block ring-2 ring-white ${
+                      className={`w-3 h-3 rounded-full block ring-2 ring-surface ${
                         user.active ? "bg-emerald-400" : "bg-slate-300"
                       }`}
                     />
                   </div>
 
                   {/* Avatar Circle */}
-                  <div className="w-20 h-20 rounded-full bg-linear-to-br from-primary-600/10 to-primary-600/20 flex items-center justify-center text-2xl font-bold text-primary-600 mb-4 shadow-inner ring-4 ring-white">
+                  <div className="w-20 h-20 rounded-full bg-linear-to-br from-primary-600/10 to-primary-600/20 flex items-center justify-center text-2xl font-bold text-primary-600 mb-4 shadow-inner ring-4 ring-surface-highlight">
                     {user.name.slice(0, 2).toUpperCase()}
                   </div>
 
                   {/* Name */}
-                  <h5 className="text-lg font-bold text-neutral-900 mb-1">
+                  <h5 className="text-lg font-bold text-text-main mb-1">
                     {user.name}
                   </h5>
-                  <p className="text-sm text-slate-500 mb-4 font-medium">Role: Staff</p>
+                  <p className="text-sm text-text-muted mb-4 font-medium">Role: Staff</p>
 
                   {/* Commission Bubble */}
-                  <div className="mb-6 p-4 bg-neutral-50 rounded-xl border border-gray-100 shadow-sm">
+                  <div className="mb-6 p-4 bg-surface-highlight rounded-xl border border-border shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                         Comisión
                       </span>
                       <div className="group relative">
@@ -1538,16 +1517,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       </div>
                     </div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-black text-primary-700">
+                      <span className="text-2xl font-black text-primary-600">
                         {user.commissionPct}%
                       </span>
                     </div>
                   </div>
                   
-                  <div className="space-y-2 pt-4 border-t border-gray-100">
+                  <div className="space-y-2 pt-4 border-t border-border">
                       <div className="flex justify-between text-sm">
-                         <span className="text-gray-500">PIN de Acceso:</span>
-                         <span className="font-mono font-bold text-gray-800 tracking-widest">****</span>
+                         <span className="text-text-muted">PIN de Acceso:</span>
+                         <span className="font-mono font-bold text-text-main tracking-widest">****</span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
@@ -1562,13 +1541,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </div>
 
                   {/* Actions Footer */}
-                  <div className="flex gap-2 mt-6 pt-4 border-t border-gray-100">
+                  <div className="flex gap-2 mt-6 pt-4 border-t border-border w-full">
                     <button
                       onClick={() => {
                         setEditingStaffItem(user);
                         setEditStaffForm(user);
                       }}
-                      className="flex-1 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md"
+                      className="flex-1 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-500 transition-colors shadow-sm hover:shadow-md"
                     >
                       Editar
                     </button>
@@ -1599,19 +1578,19 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               ))
               )}
           </div>
-          )}
         </div>
-        )}
+      )}
+
 
           {activeTab === "extras" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <h3 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-text-main mb-6 flex items-center gap-2">
                   <Star className="text-primary-400" />
                   Catálogo de Extras
                 </h3>
           {/* Form agregar extra */}
-          <div className="mb-6 p-4 bg-neutral-50 rounded-lg border-2 border-gray-100">
-            <h4 className="font-semibold text-neutral-900 mb-3">
+          <div className="mb-6 p-4 bg-surface-highlight/50 rounded-lg border border-border">
+            <h4 className="font-semibold text-text-main mb-3">
               Agregar Nuevo Extra
             </h4>
             <div className="flex gap-2 flex-wrap items-end">
@@ -1620,7 +1599,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 placeholder="Nombre del extra"
                 value={newExtraName}
                 onChange={(e) => setNewExtraName(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 bg-surface-highlight border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 focus:outline-none text-text-main placeholder-text-muted"
               />
               <input
                 type="number"
@@ -1628,12 +1607,12 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 placeholder="Precio por uña"
                 value={newExtraPrice}
                 onChange={(e) => setNewExtraPrice(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 focus:outline-none text-gray-900 bg-white"
+                className="px-4 py-2 bg-surface-highlight border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 focus:outline-none text-text-main placeholder-text-muted"
               />
               <button
                 onClick={handleAddExtra}
                   disabled={isSubmitting}
-                  className="bg-primary-400 hover:bg-primary-600 text-white px-6 py-2 rounded-xl shadow-lg shadow-primary-400/20 hover:shadow-xl transition-all duration-200 ease-out font-bold flex items-center gap-2 active:scale-95"
+                  className="bg-primary-400 hover:bg-primary-500 text-white px-6 py-2 rounded-xl shadow-lg shadow-primary-400/20 hover:shadow-xl transition-all duration-200 ease-out font-bold flex items-center gap-2 active:scale-95"
                 >
                   <PlusCircle size={20} />
                   Agregar Extra
@@ -1642,30 +1621,28 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
 
           {/* Tabla de extras */}
-          {isTableLoading ? (
-             <TableSkeleton />
-          ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+          <div className="bg-surface rounded-xl shadow-none border border-border overflow-hidden">
              {catalogExtras.length > 0 && (
               <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-neutral-50 border-b border-gray-100">
+                <thead className="bg-surface-highlight border-b border-border">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
                       Nombre del Extra
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
                       Precio Sugerido
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
                       Estado
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-bold text-text-main uppercase tracking-wider">
                       Acciones
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border">
                 {paginatedExtras.length === 0 ? (
                    <tr>
                       <td colSpan={4}>
@@ -1679,18 +1656,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 ) : (
                   paginatedExtras.map((extra) => {
                   const price =
-                    (extra as any).price || extra.priceSuggested || 0;
+                    extra.price || extra.priceSuggested || 0;
                   return (
                     <tr
                       key={extra.id}
-                      className={`group transition-colors duration-200 even:bg-neutral-50/30 hover:bg-gray-100/80 ${
+                      className={`group transition-colors duration-200 hover:bg-surface-highlight ${
                         !extra.active ? "opacity-60" : ""
                       }`}
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-neutral-900">
+                      <td className="px-6 py-4 text-sm font-medium text-text-main">
                         {extra.name || "Sin nombre"}
                       </td>
-                      <td className="px-6 py-4 text-sm font-bold text-neutral-900 font-mono">
+                      <td className="px-6 py-4 text-sm font-bold text-text-main font-mono">
                         ${price.toFixed(2)}
                       </td>
                       <td className="px-6 py-4">
@@ -1707,7 +1684,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               setEditingExtraItem(extra);
                               setEditExtraForm(extra);
                             }}
-                            className="p-2 rounded-lg text-slate-400 hover:text-primary-400 hover:bg-primary-400/10 transition-all duration-200 hover:scale-110 active:scale-90"
+                            className="p-2 rounded-lg text-primary-600 hover:bg-primary-600/10 transition-all duration-200 hover:scale-110 active:scale-90"
                             title="Editar"
                           >
                             <Edit2 size={16} />
@@ -1716,7 +1693,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           {currentUser?.role === 'owner' && (
                             <button
                               onClick={() => handleDeleteExtra(extra.id)}
-                              className="p-2 rounded-lg text-slate-400 hover:text-primary-700 hover:bg-primary-700/10 transition-all duration-200 hover:scale-110 active:scale-90"
+                              className="p-2 rounded-lg text-primary-700 hover:bg-primary-700/10 transition-all duration-200 hover:scale-110 active:scale-90"
                               title="Eliminar"
                             >
                               <Trash2 size={16} />
@@ -1736,7 +1713,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           
           {/* Extras Pagination */}
           <div className="flex justify-between items-center px-4 py-3 mt-4">
-            <div className="text-sm text-gray-500 font-medium">
+            <div className="text-sm text-text-muted font-medium">
               Mostrando{" "}
               {Math.min(
                 (extrasPage - 1) * ITEMS_PER_PAGE + 1,
@@ -1750,7 +1727,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <button
                 onClick={() => setExtrasPage((p) => Math.max(1, p - 1))}
                 disabled={extrasPage === 1}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -1764,7 +1741,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   )
                 }
                 disabled={extrasPage * ITEMS_PER_PAGE >= catalogExtras.length}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 <ChevronRight size={18} />
               </button>
@@ -1773,49 +1750,38 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
 
           {catalogExtras.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-text-muted">
               No hay extras registrados
             </div>
-          )}
-        </div>
+
+
+
         )}
         </div>
-        )}
+      </div>
+    )}
 
           {activeTab === "materials" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <h3 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
-                <Beaker className="text-primary-600" />
-                Inventario de Materiales Químicos
-              </h3>
+               <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-text-main flex items-center gap-2">
+                  <Beaker className="text-primary-600" />
+                  Inventario de Materiales Químicos
+                </h3>
+                 <button
+                  onClick={() => setAddingChemicalProduct(true)}
+                  className="bg-primary-500 hover:bg-primary-400 text-black font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out flex items-center gap-2"
+                >
+                  <PlusCircle size={18} />
+                  Nuevo Producto
+                </button>
+              </div>
+
 
 
           {/* Sección 1: Productos Químicos */}
-          <div className="mb-8">
-            <h4 className="text-lg font-semibold text-neutral-900 mb-4">
-              Productos Químicos
-            </h4>
-
-            {/* Botón para agregar nuevo producto químico */}
-            <div className="mb-6">
-              <button
-                onClick={() => setAddingChemicalProduct(true)}
-                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-600 text-white px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ease-out font-bold flex items-center justify-center gap-3 group"
-              >
-                <PlusCircle size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-                Agregar Nuevo Producto Químico
-              </button>
-            </div>
-
-
-            {/* Buscador y filtros arriba del todo si se desea, por ahora directo a la tabla */}
-           <div className="mb-8">
-            <h4 className="text-lg font-semibold text-gray-700 mb-4">
-              Productos Químicos
-            </h4>
-
-            {paginatedChemicals.length === 0 ? (
-               <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm mb-8">
+            {chemicalProducts.length === 0 ? (
+               <div className="bg-surface-highlight border border-border rounded-xl p-6 shadow-sm mb-8">
                   <EmptyState 
                     icon={Beaker} 
                     title="Inventario químico vacío" 
@@ -1823,176 +1789,146 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   />
                </div>
             ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedChemicals.map((product) => {
-                 const isLowStock = product.stock <= product.minStock;
+            <div className="bg-surface rounded-xl shadow-none border border-border">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-surface-highlight border-b border-border">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
+                        Producto
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
+                        Stock
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
+                        Presentación
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider">
+                        Costo Compra
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider" title="Costo por Servicio">
+                        $/Serv
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-bold text-text-main uppercase tracking-wider">
+                        Acciones
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {paginatedChemicals.map((product) => {
+                      const isLowStock = product.stock <= product.minStock;
 
-                 return (
-                   <div 
-                      key={product.id}
-                      className={`bg-white rounded-2xl p-5 border shadow-sm hover:shadow-md transition-all duration-200 group relative ${isLowStock ? 'border-primary-400/30 ring-1 ring-primary-400/20' : 'border-slate-100 hover:border-primary-600/20'}`}
-                   >
-                      {/* Header Badge */}
-                      <div className="flex justify-between items-start mb-4">
-                         <div>
-                            <h5 className="font-bold text-gray-800 text-lg leading-tight">{product.name}</h5>
-                            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-                               <Package size={14} />
-                               {product.quantity} {product.unit} (compra)
-                            </p>
-                         </div>
-                         <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wide border ${product.active ? 'bg-primary-600/10 text-primary-600 border-primary-600/20' : 'bg-primary-700/10 text-primary-700 border-primary-700/20'}`}>
-                            {product.active ? 'Activo' : 'Inactivo'}
-                         </span>
-                      </div>
-
-                      {/* Body Statistics */}
-                      <div className="space-y-3 mb-6">
-                         <div className={`flex flex-col p-3 rounded-lg ${isLowStock ? 'bg-primary-400/5 border border-primary-400/20' : 'bg-neutral-50 border border-gray-100'}`}>
-                            <span className="text-xs text-slate-400 mb-2 uppercase font-bold tracking-wider">Inventario</span>
-                            <div className="flex items-center gap-2">
-                                {isLowStock && <AlertTriangle size={18} className="text-primary-400 animate-pulse" />}
-                                <span className={`text-sm ${product.stock <= 0 ? "font-bold text-red-600" : "font-semibold text-neutral-900"}`}>
-                                   Stock: {product.stock} uds. | Uso: {product.currentYieldRemaining || product.yieldPerUnit || product.yield}/{product.yieldPerUnit || product.yield}
+                      return (
+                        <tr
+                          key={product.id}
+                          className={`group transition-colors duration-200 hover:bg-surface-highlight ${
+                            !product.active ? "opacity-60" : ""
+                          }`}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${isLowStock ? 'bg-red-500/10 text-red-500' : 'bg-primary-500/10 text-primary-500'}`}>
+                                <Beaker size={20} />
+                              </div>
+                              <div>
+                                <div className="font-bold text-text-main text-sm">{product.name}</div>
+                                {!product.active && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-text-muted uppercase tracking-wide">
+                                    Inactivo
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className={`text-sm font-bold ${isLowStock ? "text-red-500" : "text-text-main"}`}>
+                                {product.stock} uds.
+                              </span>
+                              {isLowStock && (
+                                <span className="text-xs text-red-500 font-medium flex items-center gap-1">
+                                  <AlertTriangle size={10} />
+                                  Min: {product.minStock}
                                 </span>
-                             </div>
-                         </div>
-
-                         <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="p-2.5 border border-slate-100 rounded-lg">
-                                <span className="block text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider">Costo Unit.</span>
-                                <span className="font-semibold text-slate-700">${product.purchasePrice.toFixed(2)}</span>
+                              )}
                             </div>
-                            <div className="p-2.5 border border-primary-600/20 bg-primary-600/5 rounded-lg">
-                                 <span className="block text-xs text-primary-600 mb-1 uppercase font-bold tracking-wider">Costo/Servicio</span>
-                                 <span className="font-bold text-primary-600">${product.costPerService.toFixed(2)}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-text-muted font-medium">
+                            {product.quantity} {product.unit}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-bold text-text-main font-mono">
+                            ${product.purchasePrice.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-primary-600 font-mono">
+                                ${product.costPerService.toFixed(2)}
+                              </span>
+                              <span className="text-[10px] text-gray-400">
+                                Rend: {product.yield} servs
+                              </span>
                             </div>
-                         </div>
-                         
-                         <div className="text-xs text-center text-slate-400">
-                            Rendimiento aprox: <span className="font-medium text-slate-600">{product.yield} servicios</span>
-                         </div>
-                      </div>
-
-                      {/* Footer Actions */}
-                      <div className="flex items-center gap-2 pt-4 border-t border-slate-50 mt-auto">
-                          <button
-                            onClick={() => {
-                                setEditingProduct(product);
-                                setEditChemicalForm(product);
-                            }}
-                            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg text-primary-600 hover:bg-primary-600/10 font-medium text-sm transition-all duration-200 hover:scale-105 active:scale-95 border border-transparent hover:border-primary-600/20 group"
-                          >
-                             <Edit2 size={16} className="group-hover:scale-110 transition-transform" /> 
-                             Editar
-                          </button>
-                          {/* SOLO OWNER */}
-                          {currentUser?.role === 'owner' && (
-                             <button
-                                onClick={() => handleDeleteChemicalProduct(product.id)}
-                                className="p-2 rounded-lg text-slate-400 hover:text-primary-700 hover:bg-primary-700/10 transition-all duration-200 hover:scale-110 active:scale-90"
-                                title="Eliminar"
-                             >
-                                <Trash2 size={18} />
-                             </button>
-                          )}
-                      </div>
-                   </div>
-                 );
-              })}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingProduct(product);
+                                  setEditChemicalForm(product);
+                                }}
+                                className="p-2 rounded-lg text-primary-600 hover:bg-primary-600/10 transition-all duration-200 hover:scale-110 active:scale-90"
+                                title="Editar"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              {currentUser?.role === 'owner' && (
+                                <button
+                                  onClick={() => handleDeleteChemicalProduct(product.id)}
+                                  className="p-2 rounded-lg text-primary-700 hover:bg-primary-700/10 transition-all duration-200 hover:scale-110 active:scale-90"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
             )}
-            </div>
-
              {/* Pagination Controls */}
+             {chemicalProducts.length > 0 && (
              <div className="flex justify-between items-center px-2 mt-4">
-                <div className="text-sm text-gray-500">
-                    Mostrando {((chemicalsPage - 1) * 5) + 1} a {Math.min(chemicalsPage * 5, chemicalProducts.length)} de {chemicalProducts.length} productos
+                <div className="text-sm text-text-muted">
+                    Mostrando {Math.min(((chemicalsPage - 1) * ITEMS_PER_PAGE) + 1, chemicalProducts.length)} a {Math.min(chemicalsPage * ITEMS_PER_PAGE, chemicalProducts.length)} de {chemicalProducts.length} productos
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={() => setChemicalsPage(p => Math.max(1, p - 1))}
                         disabled={chemicalsPage === 1}
-                        className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
                     >
                         <ChevronLeft size={16} />
                     </button>
-                    <span className="flex items-center px-3 font-semibold text-gray-700">
-                        Página {chemicalsPage}
+                    <span className="px-4 py-2 rounded-lg bg-primary-600 text-white font-bold shadow-sm shadow-primary-600/20">
+                        {chemicalsPage}
                     </span>
                     <button
-                        onClick={() => setChemicalsPage(p => (p * 5 < chemicalProducts.length ? p + 1 : p))}
-                        disabled={chemicalsPage * 5 >= chemicalProducts.length}
-                        className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setChemicalsPage(p => (p * ITEMS_PER_PAGE < chemicalProducts.length ? p + 1 : p))}
+                        disabled={chemicalsPage * ITEMS_PER_PAGE >= chemicalProducts.length}
+                        className="px-3 py-2 rounded-lg border border-border text-gray-400 hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
                     >
                         <ChevronRight size={16} />
                     </button>
                 </div>
              </div>
+             )}
 
 
-          </div>
-
-          {/* Sección 2: Recetas por Servicio */}
-          <div className="mt-8 pt-8 border-t-2 border-gray-100">
-            <h4 className="text-lg font-semibold text-neutral-900 mb-4">
-              Recetas de Servicios (Costo de Materiales)
-            </h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {materialRecipes.map((recipe) => (
-                <div
-                  key={recipe.id}
-                 className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-primary-600/50 transition-colors group"
-                >
-                  <h5 className="font-bold text-neutral-900 mb-2">
-                    {recipe.serviceName}
-                  </h5>
-                  <div className="text-sm text-gray-600 mb-3">
-                    <span className="font-semibold">Categoría:</span>{" "}
-                    {recipe.category === "manicura" ? "Manicura" : "Pedicura"}
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Químicos:</span>
-                      <span className="font-semibold text-primary-600">
-                        ${recipe.chemicalsCost.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Desechables:</span>
-                      <span className="font-semibold text-primary-400">
-                        ${recipe.disposablesCost.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t border-gray-200">
-                      <span className="font-bold text-gray-800">TOTAL:</span>
-                      <span className="font-bold text-primary-600 text-lg">
-                        ${recipe.totalCost.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {materialRecipes.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No hay recetas configuradas. Las recetas se agregarán
-                automáticamente.
-              </div>
-            )}
-          </div>
-
-          {/* Nota informativa */}
-          <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-            <p className="text-sm text-blue-800">
-              <strong>ℹ️ Información:</strong> Los costos de materiales se
-              calculan automáticamente cuando se registra un servicio y se suman
-              al campo de reposición. Los productos químicos y recetas se
-              inicializarán automáticamente en Firebase.
-            </p>
-          </div>
         </div>
         )}
 
@@ -2001,7 +1937,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         <div className="animate-in fade-in duration-300">
            {/* Header & Search Combined */}
            <div className="flex justify-between items-center mb-6 mt-0">
-              <h2 className="text-xl font-bold text-neutral-900 m-0">Directorio de Clientes</h2>
+              <h2 className="text-xl font-bold text-text-main m-0">Directorio de Clientes</h2>
               
               {/* Buscador Integrado */}
                <div className="relative w-full md:w-64">
@@ -2013,7 +1949,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     setClientsSearch(e.target.value);
                     setClientsPage(1);
                    }}
-                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-lg text-sm transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 focus:outline-none shadow-sm"
+                  className="w-full pl-9 pr-4 py-1.5 bg-surface-highlight border border-border rounded-lg text-sm text-text-main font-medium transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:outline-none shadow-sm placeholder-text-muted"
                 />
                  <div className="absolute left-3 top-2 text-primary-600">
                     <Users size={16} />
@@ -2026,31 +1962,31 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
              {filteredClients.length > 0 ? (
                <div className="overflow-x-auto">
                  <table className="w-full">
-                    <thead className="bg-neutral-50 border-b border-gray-100">
+                    <thead className="bg-surface-highlight border-b border-border">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-900 uppercase tracking-wider">Cliente</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-900 uppercase tracking-wider">Última Visita</th>
-                        <th className="px-6 py-3 text-center text-xs font-semibold text-neutral-900 uppercase tracking-wider">Servicios</th>
-                         <th className="px-6 py-3 text-right text-xs font-semibold text-neutral-900 uppercase tracking-wider">Gasto Total</th>
-                         <th className="px-6 py-3 text-right text-xs font-semibold text-neutral-900 uppercase tracking-wider">Acciones</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-text-main uppercase tracking-wider">Cliente</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-text-main uppercase tracking-wider">Última Visita</th>
+                        <th className="px-6 py-3 text-center text-xs font-semibold text-text-main uppercase tracking-wider">Servicios</th>
+                         <th className="px-6 py-3 text-right text-xs font-semibold text-text-main uppercase tracking-wider">Gasto Total</th>
+                         <th className="px-6 py-3 text-right text-xs font-semibold text-text-main uppercase tracking-wider">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-border">
                        {paginatedClients.map((client) => (
-                         <tr key={client.id} className="hover:bg-neutral-50 transition-colors group">
+                         <tr key={client.id} className="hover:bg-surface-highlight transition-colors group">
                            <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                  <div className="w-10 h-10 rounded-full bg-primary-600/10 flex items-center justify-center text-primary-600 font-bold text-sm group-hover:bg-primary-600/20 transition-colors">
                                     {client.name.substring(0, 2).toUpperCase()}
                                  </div>
-                                 <div className="font-semibold text-neutral-900">{client.name}</div>
+                                 <div className="font-semibold text-text-main">{client.name}</div>
                               </div>
                            </td>
-                           <td className="px-6 py-4 text-sm text-gray-500">
+                           <td className="px-6 py-4 text-sm text-text-muted">
                               {client.lastVisit}
                            </td>
                            <td className="px-6 py-4 text-center">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium hover:bg-surface-highlight text-text-muted border border-border">
                                 {client.totalServices} visitas
                               </span>
                            </td>
@@ -2067,7 +2003,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               {currentUser?.role === 'owner' && (
                                 <button
                                   onClick={() => handleDeleteClient(client.id)}
-                                  className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors hover:scale-110 active:scale-90"
+                                  className="p-2 rounded-lg text-primary-700 hover:bg-primary-700/10 transition-colors hover:scale-110 active:scale-90"
                                   title="Eliminar Cliente"
                                 >
                                   <Trash2 size={18} />
@@ -2081,13 +2017,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                </div>
              ) : (
                 <div className="p-12 text-center">
-                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                   <div className="w-16 h-16 bg-surface-highlight rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
                       <Users size={32} />
                    </div>
-                   <h3 className="text-lg font-medium text-gray-900 mb-1">
+                   <h3 className="text-lg font-medium text-text-main mb-1">
                      {clientsSearch ? "No se encontraron resultados" : "Aún no hay clientes registrados"}
                    </h3>
-                   <p className="text-gray-500 max-w-sm mx-auto">
+                   <p className="text-text-muted max-w-sm mx-auto">
                       {clientsSearch 
                         ? "Intenta con otro término de búsqueda." 
                         : "Aparecerán aquí automáticamente al realizar ventas."}
@@ -2097,22 +2033,22 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
              
              {/* Pagination */}
               {filteredClients.length > 7 && (
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">
+                <div className="px-6 py-4 border-t border-border bg-surface-highlight/50 flex justify-between items-center">
+                  <span className="text-sm text-text-muted">
                     Mostrando {((clientsPage - 1) * 7) + 1} - {Math.min(clientsPage * 7, filteredClients.length)} de {filteredClients.length}
                   </span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setClientsPage(p => Math.max(1, p - 1))}
                       disabled={clientsPage === 1}
-                      className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 transition-all font-medium"
+                      className="p-2 rounded-lg hover:bg-surface-highlight border border-transparent hover:border-border disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 transition-all font-medium"
                     >
                       <ChevronLeft size={20} />
                     </button>
                     <button
                       onClick={() => setClientsPage(p => Math.min(Math.ceil(filteredClients.length / 7), p + 1))}
                        disabled={clientsPage >= Math.ceil(filteredClients.length / 7)}
-                      className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 transition-all font-medium"
+                      className="p-2 rounded-lg hover:bg-surface-highlight border border-transparent hover:border-border disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 transition-all font-medium"
                     >
                       <ChevronRight size={20} />
                     </button>
@@ -2124,6 +2060,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       )}
       </div>
     </div>
+
       
       {/* Slide-over para Edición de Servicio con Materiales */}
       {editingServiceItem && (
@@ -2135,55 +2072,118 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-neutral-50">
+          <div className="relative w-full max-w-lg bg-surface h-full shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 bg-surface-highlight border-b border-border">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">
+                <h3 className="text-xl font-bold text-text-main">
                     {editingServiceItem.id === "new" ? "Nuevo Servicio" : "Editar Servicio"}
                 </h3>
-                <p className="text-sm text-gray-500">Configuración y materiales</p>
+                <p className="text-sm text-text-muted">Configuración y materiales</p>
               </div>
               <button 
                 onClick={() => setEditingServiceItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+                className="p-2 rounded-full hover:bg-surface-highlight text-text-muted transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+
+            <div className="flex-1 overflow-y-auto bg-surface-highlight/20">
+              
+              {/* Tabs Navigation */}
+              <div className="bg-surface px-6 pt-2 border-b border-border sticky top-0 z-10">
+                <div className="flex gap-6">
+                  <button
+                    onClick={() => setServiceFormTab('info')}
+                    className={`pb-3 text-sm font-semibold transition-all relative ${
+                      serviceFormTab === 'info' 
+                        ? 'text-primary-600' 
+                        : 'text-text-muted hover:text-text-main'
+                    }`}
+                  >
+                    Información
+                    {serviceFormTab === 'info' && (
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 rounded-t-full" />
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => setServiceFormTab('chemicals')}
+                    className={`pb-3 text-sm font-semibold transition-all relative flex items-center gap-2 ${
+                      serviceFormTab === 'chemicals' 
+                        ? 'text-primary-600' 
+                        : 'text-text-muted hover:text-text-main'
+                    }`}
+                  >
+                    Químicos
+                    {selectedMaterials.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-primary-100/10 text-primary-500 text-[10px] font-bold">
+                        {selectedMaterials.length}
+                      </span>
+                    )}
+                    {serviceFormTab === 'chemicals' && (
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 rounded-t-full" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setServiceFormTab('consumables')}
+                    className={`pb-3 text-sm font-semibold transition-all relative flex items-center gap-2 ${
+                      serviceFormTab === 'consumables' 
+                        ? 'text-primary-600' 
+                        : 'text-text-muted hover:text-text-main'
+                    }`}
+                  >
+                    Consumibles
+                    {selectedConsumables.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-primary-100/10 text-primary-500 text-[10px] font-bold">
+                        {selectedConsumables.length}
+                      </span>
+                    )}
+                    {serviceFormTab === 'consumables' && (
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 rounded-t-full" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
               
               {/* Información Básica */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                   <ShoppingCart size={18} className="text-primary-600" />
-                   Información del Servicio
-                </h4>
+              {serviceFormTab === 'info' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
+                     <ShoppingCart size={18} className="text-primary-600" />
+                     Información del Servicio
+                  </h4>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Servicio</label>
+                  <label className="text-sm font-medium text-text-muted">Nombre del Servicio</label>
                   <input
                     type="text"
                     value={editServiceForm.name || ""}
                     onChange={(e) => setEditServiceForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Categoría</label>
+                      <label className="text-sm font-medium text-text-muted">Categoría</label>
                       <select
                         value={editServiceForm.category || "manicura"}
                         onChange={(e) => setEditServiceForm(prev => ({ ...prev, category: e.target.value as CatalogService["category"] }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                       >
                          <option value="manicura">Manicura</option>
                          <option value="pedicura">Pedicura</option>
                       </select>
                    </div>
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Precio Base</label>
+                      <label className="text-sm font-medium text-text-muted">Precio Base</label>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                         <input
@@ -2194,21 +2194,59 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             const val = e.target.value;
                             setEditServiceForm(prev => ({ ...prev, basePrice: val === "" ? 0 : parseFloat(val) }));
                           }}
-                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                          className="w-full pl-8 pr-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                         />
                       </div>
                    </div>
                 </div>
+                </div>
+
+                {/* Cost Summary in Info Tab (Optional placement) */}
+                <div className="bg-surface rounded-xl p-4 border border-border shadow-sm">
+                  <h4 className="font-bold text-text-main mb-3 flex items-center gap-2">
+                    <DollarSign size={16} className="text-text-muted" />
+                    Resumen de Costos Estimados
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between text-text-muted">
+                      <span>
+                        Costo Químicos ({selectedMaterials.length}):
+                      </span>
+                      <span>
+                        ${totalEstimatedMaterialCost.chemicals.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-text-muted">
+                      <span>
+                        Costo Desechables (
+                        {selectedConsumables.reduce((a, b) => a + b.qty, 0)}):
+                      </span>
+                      <span>
+                        ${totalEstimatedMaterialCost.consumables.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-border mt-2">
+                      <span className="font-black text-text-main uppercase">
+                        Costo Total Materiales:
+                      </span>
+                      <span className="font-black text-primary-600 text-lg">
+                        ${totalEstimatedMaterialCost.total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
+              )}
 
               {/* Vincular Materiales */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+              {serviceFormTab === 'chemicals' && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Beaker size={18} className="text-primary-600" />
                    Vincular Materiales
                 </h4>
                 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-text-muted">
                   Selecciona los productos químicos que se utilizan en este servicio
                 </p>
 
@@ -2218,18 +2256,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     placeholder="Buscar material..."
                     value={materialSearch}
                     onChange={(e) => setMaterialSearch(e.target.value)}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
 
-                <div className="space-y-2 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="space-y-2 flex-1 overflow-y-auto border border-border rounded-lg bg-surface">
                   {chemicalProducts.length === 0 ? (
                     <div className="p-6 text-center">
-                      <Beaker size={48} className="mx-auto text-gray-300 mb-3" />
-                      <p className="text-sm text-gray-400">No hay productos químicos disponibles</p>
+                      <Beaker size={48} className="mx-auto text-gray-700 mb-3" />
+                      <p className="text-sm text-gray-500">No hay productos químicos disponibles</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-border">
                       {chemicalProducts
                         .filter(p => p.active && p.name.toLowerCase().includes(materialSearch.toLowerCase()))
                         .map((product) => {
@@ -2242,7 +2280,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               className={`flex flex-col p-3 rounded-lg border transition-colors ${
                                 selectedMaterials.some(m => m.materialId === product.id)
                                   ? 'bg-primary-600/5 border-primary-600/20'
-                                  : 'bg-white border-gray-100 hover:border-primary-600/20'
+                                  : 'bg-surface border-transparent hover:border-primary-600/20 hover:bg-surface-highlight'
                               }`}
                             >
                               <div className="flex items-start gap-3">
@@ -2250,18 +2288,18 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   type="checkbox"
                                   checked={selectedMaterials.some(m => m.materialId === product.id)}
                                   onChange={() => handleToggleMaterial(product.id)}
-                                  className="mt-1 w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-600 focus:ring-2 cursor-pointer"
+                                  className="mt-1 w-5 h-5 text-primary-600 border-border rounded focus:ring-primary-600 focus:ring-2 cursor-pointer bg-surface"
                                 />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-2 mb-1">
-                                    <span className="font-semibold text-gray-800 text-sm truncate">{product.name}</span>
+                                    <span className="font-semibold text-text-main text-sm truncate">{product.name}</span>
                                     {isLowStock && (
                                       <span className="shrink-0 px-1.5 py-0.5 bg-primary-700/10 text-primary-700 text-[10px] font-bold rounded-full">
                                         BAJO
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-xs text-gray-500 mb-2">
+                                  <p className="text-xs text-text-muted mb-2">
                                     Stock: {product.stock} | Pres: {product.quantity} {product.unit}
                                   </p>
                                   
@@ -2276,10 +2314,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                             step="0.1"
                                             value={selectedMaterials.find(m => m.materialId === product.id)?.qty || 0}
                                             onChange={(e) => handleMaterialQtyChange(product.id, parseFloat(e.target.value) || 0)}
-                                            className="w-full px-2 py-1 text-sm bg-white border border-primary-600/20 rounded focus:ring-1 focus:ring-primary-600 focus:border-primary-600 outline-none font-bold text-primary-600"
+                                            className="w-full px-2 py-1 text-sm bg-surface border border-primary-600/20 rounded focus:ring-1 focus:ring-primary-600 focus:border-primary-500 outline-none font-bold text-primary-600"
                                             onClick={(e) => e.stopPropagation()}
                                           />
-                                          <span className="absolute right-2 top-1.5 text-xs text-gray-400 pointer-events-none">
+                                          <span className="absolute right-2 top-1.5 text-xs text-text-muted pointer-events-none">
                                             {product.unit}
                                           </span>
                                        </div>
@@ -2305,15 +2343,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   </div>
                 )}
               </div>
+              )}
 
               {/* Vincular Consumibles (Desechables) */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+              {serviceFormTab === 'consumables' && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Package size={18} className="text-primary-600" />
                    Vincular Consumibles (Desechables)
                 </h4>
                 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-text-muted">
                   Selecciona los consumibles desechables que se utilizan en este servicio y especifica la cantidad
                 </p>
 
@@ -2323,15 +2363,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     placeholder="Buscar material..."
                     value={consumableSearch}
                     onChange={(e) => setConsumableSearch(e.target.value)}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
 
-                <div className="space-y-2 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="space-y-2 flex-1 overflow-y-auto border border-border rounded-lg bg-surface">
                   {consumables.length === 0 ? (
                     <div className="p-6 text-center">
-                      <Package size={48} className="mx-auto text-gray-300 mb-3" />
-                      <p className="text-sm text-gray-400">No hay consumibles disponibles</p>
+                      <Package size={48} className="mx-auto text-gray-700 mb-3" />
+                      <p className="text-sm text-gray-500">No hay consumibles disponibles</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100">
@@ -2345,7 +2385,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           return (
                             <div
                               key={consumable.id}
-                              className={`p-4 hover:bg-primary-600/5 transition-colors ${
+                              className={`p-4 hover:bg-surface-highlight border-b border-border last:border-0 transition-colors ${
                                 isSelected ? 'bg-primary-600/10' : ''
                               }`}
                             >
@@ -2354,11 +2394,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => handleToggleConsumable(consumable.id)}
-                                  className="mt-1 w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-600 focus:ring-2 cursor-pointer"
+                                  className="mt-1 w-5 h-5 text-primary-600 border-border rounded focus:ring-primary-600 focus:ring-2 cursor-pointer bg-surface"
                                 />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-2 mb-2">
-                                    <p className="font-semibold text-gray-800 truncate">{consumable.name}</p>
+                                    <p className="font-semibold text-text-main truncate">{consumable.name}</p>
                                     {isLowStock && (
                                       <span className="shrink-0 px-2 py-0.5 bg-primary-700/10 text-primary-700 text-[10px] font-bold rounded-full">
                                         BAJO STOCK
@@ -2366,10 +2406,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                     )}
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <p className="text-xs text-gray-600">
+                                    <p className="text-xs text-text-muted">
                                       <span className="font-medium">Unidad:</span> {consumable.unit}
                                     </p>
-                                    <p className={`text-xs font-semibold ${isLowStock ? 'text-orange-600' : 'text-slate-700'}`}>
+                                    <p className={`text-xs font-semibold ${isLowStock ? 'text-orange-600' : 'text-slate-500'}`}>
                                       Stock: {consumable.stockQty} {consumable.unit}
                                     </p>
                                   </div>
@@ -2377,16 +2417,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                                   {/* Quantity Input - Only show if selected */}
                                   {isSelected && (
                                     <div className="mt-3 flex items-center gap-2">
-                                      <label className="text-xs font-medium text-gray-600">Cantidad:</label>
+                                      <label className="text-xs font-medium text-text-muted">Cantidad:</label>
                                       <div className="relative">
                                         <input
                                           type="number"
                                           min="1"
                                           value={selectedItem?.qty || 1}
                                           onChange={(e) => handleConsumableQtyChange(consumable.id, parseInt(e.target.value) || 1)}
-                                          className="w-20 px-3 py-1.5 text-sm bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                                          className="w-20 px-3 py-1.5 text-sm bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                                         />
-                                        <span className="ml-2 text-xs text-gray-500">{consumable.unit}</span>
+                                        <span className="ml-2 text-xs text-text-muted">{consumable.unit}</span>
                                       </div>
                                     </div>
                                   )}
@@ -2411,7 +2451,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       {selectedConsumables.map(sc => {
                         const consumable = consumables.find(c => c.id === sc.consumableId);
                         return consumable ? (
-                          <span key={sc.consumableId} className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-primary-600/20 rounded-md text-xs text-gray-700">
+                          <span key={sc.consumableId} className="inline-flex items-center gap-1 px-2 py-1 bg-surface border border-primary-600/20 rounded-md text-xs text-text-main">
                             <span className="font-medium">{consumable.name}</span>
                             <span className="text-primary-600 font-bold">×{sc.qty}</span>
                           </span>
@@ -2421,55 +2461,21 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   </div>
                 )}
               </div>
+              )}
 
             </div>
+          </div>
 
-
-              {/* Cost Summary Section */}
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-6 mx-6">
-                <h4 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-                  <DollarSign size={16} className="text-gray-500" />
-                  Resumen de Costos Estimados
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-gray-600">
-                    <span>
-                      Costo Químicos ({selectedMaterials.length}):
-                    </span>
-                    <span>
-                      ${totalEstimatedMaterialCost.chemicals.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>
-                      Costo Desechables (
-                      {selectedConsumables.reduce((a, b) => a + b.qty, 0)}):
-                    </span>
-                    <span>
-                      ${totalEstimatedMaterialCost.consumables.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-200 mt-2">
-                    <span className="font-black text-gray-800 uppercase">
-                      Costo Total Materiales:
-                    </span>
-                    <span className="font-black text-primary-600 text-lg">
-                      ${totalEstimatedMaterialCost.total.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-border bg-surface-highlight flex gap-3">
               <button
                 onClick={() => setEditingServiceItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-text-muted font-semibold hover:bg-surface-highlight transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveUnifiedService}
-                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
+                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-900/20 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
                 {editingServiceItem.id === "new" ? "Crear Servicio" : "Guardar Cambios"}
               </button>
@@ -2488,15 +2494,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-neutral-50">
+          <div className="relative w-full max-w-md bg-surface h-full shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 bg-surface-highlight border-b border-border">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Editar Producto</h3>
-                <p className="text-sm text-gray-500">Gestión de inventario y costos</p>
+                <h3 className="text-xl font-bold text-text-main">Editar Producto</h3>
+                <p className="text-sm text-text-muted">Gestión de inventario y costos</p>
               </div>
               <button 
                 onClick={() => setEditingProduct(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+                className="p-2 rounded-full hover:bg-surface-highlight text-text-muted transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -2506,24 +2512,24 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               
               {/* Sección 1: Información e Inventario */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Package size={18} className="text-primary-600" />
                    Información e Inventario
                 </h4>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Producto</label>
+                  <label className="text-sm font-medium text-text-muted">Nombre del Producto</label>
                   <input
                     type="text"
                     value={editChemicalForm.name || ""}
                     onChange={(e) => setEditChemicalForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                <div className="grid grid-cols-2 gap-4 bg-orange-500/5 p-4 rounded-xl border border-orange-500/20">
                     <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700">Stock Actual</label>
+                       <label className="text-sm font-bold text-text-main">Stock Actual</label>
                        <input
                          type="number"
                          value={editChemicalForm.stock ?? ""}
@@ -2531,11 +2537,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             const val = e.target.value;
                             setEditChemicalForm(prev => ({ ...prev, stock: val === "" ? 0 : parseFloat(val) }));
                          }}
-                         className="w-full px-4 py-2 border border-primary-400/20 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-white font-bold text-gray-800"
+                         className="w-full px-4 py-2 border border-primary-500/20 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-surface font-bold text-text-main"
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <label className="text-sm font-medium text-text-muted">Alerta (Mínimo)</label>
                        <input
                          type="number"
                          value={editChemicalForm.minStock ?? ""}
@@ -2543,7 +2549,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                             const val = e.target.value;
                             setEditChemicalForm(prev => ({ ...prev, minStock: val === "" ? 0 : parseFloat(val) }));
                          }}
-                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-primary-400 outline-none transition-all bg-white"
+                         className="w-full px-4 py-2 border border-border rounded-lg focus:border-primary-400 outline-none transition-all bg-surface text-text-main"
                        />
                     </div>
                 </div>
@@ -2551,14 +2557,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
               {/* Sección 2: Características y Costos */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <DollarSign size={18} className="text-green-600" />
                    Características y Costos
                 </h4>
 
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Contenido Neto</label>
+                      <label className="text-sm font-medium text-text-muted">Contenido Neto</label>
                       <input
                         type="number"
                         value={editChemicalForm.quantity ?? ""}
@@ -2566,15 +2572,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           const val = e.target.value;
                           setEditChemicalForm(prev => ({ ...prev, quantity: val === "" ? 0 : parseFloat(val) }));
                         }}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                       />
                    </div>
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Unidad</label>
+                      <label className="text-sm font-medium text-text-muted">Unidad</label>
                       <select
                         value={editChemicalForm.unit || "ml"}
                         onChange={(e) => setEditChemicalForm(prev => ({ ...prev, unit: e.target.value as ChemicalProduct["unit"] }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                       >
                          <option value="ml">Mililitros (ml)</option>
                          <option value="g">Gramos (g)</option>
@@ -2584,7 +2590,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-600">Precio de Compra (Por envase)</label>
+                   <label className="text-sm font-medium text-text-muted">Precio de Compra (Por envase)</label>
                    <div className="relative">
                       <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                       <input
@@ -2595,13 +2601,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           const val = e.target.value;
                           setEditChemicalForm(prev => ({ ...prev, purchasePrice: val === "" ? 0 : parseFloat(val) }));
                         }}
-                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none font-semibold"
+                        className="w-full pl-8 pr-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-semibold"
                       />
                    </div>
                 </div>
                 
                 <div className="mt-2 bg-primary-600/5 p-3 rounded-lg border border-primary-600/10 flex justify-between items-center animate-in fade-in duration-300">
-                    <span className="text-sm font-medium text-gray-600">Costo real:</span>
+                    <span className="text-sm font-medium text-text-muted">Costo real:</span>
                     <span className="text-lg font-bold text-primary-600">
                         ${((editChemicalForm.purchasePrice || 0) / (editChemicalForm.quantity || 1)).toFixed(4)} por {editChemicalForm.unit}
                     </span>
@@ -2610,10 +2616,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-border bg-surface-highlight flex gap-3">
               <button
                 onClick={() => setEditingProduct(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-text-muted font-semibold hover:bg-surface-highlight transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -2624,7 +2630,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     setEditingProduct(null);
                   }
                 }}
-                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
+                className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold shadow-lg shadow-purple-900/20 hover:bg-purple-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner"
               >
                 Guardar Cambios
               </button>
@@ -2643,15 +2649,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-neutral-50">
+          <div className="relative w-full max-w-md bg-surface h-full shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 bg-surface-highlight border-b border-border">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Agregar Producto</h3>
-                <p className="text-sm text-gray-500">Nuevo producto para el inventario</p>
+                <h3 className="text-xl font-bold text-text-main">Agregar Producto</h3>
+                <p className="text-sm text-text-muted">Nuevo producto para el inventario</p>
               </div>
               <button 
                 onClick={() => setAddingChemicalProduct(false)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+                className="p-2 rounded-full hover:bg-surface-highlight text-text-muted transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -2661,41 +2667,41 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               
               {/* Sección 1: Información e Inventario */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Package size={18} className="text-primary-600" />
                    Información e Inventario
                 </h4>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Producto</label>
+                  <label className="text-sm font-medium text-text-muted">Nombre del Producto</label>
                   <input
                     type="text"
                     placeholder="ej. Gel Constructor, Top Coat"
                     value={newChemicalProduct.name}
                     onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                <div className="grid grid-cols-2 gap-4 bg-orange-500/5 p-4 rounded-xl border border-orange-500/10">
                     <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700">Stock Actual</label>
+                       <label className="text-sm font-bold text-text-main">Stock Actual</label>
                        <input
                          type="number"
                          placeholder="0"
                          value={newChemicalProduct.stock}
                          onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, stock: e.target.value }))}
-                         className="w-full px-4 py-2 border border-primary-400/20 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-white font-bold text-gray-800"
+                         className="w-full px-4 py-2 border border-primary-400/20 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-surface font-bold text-text-main"
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <label className="text-sm font-medium text-text-muted">Alerta (Mínimo)</label>
                        <input
                          type="number"
                          placeholder="0"
                          value={newChemicalProduct.minStock}
                          onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, minStock: e.target.value }))}
-                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-primary-400 outline-none transition-all bg-white"
+                         className="w-full px-4 py-2 border border-border rounded-lg focus:border-primary-400 outline-none transition-all bg-surface text-text-main"
                        />
                     </div>
                 </div>
@@ -2703,28 +2709,28 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
               {/* Sección 2: Características y Costos */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <DollarSign size={18} className="text-green-600" />
                    Características y Costos
                 </h4>
 
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Contenido Neto</label>
+                      <label className="text-sm font-medium text-text-muted">Contenido Neto</label>
                       <input
                         type="number"
                         placeholder="ej. 1000"
                         value={newChemicalProduct.quantity}
                         onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, quantity: e.target.value }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                       />
                    </div>
                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Unidad</label>
+                      <label className="text-sm font-medium text-text-muted">Unidad</label>
                       <select
                         value={newChemicalProduct.unit || "ml"}
                         onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, unit: e.target.value }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                       >
                          <option value="ml">Mililitros (ml)</option>
                          <option value="g">Gramos (g)</option>
@@ -2734,7 +2740,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-600">Precio de Compra (Por envase)</label>
+                   <label className="text-sm font-medium text-text-muted">Precio de Compra (Por envase)</label>
                    <div className="relative">
                       <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                       <input
@@ -2743,13 +2749,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         placeholder="0.00"
                         value={newChemicalProduct.purchasePrice}
                         onChange={(e) => setNewChemicalProduct(prev => ({ ...prev, purchasePrice: e.target.value }))}
-                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none font-semibold"
+                        className="w-full pl-8 pr-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-semibold"
                       />
                    </div>
                 </div>
 
                 <div className="mt-2 bg-primary-600/5 p-3 rounded-lg border border-primary-600/10 flex justify-between items-center animate-in fade-in duration-300">
-                    <span className="text-sm font-medium text-gray-600">Costo real:</span>
+                    <span className="text-sm font-medium text-text-muted">Costo real:</span>
                     <span className="text-lg font-bold text-primary-600">
                         ${((parseFloat(newChemicalProduct.purchasePrice) || 0) / (parseFloat(newChemicalProduct.quantity) || 1)).toFixed(4)} por {newChemicalProduct.unit}
                     </span>
@@ -2758,7 +2764,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-border bg-surface-highlight flex gap-3">
               <button
                 onClick={() => {
                   setAddingChemicalProduct(false);
@@ -2771,7 +2777,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     minStock: "",
                   });
                 }}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-text-muted font-semibold hover:bg-surface-highlight transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -2816,15 +2822,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-neutral-50">
+          <div className="relative w-full max-w-md bg-surface h-full shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 bg-surface-highlight border-b border-border">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Editar Consumible</h3>
-                <p className="text-sm text-gray-500">Gestión de insumos y costos</p>
+                <h3 className="text-xl font-bold text-text-main">Editar Consumible</h3>
+                <p className="text-sm text-text-muted">Gestión de insumos y costos</p>
               </div>
               <button 
                 onClick={() => setEditingConsumableItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+                className="p-2 rounded-full hover:bg-surface-highlight text-text-muted transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -2834,27 +2840,27 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               
               {/* Información Básica */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Package size={18} className="text-blue-600" />
                    Información del Consumible
                 </h4>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Consumible</label>
+                  <label className="text-sm font-medium text-text-muted">Nombre del Consumible</label>
                   <input
                     type="text"
                     value={editConsumableForm.name || ""}
                     onChange={(e) => setEditConsumableForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
 
                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-600">Unidad de Medida</label>
+                   <label className="text-sm font-medium text-text-muted">Unidad de Medida</label>
                    <select
                      value={editConsumableForm.unit || "ml"}
                      onChange={(e) => setEditConsumableForm(prev => ({ ...prev, unit: e.target.value }))}
-                     className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                     className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                    >
                      <option value="">Seleccionar...</option>
                      <option value="ml">Mililitros (ml)</option>
@@ -2866,14 +2872,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
               {/* Costos y Empaque */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <DollarSign size={18} className="text-primary-600" />
                    Costos y Empaque
                 </h4>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Precio Compra (Caja)</label>
+                      <label className="text-sm font-medium text-text-muted">Precio Compra (Caja)</label>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                         <input
@@ -2893,12 +2899,12 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               unitCost: parseFloat(newUnitCost.toFixed(4))
                             }));
                           }}
-                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none font-semibold"
+                          className="w-full pl-8 pr-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-semibold"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Unidades por Paquete</label>
+                      <label className="text-sm font-medium text-text-muted">Unidades por Paquete</label>
                       <input
                         type="number"
                         placeholder="1"
@@ -2915,13 +2921,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                               unitCost: parseFloat(newUnitCost.toFixed(4))
                             }));
                         }}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                       />
                     </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Costo Unitario (Calculado)</label>
+                  <label className="text-sm font-medium text-text-muted">Costo Unitario (Calculado)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                     <input
@@ -2929,10 +2935,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       step="0.0001"
                       value={editConsumableForm.unitCost ?? ""}
                       disabled
-                      className="w-full pl-8 pr-4 py-2 bg-gray-50 text-gray-500 border border-gray-200 rounded-lg cursor-not-allowed font-semibold"
+                      className="w-full pl-8 pr-4 py-2 bg-surface-highlight text-text-muted border border-border rounded-lg cursor-not-allowed font-semibold"
                     />
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-text-muted">
                      Costo por {editConsumableForm.unit || "unidad"} resultante. Se actualizará automáticamente.
                   </p>
                 </div>
@@ -2940,14 +2946,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
               {/* Inventario */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <AlertTriangle size={18} className="text-primary-400" />
                    Inventario y Alertas
                 </h4>
 
-                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                <div className="grid grid-cols-2 gap-4 bg-orange-500/5 p-4 rounded-xl border border-orange-500/20">
                     <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700">Stock Actual</label>
+                       <label className="text-sm font-bold text-text-main">Stock Actual</label>
                        <input
                          type="number"
                          value={editConsumableForm.stockQty ?? ""}
@@ -2955,11 +2961,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                            const val = e.target.value;
                            setEditConsumableForm(prev => ({ ...prev, stockQty: val === "" ? 0 : parseFloat(val) }));
                          }}
-                         className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-white font-bold text-gray-800"
+                         className="w-full px-4 py-2 border border-primary-500/20 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-surface font-bold text-text-main"
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <label className="text-sm font-medium text-text-muted">Alerta (Mínimo)</label>
                        <input
                          type="number"
                          value={editConsumableForm.minStockAlert ?? ""}
@@ -2967,7 +2973,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                            const val = e.target.value;
                            setEditConsumableForm(prev => ({ ...prev, minStockAlert: val === "" ? 0 : parseFloat(val) }));
                          }}
-                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-primary-400 outline-none transition-all bg-white"
+                         className="w-full px-4 py-2 border border-border rounded-lg focus:border-primary-400 outline-none transition-all bg-surface text-text-main"
                        />
                     </div>
                 </div>
@@ -2975,10 +2981,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-border bg-surface-highlight flex gap-3">
               <button
                 onClick={() => setEditingConsumableItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-text-muted font-semibold hover:bg-surface-highlight transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -3008,15 +3014,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-neutral-50">
+          <div className="relative w-full max-w-md bg-surface h-full shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 bg-surface-highlight border-b border-border">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Agregar Consumible</h3>
-                <p className="text-sm text-gray-500">Nuevo insumo para el inventario</p>
+                <h3 className="text-xl font-bold text-text-main">Agregar Consumible</h3>
+                <p className="text-sm text-text-muted">Nuevo insumo para el inventario</p>
               </div>
               <button 
                 onClick={() => setAddingConsumableItem(false)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+                className="p-2 rounded-full hover:bg-surface-highlight text-text-muted transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -3026,44 +3032,44 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               
               {/* Información Básica */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Package size={18} className="text-blue-600" />
                    Información del Consumible
                 </h4>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Consumible</label>
+                  <label className="text-sm font-medium text-text-muted">Nombre del Consumible</label>
                   <input
                     type="text"
                     placeholder="ej. Algodón, Guantes, Toallas"
                     value={newConsumable.name}
                     onChange={(e) => setNewConsumable(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                   />
                 </div>
 
                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-600">Unidad de Medida</label>
+                   <label className="text-sm font-medium text-text-muted">Unidad de Medida</label>
                    <input
                      type="text"
                      placeholder="ej. gramo, unidad, par, metro"
                      value={newConsumable.unit}
                      onChange={(e) => setNewConsumable(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                      className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                    />
                 </div>
               </div>
 
               {/* Costos y Paquete */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <DollarSign size={18} className="text-primary-600" />
                    Información de Compra
                 </h4>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Precio de Compra</label>
+                      <label className="text-sm font-medium text-text-muted">Precio de Compra</label>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                         <input
@@ -3072,62 +3078,62 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           placeholder="0.00"
                           value={newConsumable.purchasePrice}
                           onChange={(e) => setNewConsumable(prev => ({ ...prev, purchasePrice: e.target.value }))}
-                          className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none font-semibold"
+                          className="w-full pl-8 pr-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-semibold"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-600">Tamaño del Paquete</label>
+                      <label className="text-sm font-medium text-text-muted">Tamaño del Paquete</label>
                       <input
                         type="number"
                         step="1"
                         placeholder="100"
                         value={newConsumable.packageSize}
                         onChange={(e) => setNewConsumable(prev => ({ ...prev, packageSize: e.target.value }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                       />
                     </div>
                 </div>
                 
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-xs text-gray-600">
-                    <span className="font-semibold">Ejemplo:</span> Si compras un paquete de 100 guantes por $13.00, el costo por unidad será $0.13
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                  <p className="text-xs text-text-muted">
+                    <span className="font-semibold text-emerald-500">Ejemplo:</span> Si compras un paquete de 100 guantes por $13.00, el costo por unidad será $0.13
                   </p>
                 </div>
               </div>
 
               {/* Inventario */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <AlertTriangle size={18} className="text-orange-500" />
                    Inventario Inicial
                 </h4>
 
-                <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                <div className="grid grid-cols-2 gap-4 bg-orange-500/5 p-4 rounded-xl border border-orange-500/10">
                     <div className="space-y-2">
-                       <label className="text-sm font-bold text-gray-700">Stock Inicial</label>
+                       <label className="text-sm font-bold text-text-main">Stock Inicial</label>
                        <input
                          type="number"
                          placeholder="100"
                          value={newConsumable.stockQty}
                          onChange={(e) => setNewConsumable(prev => ({ ...prev, stockQty: e.target.value }))}
-                         className="w-full px-4 py-2 border border-primary-400/20 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-white font-bold text-gray-800"
+                         className="w-full px-4 py-2 border border-primary-500/20 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-400/20 outline-none transition-all bg-surface font-bold text-text-main"
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-sm font-medium text-gray-600">Alerta (Mínimo)</label>
+                       <label className="text-sm font-medium text-text-muted">Alerta (Mínimo)</label>
                        <input
                          type="number"
                          placeholder="10"
                          value={newConsumable.minStockAlert}
                          onChange={(e) => setNewConsumable(prev => ({ ...prev, minStockAlert: e.target.value }))}
-                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-primary-400 outline-none transition-all bg-white"
+                         className="w-full px-4 py-2 border border-border rounded-lg focus:border-primary-400 outline-none transition-all bg-surface text-text-main"
                        />
                     </div>
                 </div>
                 
-                <div className="bg-neutral-50 border border-gray-100 rounded-lg p-3">
-                  <p className="text-xs text-gray-600">
+                <div className="bg-surface-highlight border border-border rounded-lg p-3">
+                  <p className="text-xs text-text-muted">
                     <span className="font-semibold">Nota:</span> Recibirás una alerta cuando el stock llegue al nivel mínimo configurado
                   </p>
                 </div>
@@ -3135,7 +3141,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-border bg-surface-highlight flex gap-3">
               <button
                 onClick={() => {
                   setAddingConsumableItem(false);
@@ -3148,7 +3154,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     minStockAlert: "",
                   });
                 }}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-text-muted font-semibold hover:bg-surface-highlight transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -3192,15 +3198,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-neutral-50">
+          <div className="relative w-full max-w-md bg-surface h-full shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 bg-surface-highlight border-b border-border">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Editar Extra</h3>
-                <p className="text-sm text-gray-500">Configuración de servicios adicionales</p>
+                <h3 className="text-xl font-bold text-text-main">Editar Extra</h3>
+                <p className="text-sm text-text-muted">Configuración de servicios adicionales</p>
               </div>
               <button 
                 onClick={() => setEditingExtraItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+                className="p-2 rounded-full hover:bg-surface-highlight text-text-muted transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -3210,23 +3216,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               
               {/* Información Básica */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Sparkles size={18} className="text-primary-400" />
                    Detalles del Extra
                 </h4>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Extra</label>
+                  <label className="text-sm font-medium text-text-muted">Nombre del Extra</label>
                   <input
                     type="text"
                     value={editExtraForm.name || ""}
                     onChange={(e) => setEditExtraForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 outline-none"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 outline-none"
                   />
                 </div>
 
                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-600">Precio Sugerido (por Uña/Unidad)</label>
+                   <label className="text-sm font-medium text-text-muted">Precio Sugerido (por Uña/Unidad)</label>
                    <div className="relative">
                       <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
                       <input
@@ -3237,19 +3243,19 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           const val = e.target.value;
                           setEditExtraForm(prev => ({ ...prev, priceSuggested: val === "" ? 0 : parseFloat(val) }));
                         }}
-                        className="w-full pl-8 pr-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 outline-none font-bold"
+                        className="w-full pl-8 pr-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-400/20 focus:border-primary-400 outline-none font-bold"
                        />
                    </div>
-                   <p className="text-xs text-slate-400">
+                   <p className="text-xs text-text-muted">
                       Este precio se usará como base para el cálculo total (Precio * Cantidad).
                    </p>
                 </div>
                 
                  {/* Estado Activo */}
-                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                 <div className="flex items-center justify-between p-4 bg-surface-highlight rounded-xl border border-border">
                     <div>
-                       <span className="block font-semibold text-gray-700">Estado del Servicio</span>
-                       <span className="text-xs text-gray-500">Visible en el catálogo de ventas</span>
+                       <span className="block font-semibold text-text-main">Estado del Servicio</span>
+                       <span className="text-xs text-text-muted">Visible en el catálogo de ventas</span>
                     </div>
                     <button
                       onClick={() => setEditExtraForm(prev => ({ ...prev, active: !prev.active }))}
@@ -3268,10 +3274,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-border bg-surface-highlight flex gap-3">
               <button
                 onClick={() => setEditingExtraItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-text-muted font-semibold hover:bg-surface-highlight transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -3300,15 +3306,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-neutral-50">
+          <div className="relative w-full max-w-md bg-surface h-full shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-6 bg-surface-highlight border-b border-border">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Editar Perfil</h3>
-                <p className="text-sm text-gray-500">Gestión de empleado y comisiones</p>
+                <h3 className="text-xl font-bold text-text-main">Editar Perfil</h3>
+                <p className="text-sm text-text-muted">Gestión de empleado y comisiones</p>
               </div>
               <button 
                 onClick={() => setEditingStaffItem(null)}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all duration-300 hover:rotate-90 active:scale-90"
+                className="p-2 rounded-full hover:bg-surface-highlight text-text-muted transition-all duration-300 hover:rotate-90 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -3318,23 +3324,23 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               
               {/* Identidad */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Users size={18} className="text-primary-600" />
                    Identidad
                 </h4>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Nombre del Empleado</label>
+                  <label className="text-sm font-medium text-text-muted">Nombre del Empleado</label>
                   <input
                     type="text"
                     value={editStaffForm.name || ""}
                     onChange={(e) => setEditStaffForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-primary-600 focus:ring-4 focus:ring-primary-600/20 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 outline-none transition-all"
                   />
                 </div>
 
                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                   <label className="text-sm font-medium text-text-muted flex items-center gap-1">
                      <Key size={14} /> PIN de Acceso
                    </label>
                    <input
@@ -3342,9 +3348,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                         maxLength={4}
                         value={editStaffForm.pin || ""}
                         onChange={(e) => setEditStaffForm(prev => ({ ...prev, pin: e.target.value }))}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none font-mono tracking-widest"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-mono tracking-widest"
                    />
-                   <p className="text-xs text-slate-400">
+                   <p className="text-xs text-text-muted">
                       PIN de 4 dígitos para iniciar sesión.
                    </p>
                 </div>
@@ -3352,13 +3358,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
                {/* Finanzas */}
                <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Percent size={18} className="text-primary-600" />
                    Configuración Financiera
                 </h4>
 
                 <div className="space-y-2">
-                   <label className="text-sm font-medium text-gray-600">Porcentaje de Comisión</label>
+                   <label className="text-sm font-medium text-text-muted">Porcentaje de Comisión</label>
                    <div className="relative">
                       <input
                         type="number"
@@ -3369,11 +3375,11 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                           const val = e.target.value;
                           setEditStaffForm(prev => ({ ...prev, commissionPct: val === "" ? 0 : parseFloat(val) }));
                         }}
-                        className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 outline-none font-bold text-lg"
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-bold text-lg"
                        />
                        <span className="absolute right-4 top-3 text-gray-400 font-bold">%</span>
                    </div>
-                   <div className="p-3 bg-purple-50 rounded-lg text-sm text-primary-600">
+                   <div className="p-3 bg-primary-600/10 rounded-lg text-sm text-primary-500">
                       Este empleado gana el <strong>{editStaffForm.commissionPct ?? 0}%</strong> de cada servicio realizado (calculado automáticamente).
                    </div>
                 </div>
@@ -3381,17 +3387,17 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
                {/* Apariencia */}
                <div className="space-y-4">
-                <h4 className="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-text-main border-b border-border pb-2 flex items-center gap-2">
                    <Sparkles size={18} className="text-primary-600" />
                    Apariencia
                 </h4>
                 
                  <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-600">Color de Perfil</label>
+                  <label className="text-sm font-medium text-text-muted">Color de Perfil</label>
                   <select
                     value={editStaffForm.color}
                      onChange={(e) => setEditStaffForm(prev => ({ ...prev, color: e.target.value }))}
-                      className="w-full px-4 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-600/20 focus:border-primary-600 focus:outline-none"
+                      className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:outline-none"
                    >
                     <option value="from-pink-500 to-rose-600">Rosa (Pink)</option>
                     <option value="from-purple-500 to-indigo-600">Morado (Purple)</option>
@@ -3407,10 +3413,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                </div>
 
                 {/* Estado */}
-                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                 <div className="flex items-center justify-between p-4 bg-surface-highlight rounded-xl border border-border">
                     <div>
-                       <span className="block font-semibold text-gray-700">Estado de la cuenta</span>
-                       <span className="text-xs text-gray-500">{editStaffForm.active ? 'El empleado puede acceder al sistema' : 'Acceso bloqueado'}</span>
+                       <span className="block font-semibold text-text-main">Estado de la cuenta</span>
+                       <span className="text-xs text-text-muted">{editStaffForm.active ? 'El empleado puede acceder al sistema' : 'Acceso bloqueado'}</span>
                     </div>
                     <button
                       onClick={() => setEditStaffForm(prev => ({ ...prev, active: !prev.active }))}
@@ -3428,10 +3434,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-border bg-surface-highlight flex gap-3">
               <button
                 onClick={() => setEditingStaffItem(null)}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-100 transition-all duration-200 active:scale-95"
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-text-muted font-semibold hover:bg-surface-highlight transition-all duration-200 active:scale-95"
               >
                 Cancelar
               </button>
@@ -3453,6 +3459,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
 
 
+
       {/* Slide-over para CREAR Nuevo Servicio */}
 
       <ConfirmationModal
@@ -3469,4 +3476,3 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 };
 
 export default OwnerConfigTab;
-

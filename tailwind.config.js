@@ -7,24 +7,47 @@ export default {
   theme: {
     extend: {
       colors: {
+        // 🌑 FONDO (Base profunda, no negro puro)
+        background: '#020617',      // Slate-950 (Azul muy oscuro, casi negro)
+        
+        // 🃏 SUPERFICIES (Tarjetas - Aquí estaba el error)
+        // Antes eran muy claras. Ahora serán sutilmente más claras que el fondo.
+        surface: '#0F172A',         // Slate-900 (La tarjeta base)
+        'surface-highlight': '#1E293B', // Slate-800 (Hover o Inputs)
+        'surface-active': '#334155',    // Slate-700 (Seleccionado)
+
+        // ⚡ MARCA (Voidly Cyan - Ajustado para no vibrar demasiado)
         primary: {
-          400: '#c39a7c', // Earth Light / Accent
-          600: '#885f43', // Earth Base
-          700: '#5f422f', // Earth Dark / Hover
+          DEFAULT: '#06B6D4',       // Cyan-500 (Más legible)
+          400: '#22D3EE',           // Cyan-400 (Brillo)
+          500: '#06B6D4',           // Base
+          600: '#0891B2',           // Hover oscuro
+          700: '#0E7490',
+          800: '#155E75',
+          900: '#164E63',
+          foreground: '#FFFFFF',    // Texto Blanco sobre Cyan oscuro (Mejor contraste)
         },
-        neutral: {
-          50: '#f9f8f6', // Off-white / Background
-          200: '#dad0c6', // Borders
-          900: '#1d1d1b', // Soft Black / Text Main
+
+        // 🔮 SECUNDARIO
+        secondary: {
+          DEFAULT: '#6366F1',       // Indigo (Más suave que el violeta neón)
         },
-        // Aquí conectamos Tailwind con nuestras variables CSS para mantener compatibilidad
-        brand: {
-          primary: "var(--color-primary)",
-          secondary: "var(--color-secondary)",
-          accent: "var(--color-accent)",
-          dark: "var(--color-text)",
-          bg: "var(--color-background)",
-        }
+
+        // 📝 TEXTOS (Jerarquía visual)
+        text: {
+          main: '#F1F5F9',          // Slate-100 (Blanco hueso, no quema)
+          muted: '#94A3B8',         // Slate-400 (Texto secundario)
+          dim: '#475569',           // Slate-600 (Detalles sutiles)
+        },
+
+        // 🧱 BORDES (La clave del Dark Mode moderno)
+        border: '#1E293B',          // Slate-800 (Casi invisible)
+        'border-highlight': '#334155', // Slate-700
+        
+        // 🚦 ESTADOS
+        success: '#10B981', 
+        warning: '#F59E0B', 
+        danger: '#EF4444', 
       },
 
       keyframes: {

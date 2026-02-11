@@ -10,7 +10,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { EXTRAS_CATALOG, RECIPE_COSTS } from "../constants/catalog";
+
 import type {
   CatalogService,
   Consumable,
@@ -22,7 +22,7 @@ import type {
 } from "../types";
 
 // Collection names
-const SERVICES_COLLECTION = "services";
+
 const CONSUMABLES_COLLECTION = "consumables";
 const CHEMICAL_PRODUCTS_COLLECTION = "chemical_products";
 
@@ -317,7 +317,7 @@ export const updateChemicalProduct = async (
   updates: Partial<ChemicalProduct>,
   currentProduct?: ChemicalProduct // Optional optimization to avoid extra read if caller has it
 ): Promise<void> => {
-   let costPerService = updates.costPerService;
+
 
    // Recalculate costPerService if price or yield changes
    if (updates.purchasePrice !== undefined || updates.yield !== undefined) {
@@ -411,21 +411,23 @@ export const calculateTotalReplenishmentCost = (
   services: ServiceItem[],
   materialRecipes: MaterialRecipe[],
   catalogServices: CatalogService[] = [],
-  chemicalProducts: ChemicalProduct[] = []
+  chemicalProducts: ChemicalProduct[] = [],
+  consumables: Consumable[] = []
 ): number => {
   let totalCost = 0;
 
   for (const service of services) {
+    let serviceCost = 0;
+
     // Buscar servicio en catálogo
     const catalogService = catalogServices.find(
       (cs) => cs.id === service.serviceId || 
               cs.name?.toLowerCase() === service.serviceName.toLowerCase()
     );
-    
-    // PRIORIDAD 1: Si manualMaterials existe, calcular costo dinámicamente
+
+    // --- 1. CÁLCULO DE QUÍMICOS (Materiales) ---
+    // PRIORIDAD: Configuración Manual
     if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
-      let serviceCost = 0;
-      
       for (const item of catalogService.manualMaterials) {
         // Handle polymorphic item type
         const isObject = typeof item === 'object' && item !== null;
@@ -442,34 +444,40 @@ export const calculateTotalReplenishmentCost = (
           const costPerUnitMeasure = (product.purchasePrice || 0) / yieldTotal;
           
           // Cantidad usada en este servicio
-          // Si es objeto, usar qty (ej: 5ml). Si es string, asumir 1 unidad (servicio completo o lo que sea por defecto)
           const qtyUsed = isObject ? (item as { qty: number }).qty : 1;
           
-          const costForThisService = costPerUnitMeasure * qtyUsed;
-          
-          serviceCost += costForThisService;
+          serviceCost += costPerUnitMeasure * qtyUsed;
         }
       }
-      
-      totalCost += serviceCost;
-      // console.log(`💰 Costo calculado para ${service.serviceName}: $${serviceCost.toFixed(2)} (${catalogService.manualMaterials.length} materiales)`);
-      
     } else {
-      // PRIORIDAD 2: Fallback a receta antigua
+      // FALLBACK: Receta antigua (si existe)
       const recipe = materialRecipes.find(
         (r) => r.serviceName.toLowerCase() === service.serviceName.toLowerCase()
       );
 
       if (recipe) {
-        totalCost += recipe.totalCost;
-        // console.log(`💰 Costo de receta para ${service.serviceName}: $${recipe.totalCost.toFixed(2)}`);
-      } else {
-        const serviceName = service.serviceName.toLowerCase();
-        const defaultCost = serviceName.includes("pedicure") || serviceName.includes("pedicura") ? 0.5 : 0.33;
-        totalCost += defaultCost;
-        // console.log(`💰 Costo por defecto para ${service.serviceName}: $${defaultCost.toFixed(2)}`);
+        serviceCost += recipe.totalCost;
+      }
+      // NOTA: Se eliminó el fallback de costo fijo (0.50/0.33)
+    }
+
+    // --- 2. CÁLCULO DE CONSUMIBLES ---
+    // Solo si existen en el catálogo manual
+    if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {
+      for (const item of catalogService.manualConsumables) {
+        const consumable = consumables.find(c => c.id === item.consumableId);
+            
+        if (consumable) {
+          // Costo Unitario = (Precio Compra / Tamaño Paquete)
+          const packageSize = consumable.packageSize || 1;
+          const unitCost = packageSize > 0 ? (consumable.purchasePrice || 0) / packageSize : 0;
+          
+          serviceCost += unitCost * item.qty;
+        }
       }
     }
+
+    totalCost += serviceCost;
   }
 
   return totalCost;
@@ -654,7 +662,7 @@ export const restoreInventoryByRecipe = async (
       if (!chemicalId) continue;
 
       // Buscar producto
-      let product = chemicalProducts.find((p) => p.id === chemicalId);
+      const product = chemicalProducts.find((p) => p.id === chemicalId);
       
       // Fallback search por nombre similar a deductInventoryByRecipe
       if (!product) {
@@ -681,8 +689,8 @@ export const restoreInventoryByRecipe = async (
       
       // Si la botella actual "rebosa" (más que su capacidad), incrementamos stock de botellas cerradas
       if (currentYieldRemaining > yieldPerUnit) {
-          const extraYield = currentYieldRemaining - yieldPerUnit;
-          const bottlesRestored = Math.floor(extraYield / yieldPerUnit);
+
+
           // Ojo: Si currentYieldRemaining era muy bajo y sumamos mucho, podríamos restaurar botellas.
           // Simplificación: Incrementar stock si pasamos el límite.
           

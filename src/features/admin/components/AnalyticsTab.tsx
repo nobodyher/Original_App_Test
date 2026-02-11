@@ -1,4 +1,16 @@
 import React, { useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import type { Service } from "../../../types";
 
 interface AnalyticsTabProps {
@@ -10,10 +22,10 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
     "week" | "month" | "year" | "custom"
   >("week");
   const [customDateFrom, setCustomDateFrom] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [customDateTo, setCustomDateTo] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
 
   // Calcular rango de fechas según filtro
@@ -87,21 +99,11 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
     // getDay() returns 0 for Sunday, so we map correctly
     const dayName = weekdayNames[date.getDay()];
     // weekdayData keys are Spanish names corresponding to weekdayNames
-    // Except 'Domingo' is in weekdayNames[0] and weekdayData['Domingo'] exists.
-    // 'Sábado' is in weekdayData.
-    // Ensure dayName matches key. weekdayNames matches.
     if (weekdayData[dayName as keyof typeof weekdayData]) {
-        weekdayData[dayName as keyof typeof weekdayData].revenue += s.cost;
-        weekdayData[dayName as keyof typeof weekdayData].services += 1;
+      weekdayData[dayName as keyof typeof weekdayData].revenue += s.cost;
+      weekdayData[dayName as keyof typeof weekdayData].services += 1;
     }
   });
-
-  // Calcular datos diarios para gráfica de tendencia (unused in UI but defined in original?)
-  // Original had dailyData calculation code but didn't seem to render a line chart?
-  // I'll include it just in case logic is needed, but only if used.
-  // The snippet showed "Gráfica por día de semana" bar chart.
-  // And "Gráfica de dona". 
-  // It didn't render Line Chart.
 
   // Calcular métricas
   const totalIncome = filteredServices.reduce((sum, s) => sum + s.cost, 0);
@@ -119,7 +121,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
   });
 
   const topStaff = Object.entries(staffStats).sort(
-    ([, a], [, b]) => b.revenue - a.revenue
+    ([, a], [, b]) => b.revenue - a.revenue,
   )[0];
 
   // Servicio más vendido
@@ -135,330 +137,339 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
   });
 
   const topService = Object.entries(serviceStats).sort(
-    ([, a], [, b]) => b.count - a.count
+    ([, a], [, b]) => b.count - a.count,
   )[0];
 
   return (
     <div className="space-y-8 pb-10">
       {/* Filtros */}
-      <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6 border border-gray-100">
-        <h3 className="text-xl font-black text-neutral-900 mb-6 tracking-tight">Filtros de Análisis</h3>
+      <div className="bg-surface rounded-2xl shadow-none p-6 border border-border">
+        <h3 className="text-xl font-black text-text-main mb-6 tracking-tight">
+          Filtros de Análisis
+        </h3>
         <div className="flex flex-wrap gap-3 mb-6">
           {(["week", "month", "year", "custom"] as const).map((filterType) => (
-             <button
-               key={filterType}
-               onClick={() => setAnalyticsFilter(filterType)}
-               className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 transform active:scale-95 ${
-                 analyticsFilter === filterType
-                   ? "bg-primary-600 text-white shadow-lg shadow-primary-600/20"
-                   : "bg-neutral-50 text-neutral-900 hover:bg-gray-100 hover:text-primary-600"
-               }`}
-             >
-               {filterType === "week" && "Esta Semana"}
-               {filterType === "month" && "Este Mes"}
-               {filterType === "year" && "Este Año"}
-               {filterType === "custom" && "Personalizado"}
-             </button>
+            <button
+              key={filterType}
+              onClick={() => setAnalyticsFilter(filterType)}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 transform active:scale-95 ${
+                analyticsFilter === filterType
+                  ? "bg-primary-600 text-white shadow-none"
+                  : "bg-background text-text-muted hover:bg-surface hover:text-primary-600 border border-transparent hover:border-primary-600/20"
+              }`}
+            >
+              {filterType === "week" && "Esta Semana"}
+              {filterType === "month" && "Este Mes"}
+              {filterType === "year" && "Este Año"}
+              {filterType === "custom" && "Personalizado"}
+            </button>
           ))}
         </div>
 
         {analyticsFilter === "custom" && (
           <div className="flex flex-wrap gap-4 animate-in fade-in slide-in-from-top-2">
             <div className="flex flex-col gap-1">
-               <span className="text-xs font-bold text-gray-400 uppercase ml-1">Desde</span>
-               <input
-                 type="date"
-                 value={customDateFrom}
-                 onChange={(e) => setCustomDateFrom(e.target.value)}
-                 className="px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-primary-600 focus:outline-none bg-neutral-50 font-semibold text-neutral-900"
-               />
+              <span className="text-xs font-bold text-text-muted uppercase ml-1">
+                Desde
+              </span>
+              <input
+                type="date"
+                value={customDateFrom}
+                onChange={(e) => setCustomDateFrom(e.target.value)}
+                className="px-4 py-2 border border-border rounded-xl focus:border-primary-600 focus:outline-none bg-background font-semibold text-text-main"
+              />
             </div>
             <div className="flex flex-col gap-1">
-               <span className="text-xs font-bold text-gray-400 uppercase ml-1">Hasta</span>
-               <input
-                 type="date"
-                 value={customDateTo}
-                 onChange={(e) => setCustomDateTo(e.target.value)}
-                 className="px-4 py-2 border-2 border-gray-100 rounded-xl focus:border-primary-600 focus:outline-none bg-neutral-50 font-semibold text-neutral-900"
-               />
+              <span className="text-xs font-bold text-text-muted uppercase ml-1">
+                Hasta
+              </span>
+              <input
+                type="date"
+                value={customDateTo}
+                onChange={(e) => setCustomDateTo(e.target.value)}
+                className="px-4 py-2 border border-border rounded-xl focus:border-primary-600 focus:outline-none bg-background font-semibold text-text-main"
+              />
             </div>
           </div>
         )}
 
-        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
-           <div className="w-2 h-2 rounded-full bg-primary-600 animate-pulse"></div>
-           <p className="text-sm font-medium text-gray-500">
-             Mostrando datos del: <strong className="text-neutral-900">{dateRange.from}</strong> al <strong className="text-neutral-900">{dateRange.to}</strong>
-           </p>
+        <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-primary-600 animate-pulse"></div>
+          <p className="text-sm font-medium text-text-muted">
+            Mostrando datos del:{" "}
+            <strong className="text-text-main">{dateRange.from}</strong> al{" "}
+            <strong className="text-text-main">{dateRange.to}</strong>
+          </p>
         </div>
       </div>
 
       {/* Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Income - Violeta Real */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-[2rem] shadow-xl shadow-primary-600/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        {/* Income - Cyan Gradient */}
+        <div className="bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
           <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 transform group-hover:scale-120 transition-transform">
-             {/* Icon placeholder could go here */}
+            {/* Icon placeholder could go here */}
           </div>
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Ingresos Totales</h4>
-          <p className="text-4xl font-black mt-2 tracking-tight">${totalIncome.toFixed(2)}</p>
+          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+            Ingresos Totales
+          </h4>
+          <p className="text-4xl font-black mt-2 tracking-tight">
+            ${totalIncome.toFixed(2)}
+          </p>
           <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
             <span>{totalServices} servicios realizados</span>
           </div>
         </div>
 
-        {/* Ticket - Rosa Ojo de Perdiz */}
-        <div className="bg-gradient-to-br from-primary-700 to-primary-600 text-white rounded-[2rem] shadow-xl shadow-primary-700/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Ticket Promedio</h4>
-          <p className="text-4xl font-black mt-2 tracking-tight">${averageTicket.toFixed(2)}</p>
-           <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+        {/* Ticket - Cyan/Blue Gradient */}
+        <div className="bg-gradient-to-br from-primary-700 to-blue-600 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+            Ticket Promedio
+          </h4>
+          <p className="text-4xl font-black mt-2 tracking-tight">
+            ${averageTicket.toFixed(2)}
+          </p>
+          <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
             <span>Por cliente</span>
           </div>
         </div>
 
-        {/* Staff - Oro Champagne */}
-        <div className="bg-gradient-to-br from-primary-400 to-primary-600 text-white rounded-[2rem] shadow-xl shadow-primary-400/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Top Staff</h4>
-          <p className="text-3xl font-black mt-2 truncate max-w-full">{topStaff?.[0] || "N/A"}</p>
+        {/* Staff - Violet/Indigo Gradient */}
+        <div className="bg-gradient-to-br from-cyan-900 to-blue-900 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+            Top Staff
+          </h4>
+          <p className="text-3xl font-black mt-2 truncate max-w-full">
+            {topStaff?.[0] || "N/A"}
+          </p>
           <div className="mt-4 inline-flex items-center gap-2 bg-black/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
-             <span>Generó ${topStaff?.[1].revenue.toFixed(2) || "0.00"}</span>
+            <span>Generó ${topStaff?.[1].revenue.toFixed(2) || "0.00"}</span>
           </div>
         </div>
 
-        {/* Service - Slate 900 */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-700 text-white rounded-[2rem] shadow-xl shadow-neutral-900/20 p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">Servicio Estrella</h4>
-          <p className="text-2xl font-black mt-2 truncate max-w-full leading-tight">{topService?.[0] || "N/A"}</p>
+        {/* Service - Dark Gradient */}
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+            Servicio Estrella
+          </h4>
+          <p className="text-2xl font-black mt-2 truncate max-w-full leading-tight">
+            {topService?.[0] || "N/A"}
+          </p>
           <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
-             <span>{topService?.[1].count || 0} ventas</span>
+            <span>{topService?.[1].count || 0} ventas</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-          {/* Gráfica por día de semana */}
-          <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
-            <div className="flex items-center justify-between mb-8">
-               <h3 className="text-xl font-black text-[#0F172A]">
-                 Ingresos Semanales
-               </h3>
-               <div className="px-3 py-1 rounded-full bg-primary-600/10 text-primary-600 text-xs font-bold">
-                  Tendencia diaria
-               </div>
+        {/* Gráfica por día de semana */}
+        <div className="bg-surface rounded-[2.5rem] shadow-none p-8 border border-border">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-black text-text-main">
+              Ingresos Semanales
+            </h3>
+            <div className="px-3 py-1 rounded-full bg-primary-600/10 text-primary-600 text-xs font-bold">
+              Tendencia diaria
             </div>
-            
-            <div className="overflow-x-auto pb-2">
-              <div className="flex gap-4 items-end h-[240px] pt-4 relative" style={{ minWidth: "100%" }}>
-                {/* Global Gradients Definition */}
-                <svg style={{ position: "absolute", width: 0, height: 0 }}>
-                  <defs>
-                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#885f43" />
-                      <stop offset="100%" stopColor="#5f422f" />
-                    </linearGradient>
-                    <linearGradient id="barGradientHover" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#885f43" />
-                      <stop offset="100%" stopColor="#5f422f" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+          </div>
 
-                {Object.entries(weekdayData).map(([day, data]) => {
-                  const maxRevenue = Math.max(
-                    ...Object.values(weekdayData).map((d) => d.revenue)
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={Object.entries(weekdayData).map(([day, data]) => ({
+                  name: day.slice(0, 3),
+                  revenue: data.revenue,
+                }))}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#1E293B"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  stroke="#94A3B8"
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  stroke="#94A3B8"
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `$${value}`}
+                />
+                <Tooltip
+                  cursor={{ fill: "transparent" }}
+                  contentStyle={{
+                    backgroundColor: "#0F172A",
+                    borderColor: "#1E293B",
+                    color: "#F1F5F9",
+                    borderRadius: "0.75rem",
+                  }}
+                  itemStyle={{ color: "#F1F5F9" }}
+                  formatter={(value: number) => [
+                    `$${value.toFixed(2)}`,
+                    "Ingresos",
+                  ]}
+                />
+                <Bar
+                  dataKey="revenue"
+                  fill="#06B6D4"
+                  radius={[4, 4, 0, 0]}
+                  barSize={40}
+                  activeBar={{ fill: "#22D3EE" }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Gráfica de dona - Servicios más vendidos */}
+        <div className="bg-surface rounded-[2.5rem] shadow-none p-8 border border-border">
+          <h3 className="text-xl font-black text-text-main mb-8">
+            Distribución de Servicios
+          </h3>
+
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* Dona */}
+            <div className="relative flex-shrink-0">
+              {Object.values(serviceStats).length > 0 ? (
+                <div className="relative w-[220px] h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(serviceStats)
+                          .sort(([, a], [, b]) => b.count - a.count)
+                          .map(([name, data]) => ({
+                            name,
+                            value: data.count,
+                            revenue: data.revenue,
+                          }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={85}
+                        paddingAngle={2}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {Object.entries(serviceStats)
+                          .sort(([, a], [, b]) => b.count - a.count)
+                          .map((entry, index) => {
+                            const vibrantColors = [
+                              "#06B6D4",
+                              "#6366F1",
+                              "#10B981",
+                              "#8B5CF6",
+                              "#F59E0B",
+                              "#EC4899",
+                              "#64748b",
+                              "#94A3B8",
+                            ];
+                            return (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={
+                                  vibrantColors[index % vibrantColors.length]
+                                }
+                              />
+                            );
+                          })}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#0F172A",
+                          borderColor: "#1E293B",
+                          color: "#F1F5F9",
+                          borderRadius: "0.75rem",
+                        }}
+                        itemStyle={{ color: "#F1F5F9" }}
+                        formatter={(
+                          value: number,
+                          name: string,
+                          props: any,
+                        ) => [
+                          `${value} ventas ($${props.payload.revenue.toFixed(
+                            2,
+                          )})`,
+                          name,
+                        ]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Stats */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-3xl font-black text-text-main">
+                      {totalServices}
+                    </span>
+                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
+                      Total
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-[200px] h-[200px] rounded-full bg-background flex items-center justify-center text-text-muted text-sm font-medium">
+                  Sin datos
+                </div>
+              )}
+            </div>
+
+            {/* Leyenda */}
+            <div className="flex-1 w-full space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+              {Object.entries(serviceStats)
+                .sort(([, a], [, b]) => b.count - a.count)
+                .slice(0, 6) // Limit to top 6
+                .map(([service, data], idx) => {
+                  const total = Object.values(serviceStats).reduce(
+                    (sum, s) => sum + s.count,
+                    0,
                   );
-                  const isMax = maxRevenue > 0 && data.revenue === maxRevenue;
-                  const heightPercent =
-                    maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0;
-                  const barHeight = Math.max(heightPercent, 2); // Min height 2%
+                  const percentage = ((data.count / total) * 100).toFixed(1);
+                  const vibrantColors = [
+                    "#06B6D4",
+                    "#6366F1",
+                    "#10B981",
+                    "#8B5CF6",
+                    "#F59E0B",
+                    "#EC4899",
+                    "#64748b",
+                    "#94A3B8",
+                  ];
 
                   return (
                     <div
-                      key={day}
-                      className="flex-1 flex flex-col items-center gap-3 min-w-[60px] group"
+                      key={idx}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors group"
                     >
-                      <div className="relative w-full flex justify-center items-end flex-grow">
-                        {/* Tooltip on hover */}
-                        <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold py-1 px-2 rounded-lg whitespace-nowrap z-10 mb-2 pointer-events-none shadow-lg">
-                          ${data.revenue.toFixed(2)}
-                          <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                        </div>
-
-                        {/* Visual Bar (SVG) */}
-                        <svg
-                          width="100%"
-                          viewBox="0 0 40 100"
-                          preserveAspectRatio="none"
-                          className="w-full max-w-[40px] transition-all duration-300 ease-out hover:-translate-y-1"
-                          style={{ height: "100%" }}
-                        >
-                          <rect
-                            x="0"
-                            y={100 - barHeight}
-                            width="40"
-                            height={barHeight}
-                            rx="12"
-                            fill={isMax ? "url(#barGradient)" : "#e5e7eb"}
-                            fillOpacity={isMax ? 1 : 0.6}
-                            className={`transition-all duration-300 ${
-                               data.revenue > 0 ? "group-hover:fill-opacity-100" : ""
-                            }`}
-                            style={{
-                                fill: data.revenue > 0 ? "url(#barGradient)" : "#e5e7eb"
-                            }}
-                          />
-                        </svg>
-                      </div>
-
-                      <div className="text-center">
-                        <p
-                          className={`text-xs font-bold ${
-                            isMax ? "text-primary-600" : "text-gray-400"
-                          }`}
-                        >
-                          {day.slice(0, 3)}
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
+                        style={{
+                          backgroundColor:
+                            vibrantColors[idx % vibrantColors.length],
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-text-muted truncate group-hover:text-text-main transition-colors">
+                          {service}
                         </p>
+                        <p className="text-[10px] font-semibold text-text-muted">
+                          ${data.revenue.toFixed(0)} • {data.count} u.
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-black text-text-main bg-background px-2 py-1 rounded-lg">
+                          {percentage}%
+                        </span>
                       </div>
                     </div>
                   );
                 })}
-              </div>
             </div>
           </div>
-
-          {/* Gráfica de dona - Servicios más vendidos */}
-          <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
-            <h3 className="text-xl font-black text-neutral-900 mb-8">
-               Distribución de Servicios
-            </h3>
-            
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              {/* Dona */}
-              <div className="relative flex-shrink-0">
-                {Object.entries(serviceStats).length > 0 ? (
-                  <div className="relative">
-                      <svg width="220" height="220" viewBox="0 0 200 200" className="transform -rotate-90">
-                        {(() => {
-                          const total = Object.values(serviceStats).reduce(
-                            (sum, s) => sum + s.count,
-                            0
-                          );
-                          const vibrantColors = [
-                            "#885f43", "#5f422f", "#c39a7c", "#1d1d1b", 
-                            "#4a332a", "#885f43", "#c39a7c", "#dad0c6"
-                          ];
-                          let currentAngle = 0;
-
-                          return Object.entries(serviceStats)
-                            .sort(([, a], [, b]) => b.count - a.count)
-                            .map(([, data], idx) => {
-                              const sliceAngle = (data.count / total) * 360;
-                              // Ensure we don't draw if 0
-                              if (sliceAngle === 0) return null;
-
-                              const startAngle = currentAngle;
-                              const endAngle = currentAngle + sliceAngle;
-                              currentAngle = endAngle;
-
-                              // Circle for 100%
-                              if (Math.abs(sliceAngle - 360) < 0.1) {
-                                 return (
-                                    <circle 
-                                        key={idx} 
-                                        cx="100" 
-                                        cy="100" 
-                                        r="85" 
-                                        fill="none" 
-                                        stroke={vibrantColors[idx % vibrantColors.length]} 
-                                        strokeWidth="25"
-                                    />
-                                 );
-                              }
-
-                              // Calculate SVG arc path
-                              const x1 = 100 + 85 * Math.cos((startAngle * Math.PI) / 180);
-                              const y1 = 100 + 85 * Math.sin((startAngle * Math.PI) / 180);
-                              const x2 = 100 + 85 * Math.cos((endAngle * Math.PI) / 180);
-                              const y2 = 100 + 85 * Math.sin((endAngle * Math.PI) / 180);
-
-                              const largeArc = sliceAngle > 180 ? 1 : 0;
-
-                              const pathData = [
-                                `M ${x1} ${y1}`,
-                                `A 85 85 0 ${largeArc} 1 ${x2} ${y2}`,
-                              ].join(" ");
-
-                              return (
-                                <path
-                                  key={idx}
-                                  d={pathData}
-                                  fill="none"
-                                  stroke={vibrantColors[idx % vibrantColors.length]}
-                                  strokeWidth="25"
-                                  strokeLinecap="round" // Smooth lines
-                                  className="hover:opacity-80 transition-opacity cursor-pointer"
-                                />
-                              );
-                            });
-                        })()}
-                      </svg>
-                      {/* Center Stats */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                         <span className="text-3xl font-black text-neutral-900">{totalServices}</span>
-                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                      </div>
-                  </div>
-                ) : (
-                  <div className="w-[200px] h-[200px] rounded-full bg-gray-50 flex items-center justify-center text-gray-400 text-sm font-medium">
-                     Sin datos
-                  </div>
-                )}
-              </div>
-
-              {/* Leyenda */}
-              <div className="flex-1 w-full space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                {Object.entries(serviceStats)
-                  .sort(([, a], [, b]) => b.count - a.count)
-                   .slice(0, 6) // Limit to top 6
-                  .map(([service, data], idx) => {
-                    const total = Object.values(serviceStats).reduce(
-                      (sum, s) => sum + s.count,
-                      0
-                    );
-                    const percentage = ((data.count / total) * 100).toFixed(1);
-                    const vibrantColors = [
-                            "#885f43", "#5f422f", "#c39a7c", "#1d1d1b", 
-                            "#4a332a", "#885f43", "#c39a7c", "#dad0c6"
-                    ];
-
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
-                      >
-                        <div
-                          className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
-                          style={{ backgroundColor: vibrantColors[idx % vibrantColors.length] }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-700 truncate group-hover:text-neutral-900 transition-colors">
-                            {service}
-                          </p>
-                          <p className="text-[10px] font-semibold text-gray-400">
-                             ${data.revenue.toFixed(0)} • {data.count} u.
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-xs font-black text-neutral-900 bg-neutral-50 px-2 py-1 rounded-lg">
-                            {percentage}%
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          </div>
+        </div>
       </div>
     </div>
   );

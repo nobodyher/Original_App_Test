@@ -3,32 +3,49 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* --- TEMA ACTUAL: Earth Luxury (Tierra/Lujo) --- */
-    
-    /* Color Principal (Base Tierra) */
-    --color-primary: #885f43; 
-    
-    /* Color Secundario (Texto Soft Black) */
-    --color-secondary: #1d1d1b;
-    
-    /* Color de Acento (Tierra Claro) */
-    --color-accent: #c39a7c;
-    
-    /* Fondo de la app (Off-white cálido) */
-    --color-background: #f9f8f6;
-    
-    /* Texto principal (Soft Black) */
-    --color-text: #1d1d1b;
-    
-    /* Tamaño de fuente base (Tu ajuste anterior) */
-    font-size: 14px;
+  body {
+    @apply bg-background text-text-main antialiased selection:bg-primary-500 selection:text-black;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-highlight rounded-full border-2 border-background;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary-900;
+}
+
+/* Arreglo para el Autocomplete de Chrome en Dark Mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px #1E1E1E inset !important; /* Color surface-highlight */
+    -webkit-text-fill-color: white !important;
+    caret-color: white !important;
+}
+
+@layer components {
+  /* Tarjeta Estándar Voidly */
+  .card-void {
+    @apply bg-surface border border-border rounded-xl shadow-none;
+  }
+  
+  /* Tarjeta Interactiva (Hover) */
+  .card-void-hover {
+    @apply transition-all duration-200 hover:border-primary-500/30 hover:bg-surface-highlight;
   }
 
-  /* Ajuste para pantallas grandes */
-  @media (min-width: 1536px) {
-    :root {
-      font-size: 16px;
-    }
+  /* Input Voidly (No quema la vista) */
+  .input-void {
+    @apply bg-background border border-border text-text-main rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500 placeholder-text-dim;
   }
 }
