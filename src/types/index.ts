@@ -48,7 +48,7 @@ export type Service = {
   deleted?: boolean;
 };
 
-export type CreateServicePayload = Omit<Service, "id"> & {
+export type CreateServicePayload = Omit<Service, "id" | "timestamp"> & {
   timestamp?: any;
 };
 

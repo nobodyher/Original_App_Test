@@ -9,6 +9,7 @@ interface LoginScreenProps {
   onLogin: (user: AppUser) => void;
   showNotification: (message: string, type?: Toast["type"]) => void;
   notification: Toast | null;
+  loading?: boolean;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({
@@ -16,6 +17,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   onLogin,
   showNotification,
   notification,
+  loading = false,
 }) => {
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
   const [pin, setPin] = useState("");
