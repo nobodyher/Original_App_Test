@@ -1,7 +1,7 @@
 import {
   collection,
   doc,
-  addDoc,
+  writeBatch,
   updateDoc,
   deleteDoc,
 
@@ -27,7 +27,15 @@ import type {
   CatalogService,
   CreateServicePayload,
 } from "../types";
-import { deductConsumables, calculateTotalReplenishmentCost, deductInventoryByRecipe, restoreInventoryByRecipe, restoreConsumables } from "./inventoryService";
+import { 
+  deductConsumables, 
+  calculateTotalReplenishmentCost, 
+  deductInventoryByRecipe, 
+  restoreInventoryByRecipe, 
+  restoreConsumables,
+  batchDeductInventoryByRecipe,
+  batchDeductConsumables
+} from "./inventoryService";
 
 export interface NewServiceState {
   date: string;
@@ -64,6 +72,8 @@ export const calcCommissionAmount = (
 
 // ====== Main Service Functions ======
 
+// ====== Main Service Functions ======
+
 export const addService = async (
   currentUser: AppUser,
   newService: NewServiceState,
@@ -91,6 +101,49 @@ export const addService = async (
     catalogServices,
     chemicalProducts
   );
+
+  // 1. INICIAR EL LOTE (El Camión) 🚚
+  const batch = writeBatch(db);
+
+  // ====== AUTOMATIZACIÓN DE CLIENTES (Dentro del Batch) ======
+  try {
+    const clientName = newService.client.trim();
+    if (clientName) {
+      const clientsRef = collection(db, "clients");
+      // Importante: Leer antes de escribir en batch
+      const q = query(clientsRef, where("name", "==", clientName), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // Crear nuevo cliente
+        const newClientRef = doc(clientsRef); // Generar ID automático
+        batch.set(newClientRef, {
+          name: clientName,
+          firstVisit: newService.date,
+          lastVisit: newService.date,
+          totalSpent: parseFloat(totalCost.toFixed(2)),
+          totalServices: 1,
+          active: true, // Asumimos activo por defecto
+          phone: "",
+        });
+      } else {
+        // Actualizar cliente existente
+        const clientDoc = querySnapshot.docs[0];
+        batch.update(clientDoc.ref, {
+          lastVisit: newService.date,
+          totalSpent: increment(parseFloat(totalCost.toFixed(2))),
+          totalServices: increment(1),
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error preparing client update for batch:", error);
+    // Si falla la lectura del cliente, podríamos decidir continuar sin actualizarlo o fallar todo.
+    // Dado que es batch, si falla aquí antes del commit, no se ha escrito nada.
+    // En este diseño, si falla la lectura, lanzamos el error y abortamos la operación.
+    throw error; 
+  }
+  // ========================================
 
   const serviceData: CreateServicePayload = {
     userId: currentUser.id,
@@ -123,65 +176,43 @@ export const addService = async (
     serviceData.category = newService.category;
   }
 
-  // ====== AUTOMATIZACIÓN DE CLIENTES ======
-  try {
-    const clientName = newService.client.trim();
-    if (clientName) {
-      const clientsRef = collection(db, "clients");
-      const q = query(clientsRef, where("name", "==", clientName), limit(1));
-      const querySnapshot = await getDocs(q);
+  // 2. PREPARAR DOCUMENTO DE SERVICIO
+  const newServiceRef = doc(collection(db, "services"));
+  batch.set(newServiceRef, serviceData);
 
-      if (querySnapshot.empty) {
-        // Crear nuevo cliente
-        await addDoc(clientsRef, {
-          name: clientName,
-          firstVisit: newService.date, // Usamos la fecha del servicio
-          lastVisit: newService.date,
-          totalSpent: parseFloat(totalCost.toFixed(2)),
-          totalServices: 1,
-          active: true,
-          phone: "", // Opcional, se puede llenar después
-        });
-      } else {
-        // Actualizar cliente existente
-        const clientDoc = querySnapshot.docs[0];
-        await updateDoc(clientDoc.ref, {
-          lastVisit: newService.date,
-          totalSpent: increment(parseFloat(totalCost.toFixed(2))),
-          totalServices: increment(1),
-        });
-      }
-    }
-  } catch (error) {
-    console.error("Error en automatización de clientes (no crítico):", error);
-    // No lanzamos error para no interrumpir el guardado del servicio
-  }
-  // ========================================
-
-  await addDoc(collection(db, "services"), serviceData);
-
-  // ====== DESCUENTO DE INVENTARIO BASADO EN RECETAS ======
-  // Tarea 3: No cerrar ventana hasta que termine la operación
-  for (const serviceItem of newService.services) {
-    // Descontar materiales químicos
-    await deductInventoryByRecipe(
+  // 3. PROCESAR DESCUENTOS DE INVENTARIO (Todo en memoria) 🧠
+  // Iteramos sobre los servicios vendidos
+  newService.services.forEach((serviceItem) => {
+    
+    // A. Químicos (Sin await)
+    batchDeductInventoryByRecipe(
+      batch, // Pasamos el batch
       serviceItem.serviceId,
       serviceItem.serviceName,
       materialRecipes,
       chemicalProducts,
-      catalogServices // Pasar catalogServices
+      catalogServices
     );
     
-    // Descontar consumibles con prioridad (manualConsumables → serviceRecipes)
-    await deductConsumables(
+    // B. Consumibles (Sin await)
+    batchDeductConsumables(
+      batch, // Pasamos el batch
       serviceItem.serviceId,
       serviceItem.serviceName,
       serviceRecipes,
       consumables,
       catalogServices
     );
+  });
+
+  // 4. EJECUTAR TODO DE UNA VEZ (El viaje) 🚀
+  try {
+    await batch.commit();
+    console.log("✅ Transacción completada en lote con éxito");
+  } catch (error) {
+    console.error("❌ Error al procesar el lote:", error);
+    throw error; // Re-lanzar para que el UI muestre la notificación de error
   }
-  // ========================================
 };
 
 export const updateService = async (

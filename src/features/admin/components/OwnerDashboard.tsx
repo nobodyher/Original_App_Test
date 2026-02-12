@@ -32,6 +32,7 @@ import type {
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import * as salonService from "../../../services/salonService";
 import * as inventoryService from "../../../services/inventoryService";
+import { CustomSelect } from "../../../components/ui/CustomSelect";
 
 interface OwnerDashboardProps {
   services: Service[];
@@ -442,10 +443,12 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   return (
     <div className="space-y-8 pb-20">
       {/* Header & Filters Section */}
-      <div className="bg-surface rounded-3xl shadow-none border border-border p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-20 pointer-events-none"></div>
+      <div className="bg-surface rounded-3xl shadow-none border border-border p-6 relative">
+        <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-20"></div>
+        </div>
 
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="relative z-20 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
             <h2 className="text-2xl font-black text-text-main tracking-tight">
               Panel Financiero
@@ -493,41 +496,27 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
             <div className="h-8 w-px bg-border mx-1 hidden md:block"></div>
 
-            <select
-              value={ownerFilters.paymentMethod}
-              onChange={(e) =>
-                setOwnerFilters({
-                  ...ownerFilters,
-                  paymentMethod: e.target.value as "all" | PaymentMethod,
-                })
-              }
-              className="bg-surface border border-border text-text-main text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm cursor-pointer"
-            >
-              <option value="all">Todos</option>
-              <option value="cash">Efectivo</option>
-              <option value="transfer">Transferencia</option>
-            </select>
 
-            {(ownerFilters.dateFrom ||
-              ownerFilters.dateTo ||
-              ownerFilters.search ||
-              ownerFilters.paymentMethod !== "all") && (
-              <button
-                onClick={() =>
+
+            <div className="w-48">
+              <CustomSelect
+                value={ownerFilters.paymentMethod}
+                onChange={(val) =>
                   setOwnerFilters({
-                    dateFrom: "",
-                    dateTo: "",
-                    paymentMethod: "all",
-                    includeDeleted: false,
-                    search: "",
+                    ...ownerFilters,
+                    paymentMethod: val as "all" | PaymentMethod,
                   })
                 }
-                className="ml-2 w-8 h-8 flex items-center justify-center rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-                title="Limpiar filtros"
-              >
-                <X size={16} />
-              </button>
-            )}
+                options={[
+                  { label: "Todos", value: "all" },
+                  { label: "Efectivo", value: "cash" },
+                  { label: "Transferencia", value: "transfer" },
+                ]}
+                placeholder="Método de Pago"
+              />
+            </div>
+
+
           </div>
         </div>
 
@@ -698,7 +687,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </div>
               <button
                 onClick={handleExportExcel}
-                className="mt-4 md:mt-0 flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl hover:bg-primary-700 transition shadow-none text-sm font-bold"
+                className="mt-4 md:mt-0 flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl hover:bg-primary-600/80 transition shadow-none text-sm font-bold"
               >
                 <Download size={16} />
                 Exportar Excel
@@ -1137,7 +1126,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               <div className="pt-2">
                 <button
                   onClick={handleAddExpense}
-                  className="w-full h-14 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-none flex items-center justify-center gap-2"
+                  className="w-full h-14 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-600/80 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-none flex items-center justify-center gap-2"
                 >
                   <DollarSign size={20} />
                   Agregar Gasto

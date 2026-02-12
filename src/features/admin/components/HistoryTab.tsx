@@ -22,18 +22,52 @@ import {
   Clock,
   Check,
 } from "lucide-react";
-import type { Service, AppUser } from "../../../types";
+import type { Service, AppUser, CatalogService } from "../../../types";
 
 interface HistoryTabProps {
   services: Service[];
   users: AppUser[];
+  catalogServices: CatalogService[];
 }
 
-export default function HistoryTab({ services, users }: HistoryTabProps) {
+export default function HistoryTab({
+  services,
+  users,
+  catalogServices,
+}: HistoryTabProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [isEmployeeFilterOpen, setIsEmployeeFilterOpen] = useState(false);
+
+  // --- Lógica de Filtrado de Servicios (Eliminados del Catálogo) ---
+  const activeServices = useMemo(() => {
+    // Mapa de IDs y Nombres activos
+    const validServiceIds = new Set(
+      catalogServices.filter((cs) => cs.active).map((cs) => cs.id),
+    );
+    const validServiceNames = new Set(
+      catalogServices.filter((cs) => cs.active).map((cs) => cs.name),
+    );
+
+    return services.filter((transaction) => {
+      // 1. Filtrar transacciones eliminadas (soft delete)
+      if (transaction.deleted) return false;
+
+      // 2. Filtrar transacciones de servicios inactivos en catálogo
+      // Si tiene items (estructura nueva)
+      if (transaction.services && transaction.services.length > 0) {
+        return transaction.services.every((item) =>
+          validServiceIds.has(item.serviceId),
+        );
+      }
+      // Si es estructura antigua (solo nombre)
+      if (transaction.service) {
+        return validServiceNames.has(transaction.service);
+      }
+      return true; // Si no tiene info de servicio, lo dejamos (o false segun preferencia, asumimos true para "otros")
+    });
+  }, [services, catalogServices]);
 
   // --- Lógica del Calendario ---
   const calendarDays = useMemo(() => {
@@ -44,14 +78,14 @@ export default function HistoryTab({ services, users }: HistoryTabProps) {
 
   const daysWithActivity = useMemo(() => {
     const activitySet = new Set<string>();
-    services.forEach((s) => activitySet.add(s.date)); // s.date es YYYY-MM-DD
+    activeServices.forEach((s) => activitySet.add(s.date)); // s.date es YYYY-MM-DD
     return activitySet;
-  }, [services]);
+  }, [activeServices]);
 
-  // --- Lógica de Filtrado ---
+  // --- Lógica de Filtrado (Vista) ---
   const filteredServices = useMemo(() => {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    return services
+    return activeServices
       .filter((s) => {
         const matchesDate = s.date === dateStr;
         const matchesEmployee =
@@ -66,7 +100,7 @@ export default function HistoryTab({ services, users }: HistoryTabProps) {
         }
         return 0;
       });
-  }, [services, selectedDate, selectedEmployeeIds]);
+  }, [activeServices, selectedDate, selectedEmployeeIds]);
 
   const totalAmount = filteredServices.reduce(
     (sum, s) => sum + Number(s.cost),
@@ -194,9 +228,9 @@ export default function HistoryTab({ services, users }: HistoryTabProps) {
           {/* Grid Semanal */}
           <div className="p-6 overflow-y-auto">
             <div className="grid grid-cols-7 mb-4">
-              {["L", "M", "M", "J", "V", "S", "D"].map((d) => (
+              {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
                 <div
-                  key={d}
+                  key={`${d}-${i}`}
                   className="text-center text-xs font-bold text-text-muted opacity-50"
                 >
                   {d}

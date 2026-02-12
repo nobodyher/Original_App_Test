@@ -3,49 +3,62 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-background text-text-main antialiased selection:bg-primary-500 selection:text-black;
+  :root {
+    /* ☀️ MODO CLARO: Tech Elegance (Zafiro y Coral) */
+    /* Estos colores se activarán cuando NO haya clase 'dark' */
+    --background: 248 250 252;       /* Slate-50 */
+    --surface: 255 255 255;          /* White */
+    --surface-highlight: 241 245 249; /* Slate-100 */
+    --surface-active: 226 232 240;    /* Slate-200 */
+
+    --primary: 27 38 79;             /* Zafiro Oscuro (#1B264F) */
+    --secondary: 255 140 125;        /* Coral Suave (#FF8C7D) */
+
+    --text-main: 15 23 42;           /* Slate-900 */
+    --text-muted: 100 116 139;       /* Slate-500 */
+    --text-dim: 148 163 184;         /* Slate-400 */
+
+    --border: 226 232 240;           /* Slate-200 */
+    --border-highlight: 203 213 225; /* Slate-300 */
+  }
+
+  .dark {
+    /* 🌑 MODO OSCURO: Tu Configuración Actual (Exacta) */
+    /* He convertido tus HEX a RGB para que coincidan 100% */
+    
+    --background: 2 6 23;            /* #020617 */
+    --surface: 15 23 42;             /* #0F172A */
+    --surface-highlight: 30 41 59;    /* #1E293B */
+    --surface-active: 51 65 85;       /* #334155 */
+
+    --primary: 6 182 212;            /* #06B6D4 (Cyan-500) */
+    --secondary: 99 102 241;         /* #6366F1 */
+
+    --text-main: 241 245 249;        /* #F1F5F9 */
+    --text-muted: 148 163 184;       /* #94A3B8 */
+    --text-dim: 71 85 105;           /* #475569 */
+
+    --border: 30 41 59;              /* #1E293B */
+    --border-highlight: 51 65 85;    /* #334155 */
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  @apply bg-background;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-surface-highlight rounded-full border-2 border-background;
-}
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary-900;
-}
-
-/* Arreglo para el Autocomplete de Chrome en Dark Mode */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active{
-    -webkit-box-shadow: 0 0 0 30px #1E1E1E inset !important; /* Color surface-highlight */
-    -webkit-text-fill-color: white !important;
-    caret-color: white !important;
-}
-
-@layer components {
-  /* Tarjeta Estándar Voidly */
-  .card-void {
-    @apply bg-surface border border-border rounded-xl shadow-none;
+/* Estilos Globales */
+@layer base {
+  body {
+    @apply bg-background text-text-main transition-colors duration-300;
   }
   
-  /* Tarjeta Interactiva (Hover) */
-  .card-void-hover {
-    @apply transition-all duration-200 hover:border-primary-500/30 hover:bg-surface-highlight;
-  }
-
-  /* Input Voidly (No quema la vista) */
+  /* Tu input original adaptado a variables */
   .input-void {
-    @apply bg-background border border-border text-text-main rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500 placeholder-text-dim;
+    @apply w-full px-4 py-3 rounded-xl bg-background border border-border 
+           text-text-main placeholder-text-muted 
+           focus:border-primary focus:ring-4 focus:ring-primary/10 
+           transition-all outline-none;
   }
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { @apply bg-background; }
+::-webkit-scrollbar-thumb { @apply bg-surface-highlight rounded-full hover:bg-text-muted/50; }

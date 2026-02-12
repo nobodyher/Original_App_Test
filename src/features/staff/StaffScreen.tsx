@@ -15,6 +15,7 @@ import {
 import NotificationToast from "../../components/ui/NotificationToast";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
+import ThemeToggle from "../../components/ui/ThemeToggle";
 import type {
   AppUser,
   Service,
@@ -273,15 +274,18 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
             </div>
           </div>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onLogout}
-            className="flex items-center gap-2"
-          >
-            <LogOut size={18} />
-            <span className="hidden sm:inline">Cerrar Turno</span>
-          </Button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut size={18} />
+              <span className="hidden sm:inline">Cerrar Turno</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -428,13 +432,12 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                         <span className="font-black text-text-main text-lg">
                           ${s.servicePrice}
                         </span>
-                        <Button
-                          variant="danger"
+                        <button
                           onClick={() => removeServiceFromList(idx)}
-                          className="w-10 h-10 p-0 rounded-xl"
+                          className="w-10 h-10 flex items-center justify-center rounded-xl bg-transparent text-text-muted hover:bg-red-500 hover:text-white transition-colors"
                         >
                           <Trash2 size={18} />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -636,7 +639,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                     isSubmitting
                   }
                   isLoading={isSubmitting}
-                  className="py-5 text-lg border-2 border-primary-500 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:bg-primary-400 hover:border-primary-400 hover:text-black transition-all duration-300"
+                  className="w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 bg-primary-600 text-white hover:bg-primary-600/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {!isSubmitting && <Check size={24} strokeWidth={3} />}
                   Confirmar Cobro

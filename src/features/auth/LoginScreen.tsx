@@ -4,6 +4,8 @@ import NotificationToast from "../../components/ui/NotificationToast";
 import { Card } from "../../components/ui/Card";
 import type { AppUser, Toast } from "../../types";
 
+import ThemeToggle from "../../components/ui/ThemeToggle";
+
 interface LoginScreenProps {
   users: AppUser[];
   onLogin: (user: AppUser) => void;
@@ -44,7 +46,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     setPin((prev) => prev.slice(0, -1));
   };
 
-  const handleLogin = () => {
+  const handleLogin = React.useCallback(() => {
     if (!selectedUser) return;
 
     if (pin === selectedUser.pin) {
@@ -56,10 +58,41 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       showNotification("PIN incorrecto", "error");
       setPin("");
     }
-  };
+  }, [selectedUser, pin, onLogin, showNotification]);
+
+  // Keyboard support for PIN entry
+  React.useEffect(() => {
+    if (!selectedUser) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Numbers 0-9
+      if (/^\d$/.test(e.key)) {
+        setPin((prev) => (prev.length < 4 ? prev + e.key : prev));
+      }
+      // Backspace
+      else if (e.key === "Backspace") {
+        setPin((prev) => prev.slice(0, -1));
+      }
+      // Escape
+      else if (e.key === "Escape") {
+        setSelectedUser(null);
+        setPin("");
+      }
+      // Enter
+      else if (e.key === "Enter") {
+        handleLogin();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedUser, handleLogin]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
       {/* Background Effects */}
       <style>{`
         @keyframes blob {
@@ -104,7 +137,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               <button
                 key={user.id}
                 onClick={() => handleUserClick(user)}
-                className="w-40 sm:w-48 group relative flex flex-col items-center p-6 rounded-2xl bg-surface/30 border border-white/5 hover:bg-surface/50 hover:border-primary-500/30 transition-all duration-300 hover:scale-105 active:scale-95 text-left h-full"
+                className="w-40 sm:w-48 group relative flex flex-col items-center p-6 rounded-2xl bg-surface border border-border hover:bg-surface-highlight hover:border-primary-500/30 transition-all duration-300 hover:scale-105 active:scale-95 text-left h-full"
               >
                 <div className="relative w-24 h-24 rounded-full p-[3px] bg-gradient-to-tr from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 mb-4 group-hover:shadow-primary-500/40 transition-shadow">
                   <div className="w-full h-full rounded-full bg-surface-highlight flex items-center justify-center border-2 border-surface overflow-hidden">
@@ -123,7 +156,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                     )}
                   </div>
                 </div>
-                <span className="text-lg font-bold text-text-main group-hover:text-primary-400 transition-colors">
+                <span className="text-lg font-bold text-text-muted group-hover:text-primary-500 transition-colors">
                   {user.name}
                 </span>
                 {user.role === "owner" && (
@@ -168,7 +201,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                     )}
                   </div>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-1">
+                <h2 className="text-2xl font-bold text-text-main mb-1">
                   Hola, {selectedUser.name}
                 </h2>
                 <p className="text-sm text-text-muted font-medium">
@@ -184,7 +217,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                     className={`w-4 h-4 rounded-full transition-all duration-300 ${
                       idx < pin.length
                         ? "bg-primary-500 shadow-[0_0_15px_rgba(6,182,212,0.8)] scale-125"
-                        : "bg-surface-highlight border-2 border-surface/50 opacity-50"
+                        : "bg-surface-highlight border-2 border-border opacity-50"
                     }`}
                   />
                 ))}
@@ -196,7 +229,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                   <button
                     key={num}
                     onClick={() => handleDigit(num.toString())}
-                    className="h-16 w-16 mx-auto rounded-full bg-surface-highlight border border-white/5 text-2xl font-bold text-white hover:bg-primary-500 hover:text-black hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-lg"
+                    className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-2xl font-bold text-text-main hover:bg-surface-highlight hover:text-primary-600 hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     {num}
                   </button>
@@ -204,13 +237,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 <div /> {/* Spacer */}
                 <button
                   onClick={() => handleDigit("0")}
-                  className="h-16 w-16 mx-auto rounded-full bg-surface-highlight border border-white/5 text-2xl font-bold text-white hover:bg-primary-500 hover:text-black hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-lg"
+                  className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-2xl font-bold text-text-main hover:bg-surface-highlight hover:text-primary-600 hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   0
                 </button>
                 <button
                   onClick={handleBackspace}
-                  className="h-16 w-16 mx-auto rounded-full bg-surface-highlight/50 border border-white/5 text-red-400 flex items-center justify-center hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/50 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg"
+                  className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-red-400 flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 hover:scale-105 active:scale-95 transition-all duration-200 shadow-sm"
                 >
                   <Delete size={24} />
                 </button>
@@ -219,7 +252,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               <button
                 onClick={handleLogin}
                 disabled={pin.length < 4}
-                className="w-full py-4 rounded-xl bg-primary-500 text-black font-bold text-lg hover:bg-primary-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50 disabled:shadow-none transition-all duration-300 flex items-center justify-center gap-2 transform active:scale-95"
+                className="w-full py-4 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-500 hover:shadow-lg hover:shadow-primary-500/20 disabled:opacity-50 disabled:shadow-none transition-all duration-300 flex items-center justify-center gap-2 transform active:scale-95"
               >
                 <Lock size={20} />
                 Acceder

@@ -967,7 +967,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                     setMaterialSearch("");
                     setConsumableSearch("");
                   }}
-                  className="bg-primary-500 hover:bg-primary-400 text-black font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out flex items-center gap-2"
+                  className="bg-primary-600 hover:bg-primary-600/80 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
                 >
                   <Plus size={18} />
                   Nuevo Servicio
@@ -1469,7 +1469,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </h3>
                 <button
                   onClick={() => setAddingConsumableItem(true)}
-                  className="bg-primary-500 hover:bg-primary-400 text-black font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out flex items-center gap-2"
+                  className="bg-primary-600 hover:bg-primary-600/80 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
                 >
                   <PlusCircle size={18} />
                   Nuevo Consumible
@@ -1719,7 +1719,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </div>
                 <button
                   onClick={() => setIsAddUserOpen(true)}
-                  className="bg-primary-600 hover:bg-primary-500 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
+                  className="bg-primary-600 hover:bg-primary-600/80 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
                 >
                   <Plus size={20} />
                   Nuevo Personal
@@ -2062,7 +2062,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   <button
                     onClick={handleAddExtra}
                     disabled={isSubmitting}
-                    className="bg-primary-400 hover:bg-primary-500 text-white px-6 py-2 rounded-xl shadow-lg shadow-primary-400/20 hover:shadow-xl transition-all duration-200 ease-out font-bold flex items-center gap-2 active:scale-95"
+                    className="bg-primary-600 hover:bg-primary-600/80 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
                   >
                     <PlusCircle size={20} />
                     Agregar Extra
@@ -2226,7 +2226,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </h3>
                 <button
                   onClick={() => setAddingChemicalProduct(true)}
-                  className="bg-primary-500 hover:bg-primary-400 text-black font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ease-out flex items-center gap-2"
+                  className="bg-primary-600 hover:bg-primary-600/80 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
                 >
                   <PlusCircle size={18} />
                   Nuevo Producto

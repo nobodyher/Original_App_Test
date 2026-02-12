@@ -8,6 +8,7 @@ import {
   getDocs,
   runTransaction,
   serverTimestamp,
+  WriteBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -797,6 +798,134 @@ export const getConsumableYield = (consumable: Consumable, qtyPerService: number
 /**
  * Verifica si un consumible está en stock bajo
  */
+// ====== Batch Operations (New) ======
+
+export const batchDeductInventoryByRecipe = (
+  batch: WriteBatch,
+  serviceId: string,
+  serviceName: string,
+  materialRecipes: MaterialRecipe[],
+  chemicalProducts: ChemicalProduct[],
+  catalogServices: CatalogService[] = []
+) => {
+  // 1. Buscar servicio en catálogo
+  const catalogService = catalogServices.find(
+    (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+  );
+
+  // 2. Determinar materiales a descontar
+  let materialsToDeduct: MaterialInput[] = [];
+  
+  // SI manualMaterials existe, usar eso
+  if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
+    materialsToDeduct = catalogService.manualMaterials;
+  } else {
+    // FALLBACK: Recetas antiguas
+    const recipe = materialRecipes.find(
+      (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
+    );
+    materialsToDeduct = recipe ? recipe.chemicalIds : [];
+  }
+
+  if (materialsToDeduct.length === 0) return;
+
+  materialsToDeduct.forEach((item) => {
+      // 1. DETECCIÓN DE TIPO BLINDADA
+      let chemicalId: string = "";
+      let deductAmount = 0;
+
+      if (typeof item === 'string') {
+        chemicalId = item;
+      } else if (typeof item === 'object' && item !== null) {
+        chemicalId = item.id || item.materialId || ""; 
+        deductAmount = item.quantity || item.qty || item.amount || 0;
+      }
+
+      if (!chemicalId) return;
+
+      // 2. BUSCAR PRODUCTO (En el array en memoria)
+      // Buscamos por ID primero
+      let product = chemicalProducts.find((p) => p.id === chemicalId);
+      
+      if (!product) {
+         // Fallback búsqueda por nombre si no se encuentra por ID (para consistencia con lógica legacy)
+         const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
+         product = chemicalProducts.find(p => {
+            const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+            return normalizedProductName === normalizedSearchName;
+         });
+      }
+
+      if (!product) return;
+
+      // 3. CÁLCULO DE STOCK (Usando datos en memoria)
+      const amountToSubtract = deductAmount > 0 ? deductAmount : 1;
+
+      let currentYieldRemaining = product.currentYieldRemaining ?? product.yieldPerUnit ?? product.yield ?? 1;
+      let stock = product.stock ?? 0;
+      const yieldPerUnit = product.yieldPerUnit ?? product.yield ?? 1;
+
+      // Restamos la cantidad
+      currentYieldRemaining = currentYieldRemaining - amountToSubtract;
+
+      // Lógica de reposición
+      if (currentYieldRemaining <= 0) {
+        const bottlesConsumed = Math.ceil(Math.abs(currentYieldRemaining) / yieldPerUnit) || 1; 
+        stock = Math.max(0, stock - bottlesConsumed); 
+        const remainder = Math.abs(currentYieldRemaining) % yieldPerUnit;
+        currentYieldRemaining = remainder === 0 ? yieldPerUnit : (yieldPerUnit - remainder);
+      }
+
+      // 4. ACTUALIZAR BATCH
+      const productRef = doc(db, "chemical_products", product.id);
+      
+      batch.update(productRef, {
+          currentYieldRemaining,
+          stock,
+          // lastUpdated: new Date().toISOString() 
+      });
+  });
+};
+
+export const batchDeductConsumables = (
+  batch: WriteBatch,
+  serviceId: string,
+  serviceName: string,
+  serviceRecipes: ServiceRecipe[],
+  consumables: Consumable[],
+  catalogServices: CatalogService[] = []
+) => {
+  // 1. Buscar servicio en catálogo
+  const catalogService = catalogServices.find(
+    s => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+  );
+  
+  let itemsToDeduct: { consumableId: string; qty: number }[] = [];
+  
+  // PRIORIDAD 1: manualConsumables
+  if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {
+    itemsToDeduct = catalogService.manualConsumables;
+  } else {
+    // PRIORIDAD 2: serviceRecipes
+    const recipe = serviceRecipes.find(r => r.serviceId === serviceId);
+    itemsToDeduct = recipe?.items || [];
+  }
+
+  itemsToDeduct.forEach(item => {
+      const consumable = consumables.find(c => c.id === item.consumableId);
+    
+      if (consumable) {
+          const newQty = Math.max(0, consumable.stockQty - item.qty);
+          
+          const consumibleRef = doc(db, "consumables", item.consumableId);
+          
+          batch.update(consumibleRef, {
+              stockQty: newQty,
+              lastDeducted: new Date().toISOString(),
+          });
+      }
+  });
+};
 export const isConsumableLowStock = (consumable: Consumable): boolean => {
   return consumable.stockQty <= consumable.minStockAlert;
 };

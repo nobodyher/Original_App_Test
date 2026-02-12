@@ -273,7 +273,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
             </div>
           </div>
 
-          <div className="h-[300px] w-full">
+          <div style={{ width: "100%", height: 400 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={Object.entries(weekdayData).map(([day, data]) => ({
@@ -337,7 +337,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
             {/* Dona */}
             <div className="relative flex-shrink-0">
               {Object.values(serviceStats).length > 0 ? (
-                <div className="relative w-[220px] h-[220px]">
+                <div className="relative" style={{ width: 220, height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie

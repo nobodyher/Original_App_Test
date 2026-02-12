@@ -1,55 +1,63 @@
 /** @type {import('tailwindcss').Config} */
+
+// Función para permitir opacidad con variables CSS (ej: bg-primary/20)
+function withOpacity(variableName) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgb(var(${variableName}) / ${opacityValue})`
+    }
+    return `rgb(var(${variableName}))`
+  }
+}
+
 export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class', // Activa el modo oscuro manual
   theme: {
     extend: {
       colors: {
-        // 🌑 FONDO (Base profunda, no negro puro)
-        background: '#020617',      // Slate-950 (Azul muy oscuro, casi negro)
-        
-        // 🃏 SUPERFICIES (Tarjetas - Aquí estaba el error)
-        // Antes eran muy claras. Ahora serán sutilmente más claras que el fondo.
-        surface: '#0F172A',         // Slate-900 (La tarjeta base)
-        'surface-highlight': '#1E293B', // Slate-800 (Hover o Inputs)
-        'surface-active': '#334155',    // Slate-700 (Seleccionado)
+        // --- COLORES DINÁMICOS (Cambian Light/Dark) ---
+        background: withOpacity('--background'),
+        surface: withOpacity('--surface'),
+        'surface-highlight': withOpacity('--surface-highlight'),
+        'surface-active': withOpacity('--surface-active'),
 
-        // ⚡ MARCA (Voidly Cyan - Ajustado para no vibrar demasiado)
+        // Marca Adaptable
         primary: {
-          DEFAULT: '#06B6D4',       // Cyan-500 (Más legible)
-          400: '#22D3EE',           // Cyan-400 (Brillo)
-          500: '#06B6D4',           // Base
-          600: '#0891B2',           // Hover oscuro
+          DEFAULT: withOpacity('--primary'),
+          // Variantes fijas para mantener compatibilidad si las usas
+          400: '#22D3EE', 
+          500: withOpacity('--primary'),
+          600: '#0891B2',
           700: '#0E7490',
           800: '#155E75',
           900: '#164E63',
-          foreground: '#FFFFFF',    // Texto Blanco sobre Cyan oscuro (Mejor contraste)
+          foreground: '#FFFFFF',
         },
 
-        // 🔮 SECUNDARIO
         secondary: {
-          DEFAULT: '#6366F1',       // Indigo (Más suave que el violeta neón)
+          DEFAULT: withOpacity('--secondary'),
         },
 
-        // 📝 TEXTOS (Jerarquía visual)
         text: {
-          main: '#F1F5F9',          // Slate-100 (Blanco hueso, no quema)
-          muted: '#94A3B8',         // Slate-400 (Texto secundario)
-          dim: '#475569',           // Slate-600 (Detalles sutiles)
+          main: withOpacity('--text-main'),
+          muted: withOpacity('--text-muted'),
+          dim: withOpacity('--text-dim'),
         },
 
-        // 🧱 BORDES (La clave del Dark Mode moderno)
-        border: '#1E293B',          // Slate-800 (Casi invisible)
-        'border-highlight': '#334155', // Slate-700
-        
-        // 🚦 ESTADOS
-        success: '#10B981', 
-        warning: '#F59E0B', 
-        danger: '#EF4444', 
+        border: withOpacity('--border'),
+        'border-highlight': withOpacity('--border-highlight'),
+
+        // --- COLORES FIJOS (Estados) ---
+        success: '#10B981',
+        warning: '#F59E0B',
+        danger: '#EF4444',
       },
 
+      // --- TUS ANIMACIONES ORIGINALES (INTACTAS) ---
       keyframes: {
         fadeInUp: {
           '0%': { opacity: '0', transform: 'translateY(10px)' },

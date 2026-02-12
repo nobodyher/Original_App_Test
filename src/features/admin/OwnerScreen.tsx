@@ -21,6 +21,7 @@ import AnalyticsTab from "./components/AnalyticsTab";
 import OwnerConfigTab from "./components/OwnerConfigTab";
 import type { ConfigTab } from "./components/OwnerConfigTab";
 import { Button } from "../../components/ui/Button";
+import ThemeToggle from "../../components/ui/ThemeToggle"; 
 import type {
   AppUser,
   Service,
@@ -310,6 +311,10 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
             )}
           </div>
 
+          <div className="mb-2 flex justify-center">
+            <ThemeToggle />
+          </div>
+
           <button
             onClick={props.onLogout}
             className={`flex items-center justify-center py-2.5 rounded-lg text-sm transition-all duration-200 group border border-red-500/20 text-red-400 hover:bg-red-500/10 ${
@@ -401,7 +406,11 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
                 )}
 
                 {currentView === "history" && (
-                  <HistoryTab services={props.services} users={props.users} />
+                  <HistoryTab
+                    services={props.services}
+                    users={props.users}
+                    catalogServices={props.catalogServices}
+                  />
                 )}
 
                 {currentView === "analytics" && (
