@@ -1,6 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
+import { ROLES, PAYMENT_METHODS, CATEGORIES } from "../constants/app";
 
-export type Role = "owner" | "staff";
+export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 export type AppUser = {
   id: string;
@@ -22,7 +23,8 @@ export type AppUser = {
   isActive?: boolean; // Para "Soft Delete" (true = activo, false = inactivo/papelera)
 };
 
-export type PaymentMethod = "cash" | "transfer";
+export type PaymentMethod =
+  (typeof PAYMENT_METHODS)[keyof typeof PAYMENT_METHODS];
 
 export type ServiceItem = {
   serviceId: string;
@@ -51,7 +53,7 @@ export type Service = {
   userName: string;
   paymentMethod: PaymentMethod;
   commissionPct: number;
-  category?: "manicura" | "pedicura";
+  category?: (typeof CATEGORIES)[keyof typeof CATEGORIES];
   reposicion?: number;
   deleted?: boolean;
 };
@@ -89,7 +91,7 @@ export type Filters = {
 export type CatalogService = {
   id: string;
   name: string;
-  category: "manicura" | "pedicura";
+  category: (typeof CATEGORIES)[keyof typeof CATEGORIES];
   basePrice: number;
   active: boolean;
   manualMaterials?: { materialId: string; qty: number }[]; // IDs de productos químicos y cantidad de uso
@@ -159,7 +161,7 @@ export type MaterialRecipe = {
   chemicalsCost: number;
   disposablesCost: number;
   totalCost: number;
-  category: "manicura" | "pedicura";
+  category: (typeof CATEGORIES)[keyof typeof CATEGORIES];
   active: boolean;
 };
 

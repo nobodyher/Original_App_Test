@@ -20,6 +20,7 @@ import type {
   Client,
 } from "../types";
 import { EXTRAS_CATALOG } from "../constants/catalog";
+import { COLLECTIONS } from "../constants/app";
 
 export const useSalonData = (initialized: boolean) => {
   const [services, setServices] = useState<Service[]>([]);
@@ -29,7 +30,7 @@ export const useSalonData = (initialized: boolean) => {
   const [serviceRecipes, setServiceRecipes] = useState<ServiceRecipe[]>([]);
   const [catalogExtras, setCatalogExtras] = useState<CatalogExtra[]>([]);
   const [chemicalProducts, setChemicalProducts] = useState<ChemicalProduct[]>(
-    []
+    [],
   );
   const [materialRecipes, setMaterialRecipes] = useState<MaterialRecipe[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -38,18 +39,21 @@ export const useSalonData = (initialized: boolean) => {
   useEffect(() => {
     if (!initialized) return;
 
-    const q = query(collection(db, "services"), orderBy("timestamp", "desc"));
+    const q = query(
+      collection(db, COLLECTIONS.SERVICES),
+      orderBy("timestamp", "desc"),
+    );
     const unsub = onSnapshot(
       q,
       (snap) => {
         const data = snap.docs.map(
-          (d) => ({ id: d.id, ...d.data() } as Service)
+          (d) => ({ id: d.id, ...d.data() }) as Service,
         );
         setServices(data);
       },
       (error) => {
         console.error("Error cargando servicios:", error);
-      }
+      },
     );
 
     return () => unsub();
@@ -59,18 +63,21 @@ export const useSalonData = (initialized: boolean) => {
   useEffect(() => {
     if (!initialized) return;
 
-    const q = query(collection(db, "expenses"), orderBy("timestamp", "desc"));
+    const q = query(
+      collection(db, COLLECTIONS.EXPENSES),
+      orderBy("timestamp", "desc"),
+    );
     const unsub = onSnapshot(
       q,
       (snap) => {
         const data = snap.docs.map(
-          (d) => ({ id: d.id, ...d.data() } as Expense)
+          (d) => ({ id: d.id, ...d.data() }) as Expense,
         );
         setExpenses(data);
       },
       (error) => {
         console.error("Error cargando gastos:", error);
-      }
+      },
     );
 
     return () => unsub();
@@ -79,10 +86,13 @@ export const useSalonData = (initialized: boolean) => {
   // Cargar catálogo de servicios
   useEffect(() => {
     if (!initialized) return;
-    const q = query(collection(db, "catalog_services"), orderBy("name", "asc"));
+    const q = query(
+      collection(db, COLLECTIONS.CATALOG_SERVICES),
+      orderBy("name", "asc"),
+    );
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as CatalogService)
+        (d) => ({ id: d.id, ...d.data() }) as CatalogService,
       );
       setCatalogServices(data);
     });
@@ -92,10 +102,13 @@ export const useSalonData = (initialized: boolean) => {
   // Cargar consumibles
   useEffect(() => {
     if (!initialized) return;
-    const q = query(collection(db, "consumables"), orderBy("name", "asc"));
+    const q = query(
+      collection(db, COLLECTIONS.CONSUMABLES),
+      orderBy("name", "asc"),
+    );
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as Consumable)
+        (d) => ({ id: d.id, ...d.data() }) as Consumable,
       );
       setConsumables(data);
     });
@@ -105,22 +118,28 @@ export const useSalonData = (initialized: boolean) => {
   // Cargar recetas
   useEffect(() => {
     if (!initialized) return;
-    const unsub = onSnapshot(collection(db, "service_recipes"), (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as ServiceRecipe)
-      );
-      setServiceRecipes(data);
-    });
+    const unsub = onSnapshot(
+      collection(db, COLLECTIONS.SERVICE_RECIPES),
+      (snap) => {
+        const data = snap.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as ServiceRecipe,
+        );
+        setServiceRecipes(data);
+      },
+    );
     return () => unsub();
   }, [initialized]);
 
   // Cargar extras
   useEffect(() => {
     if (!initialized) return;
-    const q = query(collection(db, "catalog_extras"), orderBy("name", "asc"));
+    const q = query(
+      collection(db, COLLECTIONS.CATALOG_EXTRAS),
+      orderBy("name", "asc"),
+    );
     const unsub = onSnapshot(q, async (snap) => {
       const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as CatalogExtra)
+        (d) => ({ id: d.id, ...d.data() }) as CatalogExtra,
       );
       setCatalogExtras(data);
 
@@ -131,12 +150,12 @@ export const useSalonData = (initialized: boolean) => {
 
         if (catalogExtra && (!currentPrice || currentPrice === 0)) {
           try {
-            await updateDoc(doc(db, "catalog_extras", extra.id), {
+            await updateDoc(doc(db, COLLECTIONS.CATALOG_EXTRAS, extra.id), {
               price: catalogExtra.priceSuggested,
               priceSuggested: catalogExtra.priceSuggested,
             });
             console.log(
-              `✅ Sincronizado: ${extra.name} - $${catalogExtra.priceSuggested}`
+              `✅ Sincronizado: ${extra.name} - $${catalogExtra.priceSuggested}`,
             );
           } catch (error) {
             console.error(`❌ Error sincronizando ${extra.name}:`, error);
@@ -151,12 +170,12 @@ export const useSalonData = (initialized: boolean) => {
   useEffect(() => {
     if (!initialized) return;
     const q = query(
-      collection(db, "chemical_products"),
-      orderBy("name", "asc")
+      collection(db, COLLECTIONS.CHEMICAL_PRODUCTS),
+      orderBy("name", "asc"),
     );
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as ChemicalProduct)
+        (d) => ({ id: d.id, ...d.data() }) as ChemicalProduct,
       );
       setChemicalProducts(data);
     });
@@ -166,26 +185,25 @@ export const useSalonData = (initialized: boolean) => {
   // Cargar recetas de materiales
   useEffect(() => {
     if (!initialized) return;
-    const q = query(collection(db, "material_recipes"));
+    const q = query(collection(db, COLLECTIONS.MATERIAL_RECIPES));
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as MaterialRecipe)
+        (d) => ({ id: d.id, ...d.data() }) as MaterialRecipe,
       );
       setMaterialRecipes(data);
     });
     return () => unsub();
   }, [initialized]);
 
-
-
   // Cargar clientes
   useEffect(() => {
     if (!initialized) return;
-    const q = query(collection(db, "clients"), orderBy("name", "asc"));
+    const q = query(
+      collection(db, COLLECTIONS.CLIENTS),
+      orderBy("name", "asc"),
+    );
     const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as Client)
-      );
+      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Client);
       setClients(data);
     });
     return () => unsub();

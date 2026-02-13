@@ -59,7 +59,7 @@ interface OwnerConfigTabProps {
   chemicalProducts: ChemicalProduct[];
   clients: Client[];
   currentUser: AppUser | null;
-  services?: Service[]; // Optional for backward compatibility or make required if always available
+  transactions?: Service[]; // Optional for backward compatibility or make required if always available
   showNotification: (message: string, type?: Toast["type"]) => void;
 
   // Optional controlled props
@@ -136,7 +136,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   chemicalProducts,
   clients,
   currentUser,
-  services, // Destructure services
+  transactions = [],
   showNotification,
   initialTab,
   hideNavigation = false,
@@ -1747,7 +1747,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   onClose={() => setSelectedStaff(null)}
                   onUpdate={handleUpdateStaff}
                   onDelete={handleDeleteStaff}
-                  transactions={services ?? []}
+                  transactions={transactions}
                 />
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

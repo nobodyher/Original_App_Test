@@ -81,17 +81,30 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
   // Filter Transactions
   const filteredTransactions = useMemo(() => {
+    // Definir fechas de referencia sin mutar 'now'
     const now = new Date();
-    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+
+    // Inicio del día local
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // Inicio de la semana (Domingo)
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday as start
+    startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
+
+    // Inicio del mes
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     return transactions
       .filter((t) => t.userId === staff.id)
       .filter((t) => {
-        const tDate = new Date(t.date); // Assuming ISO string or compatible
+        // Usar timestamp si existe para precisión de zona horaria, si no, fallar a string date
+        const tDate =
+          t.timestamp && typeof t.timestamp.toDate === "function"
+            ? t.timestamp.toDate()
+            : new Date(t.date);
+
         if (isNaN(tDate.getTime())) return false;
 
         switch (filter) {
@@ -107,7 +120,17 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             return true;
         }
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => {
+        const dateA =
+          a.timestamp && typeof a.timestamp.toDate === "function"
+            ? a.timestamp.toDate()
+            : new Date(a.date);
+        const dateB =
+          b.timestamp && typeof b.timestamp.toDate === "function"
+            ? b.timestamp.toDate()
+            : new Date(b.date);
+        return dateB.getTime() - dateA.getTime();
+      });
   }, [transactions, staff.id, filter]);
 
   // Calculate Stats
@@ -421,35 +444,41 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredTransactions.length > 0 ? (
-                    filteredTransactions.map((t) => (
-                      <tr
-                        key={t.id}
-                        className="hover:bg-surface-highlight transition-colors"
-                      >
-                        <td className="py-3 px-6 text-sm text-text-main font-medium">
-                          {t.services?.[0]?.serviceName ||
-                            t.service ||
-                            "Servicio Gral."}
-                          {t.services && t.services.length > 1 && (
-                            <span className="text-xs text-text-muted ml-1">
-                              (+{t.services.length - 1})
+                    filteredTransactions.map((t) => {
+                      const transactionDate = t.timestamp
+                        ? t.timestamp.toDate()
+                        : new Date(t.date);
+
+                      return (
+                        <tr
+                          key={t.id}
+                          className="hover:bg-surface-highlight transition-colors"
+                        >
+                          <td className="py-3 px-6 text-sm text-text-main font-medium">
+                            {t.services?.[0]?.serviceName ||
+                              t.service ||
+                              "Servicio Gral."}
+                            {t.services && t.services.length > 1 && (
+                              <span className="text-xs text-text-muted ml-1">
+                                (+{t.services.length - 1})
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-6 text-sm text-text-muted">
+                            {transactionDate.toLocaleDateString()}
+                            <span className="text-xs ml-2 opacity-50">
+                              {transactionDate.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-6 text-sm text-text-muted">
-                          {new Date(t.date).toLocaleDateString()}
-                          <span className="text-xs ml-2 opacity-50">
-                            {new Date(t.date).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </td>
-                        <td className="py-3 px-6 text-sm text-text-main font-bold text-right">
-                          ${t.cost.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="py-3 px-6 text-sm text-text-main font-bold text-right">
+                            ${t.cost.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td

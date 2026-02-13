@@ -19,7 +19,7 @@ import HistoryTab from "./components/HistoryTab";
 import AnalyticsTab from "./components/AnalyticsTab";
 import OwnerConfigTab from "./components/OwnerConfigTab";
 import type { ConfigTab } from "./components/OwnerConfigTab";
-import ThemeToggle from "../../components/ui/ThemeToggle"; 
+import ThemeToggle from "../../components/ui/ThemeToggle";
 import type {
   AppUser,
   Service,
@@ -98,14 +98,58 @@ interface OwnerScreenProps {
   deleteClient: (clientId: string) => Promise<void>;
 }
 
+// Helper functions for persistence
+const getInitialView = (): "dashboard" | "history" | "analytics" | "admin" => {
+  try {
+    const saved = localStorage.getItem("owner_currentView");
+    if (
+      saved &&
+      ["dashboard", "history", "analytics", "admin"].includes(saved)
+    ) {
+      return saved as "dashboard" | "history" | "analytics" | "admin";
+    }
+  } catch (e) {
+    console.warn("Failed to read view preference", e);
+  }
+  return "dashboard";
+};
+
+const getInitialAdminTab = (): ConfigTab => {
+  try {
+    const saved = localStorage.getItem("owner_adminSubTab");
+    if (saved) {
+      return saved as ConfigTab;
+    }
+  } catch (e) {
+    console.warn("Failed to read admin tab preference", e);
+  }
+  return "services";
+};
+
 const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
   const [currentView, setCurrentView] = useState<
     "dashboard" | "history" | "analytics" | "admin"
-  >("dashboard");
-  const [adminSubTab, setAdminSubTab] = useState<ConfigTab>("services");
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  >(getInitialView);
+  const [adminSubTab, setAdminSubTab] = useState<ConfigTab>(getInitialAdminTab);
+  const [isAdminOpen, setIsAdminOpen] = useState(currentView === "admin"); // Initialize open if we start in admin
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Persist state changes
+  React.useEffect(() => {
+    localStorage.setItem("owner_currentView", currentView);
+  }, [currentView]);
+
+  React.useEffect(() => {
+    localStorage.setItem("owner_adminSubTab", adminSubTab);
+  }, [adminSubTab]);
+
+  // Sync admin accordion state with current view
+  React.useEffect(() => {
+    if (currentView === "admin") {
+      setIsAdminOpen(true);
+    }
+  }, [currentView]);
 
   // Trigger loading state on view change
   React.useEffect(() => {
@@ -447,9 +491,8 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
                     updateChemicalProduct={props.updateChemicalProduct}
                     deleteChemicalProduct={props.deleteChemicalProduct}
                     initializeMaterialsData={props.initializeMaterialsData}
-
                     deleteClient={props.deleteClient}
-                    services={props.services}
+                    transactions={props.services} // Pass transactions prop
                   />
                 )}
               </div>
