@@ -18,13 +18,12 @@ import {
   DollarSign,
   Sparkles,
   Key,
-  Percent,
-  HelpCircle,
   Star,
-  MoreVertical,
-  Eye,
-  Power,
+  Percent,
   UserPlus,
+  Phone,
+  Mail,
+  Calendar,
 } from "lucide-react";
 import type {
   AppUser,
@@ -36,9 +35,11 @@ import type {
   ChemicalProduct,
   Toast,
   Client,
+  Service,
 } from "../../../types";
 import { deleteClient } from "../../../services/salonService";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
+import { StaffDetailView } from "./StaffDetailView";
 
 export type ConfigTab =
   | "services"
@@ -58,6 +59,7 @@ interface OwnerConfigTabProps {
   chemicalProducts: ChemicalProduct[];
   clients: Client[];
   currentUser: AppUser | null;
+  services?: Service[]; // Optional for backward compatibility or make required if always available
   showNotification: (message: string, type?: Toast["type"]) => void;
 
   // Optional controlled props
@@ -134,6 +136,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   chemicalProducts,
   clients,
   currentUser,
+  services, // Destructure services
   showNotification,
   initialTab,
   hideNavigation = false,
@@ -221,11 +224,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     name: "",
     pin: "",
     commissionPct: "",
-    color: "from-blue-500 to-blue-600",
+    phone: "",
+    email: "",
+    birthDate: "",
   });
-
-  const [showInactiveStaff, setShowInactiveStaff] = useState(false);
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -254,6 +256,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     null,
   );
   const [editStaffForm, setEditStaffForm] = useState<Partial<AppUser>>({});
+  const [selectedStaff, setSelectedStaff] = useState<AppUser | null>(null);
 
   // Extras Adding State
   const [newExtraName, setNewExtraName] = useState("");
@@ -425,7 +428,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         name: newUser.name,
         pin: newUser.pin,
         commissionPct: parseFloat(newUser.commissionPct as string) || 0,
-        color: newUser.color,
+        phoneNumber: newUser.phone,
+        email: newUser.email,
+        birthDate: newUser.birthDate,
+        color: "from-gray-700 to-gray-900", // Default dark elegant color
         role: "staff",
         active: true,
         icon: "user",
@@ -436,7 +442,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         name: "",
         pin: "",
         commissionPct: "",
-        color: "from-blue-500 to-blue-600",
+        phone: "",
+        email: "",
+        birthDate: "",
       });
       setIsAddUserOpen(false);
       showNotification("Usuario creado exitosamente");
@@ -466,28 +474,21 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     }
   };
 
-  // Refactor: Toggle Status Logic
-  // Nota: El componente padre debe asegurar que la prop 'users' se actualice para reflejar el cambio en la tabla.
-  const handleToggleStaffStatus = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user) return;
+  const handleUpdateStaff = async (updatedData: Partial<AppUser>) => {
+    if (!selectedStaff) return;
 
-    if (currentUser?.role !== "owner") {
-      showNotification("Solo el dueño puede realizar esta acción", "error");
-      return;
+    try {
+      await updateUser(selectedStaff.id, updatedData);
+
+      // 2. Update Local State
+      setSelectedStaff((prev) => (prev ? { ...prev, ...updatedData } : null));
+
+      // 3. Notification
+      showNotification("Personal actualizado correctamente", "success");
+    } catch (error) {
+      console.error("Error al actualizar:", error);
+      showNotification("Error al actualizar", "error");
     }
-
-    const action = !user.active ? "activar" : "desactivar";
-    setItemToDelete({
-      type: "toggle_staff",
-      id: userId,
-      action,
-      name: user.name,
-    });
-  };
-
-  const handleDeleteUserPermanently = (userId: string) => {
-    setItemToDelete({ type: "staff", id: userId });
   };
 
   const handleSaveUnifiedService = async () => {
@@ -1726,150 +1727,83 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 </button>
               </div>
 
-              {/* Grid Layout */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {users
-                  .filter((u) => u.role === "staff")
-                  .map((user) => (
-                    <div
-                      key={user.id}
-                      className="group bg-surface hover:bg-surface-highlight border border-border hover:border-primary-500/30 rounded-2xl p-4 transition-all duration-300 shadow-sm hover:shadow-md flex flex-col items-center relative overflow-hidden"
-                    >
-                      {/* Status Indicador */}
+              {/* Staff Detail View or Grid Layout */}
+              {selectedStaff ? (
+                <StaffDetailView
+                  staff={selectedStaff}
+                  onClose={() => setSelectedStaff(null)}
+                  onUpdate={handleUpdateStaff}
+                  transactions={services || []}
+                />
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {users
+                    .filter((u) => u.role === "staff")
+                    .map((user) => (
                       <div
-                        className={`absolute top-0 left-0 w-full h-1 ${user.active ? "bg-emerald-500" : "bg-gray-300"}`}
-                      />
-
-                      {/* Action Menu Trigger */}
-                      <div className="absolute top-3 right-3 z-10">
-                        <button
-                          onClick={() =>
-                            setActiveMenuId(
-                              activeMenuId === user.id ? null : user.id,
-                            )
-                          }
-                          className="p-1.5 rounded-lg text-text-muted hover:text-text-main hover:bg-black/5 transition-colors"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {activeMenuId === user.id && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-10"
-                              onClick={() => setActiveMenuId(null)}
-                            />
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-border rounded-xl shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                              <button
-                                onClick={() => {
-                                  setEditingStaffItem(user);
-                                  setEditStaffForm(user);
-                                  setActiveMenuId(null);
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-highlight flex items-center gap-2 text-text-main"
-                              >
-                                <Edit2 size={14} className="text-text-muted" />
-                                Editar Perfil
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleToggleStaffStatus(user.id);
-                                  setActiveMenuId(null);
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-highlight flex items-center gap-2 text-text-main"
-                              >
-                                {user.active ? (
-                                  <>
-                                    <Power
-                                      size={14}
-                                      className="text-orange-500"
-                                    />
-                                    Desactivar Cuenta
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle
-                                      size={14}
-                                      className="text-emerald-500"
-                                    />
-                                    Activar Cuenta
-                                  </>
-                                )}
-                              </button>
-                              {currentUser?.role === "owner" && (
-                                <button
-                                  onClick={() => {
-                                    handleDeleteUserPermanently(user.id);
-                                    setActiveMenuId(null);
-                                  }}
-                                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 text-red-600 flex items-center gap-2 border-t border-border"
-                                >
-                                  <Trash2 size={14} />
-                                  Eliminar
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Avatar */}
-                      <div
-                        className={`w-16 h-16 rounded-full mb-3 flex items-center justify-center text-xl font-bold shadow-inner ${
-                          user.active
-                            ? "bg-primary-100/50 text-primary-600"
-                            : "bg-gray-100 text-gray-400 grayscale"
+                        key={user.id}
+                        onClick={() => setSelectedStaff(user)}
+                        className={`group bg-surface hover:bg-surface-highlight border hover:border-primary-500/30 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center cursor-pointer relative overflow-hidden ${
+                          selectedStaff?.id === user.id
+                            ? "ring-2 ring-primary-500 shadow-xl scale-[1.02]"
+                            : "border-border shadow-sm hover:shadow-xl hover:-translate-y-1"
                         }`}
                       >
-                        {user.name.slice(0, 2).toUpperCase()}
-                      </div>
-
-                      {/* Info */}
-                      <div className="text-center w-full">
-                        <h4
-                          className={`font-bold text-text-main truncate w-full ${!user.active && "text-text-muted"}`}
-                        >
-                          {user.name}
-                        </h4>
-                        <p className="text-xs text-text-muted font-medium mb-2">
-                          Staff
-                        </p>
-
-                        <div className="flex items-center justify-center gap-4 text-xs text-text-muted border-t border-border/50 pt-2 w-full mt-1">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-text-main">
-                              {user.commissionPct}%
-                            </span>
-                            <span className="scale-90">Comisión</span>
+                        {/* Avatar y Estado */}
+                        <div className="relative mb-4">
+                          <div
+                            className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold shadow-inner border-4 border-surface ${
+                              user.active
+                                ? "bg-primary-100/50 text-primary-600"
+                                : "bg-gray-100 text-gray-400 grayscale"
+                            }`}
+                          >
+                            {user.photoURL ? (
+                              <img
+                                src={user.photoURL}
+                                alt={user.name}
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            ) : (
+                              user.name.slice(0, 2).toUpperCase()
+                            )}
                           </div>
-                          <div className="h-6 w-px bg-border/50" />
-                          <div className="flex flex-col">
-                            <span
-                              className={`font-bold ${user.active ? "text-emerald-600" : "text-text-muted"}`}
-                            >
-                              {user.active ? "Activo" : "Inactivo"}
-                            </span>
-                            <span className="scale-90">Estado</span>
-                          </div>
+                          {/* Indicador de Estado */}
+                          <div
+                            className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-surface ${
+                              user.active ? "bg-green-500" : "bg-gray-400"
+                            }`}
+                          />
+                        </div>
+
+                        {/* Info */}
+                        <div className="text-center w-full">
+                          <h4
+                            className={`text-lg font-bold text-text-main truncate w-full ${!user.active && "text-text-muted"}`}
+                          >
+                            {user.name}
+                          </h4>
+                          <p className="text-sm text-text-muted capitalize mt-1">
+                            {user.role}
+                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                {/* Empty State / Add Placehoder */}
-                {users.filter((u) => u.role === "staff").length === 0 && (
-                  <div className="col-span-full py-12 flex flex-col items-center justify-center text-text-muted border-2 border-dashed border-border rounded-2xl bg-surface/30">
-                    <UserPlus size={48} className="mb-4 opacity-20" />
-                    <p className="text-lg font-medium">
-                      No hay personal activa
-                    </p>
-                    <p className="text-sm">
-                      Agrega nuevos miembros al equipo para comenzar
-                    </p>
-                  </div>
-                )}
-              </div>
+                  {/* Empty State / Add Placehoder */}
+                  {users.filter((u) => u.role === "staff").length === 0 && (
+                    <div className="col-span-full py-12 flex flex-col items-center justify-center text-text-muted border-2 border-dashed border-border rounded-2xl bg-surface/30">
+                      <UserPlus size={48} className="mb-4 opacity-20" />
+                      <p className="text-lg font-medium">
+                        No hay personal activa
+                      </p>
+                      <p className="text-sm">
+                        Agrega nuevos miembros al equipo para comenzar
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Slide-over: Create New User */}
               {isAddUserOpen && (
@@ -1972,39 +1906,72 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-text-main">
-                            Color Identificativo
+                            Teléfono
                           </label>
-                          <div className="grid grid-cols-5 gap-2">
-                            {[
-                              {
-                                val: "from-blue-500 to-blue-600",
-                                color: "bg-blue-500",
-                              },
-                              {
-                                val: "from-pink-500 to-pink-600",
-                                color: "bg-pink-500",
-                              },
-                              {
-                                val: "from-green-500 to-green-600",
-                                color: "bg-emerald-500",
-                              },
-                              {
-                                val: "from-purple-500 to-purple-600",
-                                color: "bg-purple-500",
-                              },
-                              {
-                                val: "from-orange-500 to-orange-600",
-                                color: "bg-orange-500",
-                              },
-                            ].map((opt) => (
-                              <button
-                                key={opt.val}
-                                onClick={() =>
-                                  setNewUser({ ...newUser, color: opt.val })
-                                }
-                                className={`h-10 rounded-xl transition-all ${opt.color} ${newUser.color === opt.val ? "ring-2 ring-offset-2 ring-text-main scale-105" : "opacity-60 hover:opacity-100"}`}
-                              />
-                            ))}
+                          <div className="relative">
+                            <Phone
+                              size={18}
+                              className="absolute left-3 top-3.5 text-text-muted"
+                            />
+                            <input
+                              type="tel"
+                              placeholder="612 345 678"
+                              value={newUser.phone || ""}
+                              onChange={(e) =>
+                                setNewUser({
+                                  ...newUser,
+                                  phone: e.target.value,
+                                })
+                              }
+                              className="w-full h-11 pl-10 pr-4 bg-surface text-text-main border border-border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder:text-text-muted/50"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-text-main">
+                            Email
+                          </label>
+                          <div className="relative">
+                            <Mail
+                              size={18}
+                              className="absolute left-3 top-3.5 text-text-muted"
+                            />
+                            <input
+                              type="email"
+                              placeholder="correo@ejemplo.com"
+                              value={newUser.email || ""}
+                              onChange={(e) =>
+                                setNewUser({
+                                  ...newUser,
+                                  email: e.target.value,
+                                })
+                              }
+                              className="w-full h-11 pl-10 pr-4 bg-surface text-text-main border border-border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder:text-text-muted/50"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-text-main">
+                            Fecha de Nacimiento
+                          </label>
+                          <div className="relative">
+                            <Calendar
+                              size={18}
+                              className="absolute left-3 top-3.5 text-text-muted"
+                            />
+                            <input
+                              type="date"
+                              value={newUser.birthDate || ""}
+                              onChange={(e) =>
+                                setNewUser({
+                                  ...newUser,
+                                  birthDate: e.target.value,
+                                })
+                              }
+                              className="w-full h-11 pl-10 pr-4 bg-surface text-text-main border border-border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder:text-text-muted/50"
+                            />
                           </div>
                         </div>
                       </div>

@@ -12,12 +12,13 @@ export const normalizeUser = (u: DocumentData & { id: string }): AppUser => {
     typeof u.commissionPct === "number"
       ? clamp(u.commissionPct, 0, 100)
       : u.commissionPct != null
-      ? clamp(parseFloat(u.commissionPct) || 0, 0, 100)
-      : u.role === "owner"
-      ? 0
-      : 35;
+        ? clamp(parseFloat(u.commissionPct) || 0, 0, 100)
+        : u.role === "owner"
+          ? 0
+          : 35;
 
   return {
+    ...u, // Include everything else from Firestore (phoneNumber, birthDate, etc.)
     id: u.id,
     name: u.name ?? "Sin nombre",
     pin: String(u.pin ?? ""),
@@ -27,10 +28,13 @@ export const normalizeUser = (u: DocumentData & { id: string }): AppUser => {
     icon: u.icon ?? "user",
     commissionPct,
     active: u.active !== false,
-  };
+  } as AppUser;
 };
 
-export const exportToCSV = (data: Record<string, unknown>[], filename: string): boolean => {
+export const exportToCSV = (
+  data: Record<string, unknown>[],
+  filename: string,
+): boolean => {
   if (!data || data.length === 0) {
     return false;
   }

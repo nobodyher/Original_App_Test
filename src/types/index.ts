@@ -1,4 +1,4 @@
-import type { DocumentData, Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
 export type Role = "owner" | "staff";
 
@@ -12,6 +12,14 @@ export type AppUser = {
   icon: "crown" | "user";
   commissionPct: number;
   active: boolean;
+  photoURL?: string;
+
+  // Nuevos campos para el CRM de Staff:
+  phoneNumber?: string; // Para contacto
+  email?: string; // Para contacto y notificaciones
+  birthDate?: string; // Para recordatorios de cumpleaños (Formato ISO: YYYY-MM-DD)
+  // commissionRate eliminado a favor de commissionPct
+  isActive?: boolean; // Para "Soft Delete" (true = activo, false = inactivo/papelera)
 };
 
 export type PaymentMethod = "cash" | "transfer";

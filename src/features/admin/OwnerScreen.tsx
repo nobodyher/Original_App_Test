@@ -11,7 +11,6 @@ import {
   Users,
   Plus,
   Beaker,
-  User,
   Menu,
   PanelLeftClose,
 } from "lucide-react";
@@ -20,7 +19,6 @@ import HistoryTab from "./components/HistoryTab";
 import AnalyticsTab from "./components/AnalyticsTab";
 import OwnerConfigTab from "./components/OwnerConfigTab";
 import type { ConfigTab } from "./components/OwnerConfigTab";
-import { Button } from "../../components/ui/Button";
 import ThemeToggle from "../../components/ui/ThemeToggle"; 
 import type {
   AppUser,
@@ -449,7 +447,9 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
                     updateChemicalProduct={props.updateChemicalProduct}
                     deleteChemicalProduct={props.deleteChemicalProduct}
                     initializeMaterialsData={props.initializeMaterialsData}
+
                     deleteClient={props.deleteClient}
+                    services={props.services}
                   />
                 )}
               </div>

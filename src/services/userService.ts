@@ -8,6 +8,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import type { AppUser } from "../types";
 
 export const initializeDefaultUsers = async (): Promise<void> => {
   await runTransaction(db, async (tx) => {
@@ -62,16 +63,12 @@ export const initializeDefaultUsers = async (): Promise<void> => {
   });
 };
 
-export const createNewUser = async (userData: {
-  name: string;
-  pin: string;
-  commissionPct: string | number;
-  color: string;
-}) => {
-  const { name, pin, commissionPct, color } = userData;
+export const createNewUser = async (userData: Partial<AppUser>) => {
+  const { name, pin, commissionPct, color, phoneNumber, email, birthDate } =
+    userData;
 
-  if (!name || !pin || commissionPct === "") {
-    throw new Error("Completa todos los campos");
+  if (!name || !pin || commissionPct === undefined) {
+    throw new Error("Completa todos los campos obligatorios");
   }
 
   const commPct =
@@ -91,9 +88,12 @@ export const createNewUser = async (userData: {
     name: name.trim(),
     pin: pin.trim(),
     role: "staff",
-    color: color,
+    color: color || "from-gray-500 to-gray-600",
     icon: "user",
     commissionPct: commPct,
+    phoneNumber: phoneNumber || "",
+    email: email || "",
+    birthDate: birthDate || "",
     active: true,
     createdAt: serverTimestamp(),
   });
@@ -126,32 +126,56 @@ export const deleteUserPermanently = async (userId: string) => {
   await deleteDoc(doc(db, "users", userId));
 };
 
-export const updateUser = async (
-  userId: string,
-  updates: Partial<{
-    name: string;
-    pin: string;
-    commissionPct: number;
-    color: string;
-    active: boolean;
-  }>
-) => {
-  const dataToUpdate: any = { ...updates };
+export const updateUser = async (userId: string, updates: Partial<AppUser>) => {
+  try {
+    // 1. Clonar para evitar mutar el objeto original y permitir manipulación
+    const dataToUpdate: any = { ...updates };
 
-  // Validation
-  if (updates.commissionPct !== undefined) {
-    if (
-      !Number.isFinite(updates.commissionPct) ||
-      updates.commissionPct < 0 ||
-      updates.commissionPct > 100
-    ) {
-      throw new Error("Porcentaje inválido (0-100)");
+    // 2. Limpieza estricta de undefined para evitar errores en Firestore
+    Object.keys(dataToUpdate).forEach((key) => {
+      if (dataToUpdate[key] === undefined) {
+        delete dataToUpdate[key];
+      }
+    });
+
+    // Si no hay datos válidos para actualizar, retornar temprano
+    if (Object.keys(dataToUpdate).length === 0) {
+      return;
     }
-  }
 
-  if (updates.pin !== undefined && updates.pin.length < 4) {
-    throw new Error("PIN debe tener al menos 4 dígitos");
-  }
+    // 3. Validar Porcentaje de Comisión (si se está actualizando)
+    if (dataToUpdate.commissionPct !== undefined) {
+      const comm = Number(dataToUpdate.commissionPct);
+      if (!Number.isFinite(comm) || comm < 0 || comm > 100) {
+        throw new Error("El porcentaje de comisión debe estar entre 0 y 100.");
+      }
+      dataToUpdate.commissionPct = comm; // Asegurar tipo numérico
+    }
 
-  await updateDoc(doc(db, "users", userId), dataToUpdate);
+    // 4. Validar PIN (si se está actualizando)
+    if (dataToUpdate.pin !== undefined) {
+      const pinStr = String(dataToUpdate.pin).trim();
+      if (pinStr.length < 4) {
+        throw new Error("El PIN debe tener al menos 4 dígitos.");
+      }
+      dataToUpdate.pin = pinStr;
+    }
+
+    // 5. Validar Nombre (si se está actualizando)
+    if (dataToUpdate.name !== undefined) {
+      const nameStr = String(dataToUpdate.name).trim();
+      if (!nameStr) {
+        throw new Error("El nombre no puede estar vacío.");
+      }
+      dataToUpdate.name = nameStr;
+    }
+
+    // 6. Ejecutar actualización en Firestore
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, dataToUpdate);
+  } catch (error) {
+    // Loguear el error para depuración (puedes conectarlo a un servicio de logs externo si lo tienes)
+    console.error(`Error blindado en updateUser (User ID: ${userId}):`, error);
+    throw error; // Re-lanzar para que la UI pueda mostrar el mensaje
+  }
 };
