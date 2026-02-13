@@ -10,13 +10,16 @@ import {
   DollarSign,
   Briefcase,
   TrendingUp,
+  Trash2,
 } from "lucide-react";
 import type { AppUser, Service } from "../../../types";
+import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 
 interface StaffDetailViewProps {
   staff: AppUser;
   onClose: () => void;
   onUpdate: (data: Partial<AppUser>) => Promise<void>;
+  onDelete: () => void;
   transactions: Service[];
 }
 
@@ -25,11 +28,13 @@ type TimeFilter = "today" | "week" | "month" | "total";
 export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
   staff,
   onClose,
+  onDelete,
   onUpdate,
   transactions,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filter, setFilter] = useState<TimeFilter>("month");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -292,6 +297,15 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                 <Save size={18} />
                 {isSubmitting ? "Guardando..." : "Guardar Cambios"}
               </button>
+
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isSubmitting}
+                className="w-full mt-3 bg-white hover:bg-red-50 text-red-500 hover:text-red-600 border border-transparent hover:border-red-200 font-bold py-3 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Trash2 size={18} />
+                Eliminar Personal
+              </button>
             </div>
           </div>
         </div>
@@ -452,6 +466,18 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          onDelete();
+          setShowDeleteModal(false);
+        }}
+        title={`¿Eliminar a ${staff.name}?`}
+        message="Esta acción eliminará permanentemente al empleado y todo su historial. No se puede deshacer."
+        isLoading={isSubmitting}
+      />
     </div>
   );
 };

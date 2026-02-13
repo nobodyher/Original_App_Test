@@ -491,6 +491,19 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     }
   };
 
+  const handleDeleteStaff = async () => {
+    if (!selectedStaff) return;
+
+    try {
+      await deleteUserPermanently(selectedStaff.id);
+      showNotification("Personal eliminado correctamente", "success");
+      setSelectedStaff(null);
+    } catch (error) {
+      console.error("Error eliminando personal:", error);
+      showNotification("Error al eliminar personal", "error");
+    }
+  };
+
   const handleSaveUnifiedService = async () => {
     if (!editingServiceItem) return;
 
@@ -1733,7 +1746,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                   staff={selectedStaff}
                   onClose={() => setSelectedStaff(null)}
                   onUpdate={handleUpdateStaff}
-                  transactions={services || []}
+                  onDelete={handleDeleteStaff}
+                  transactions={services ?? []}
                 />
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -1743,11 +1757,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                       <div
                         key={user.id}
                         onClick={() => setSelectedStaff(user)}
-                        className={`group bg-surface hover:bg-surface-highlight border hover:border-primary-500/30 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center cursor-pointer relative overflow-hidden ${
-                          selectedStaff?.id === user.id
-                            ? "ring-2 ring-primary-500 shadow-xl scale-[1.02]"
-                            : "border-border shadow-sm hover:shadow-xl hover:-translate-y-1"
-                        }`}
+                        className="group bg-surface hover:bg-surface-highlight border hover:border-primary-500/30 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center cursor-pointer relative overflow-hidden border-border shadow-sm hover:shadow-xl hover:-translate-y-1"
                       >
                         {/* Avatar y Estado */}
                         <div className="relative mb-4">
