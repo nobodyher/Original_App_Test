@@ -9,6 +9,7 @@ import {
   runTransaction,
   serverTimestamp,
   WriteBatch,
+  increment,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -832,23 +833,23 @@ export const batchDeductInventoryByRecipe = (
   materialsToDeduct.forEach((item) => {
       // 1. DETECCIÓN DE TIPO BLINDADA
       let chemicalId: string = "";
-      let deductAmount = 0;
+      let qtyUsed = 0;
 
       if (typeof item === 'string') {
         chemicalId = item;
+        qtyUsed = 1; // Default: 1 unidad si no se especifica
       } else if (typeof item === 'object' && item !== null) {
         chemicalId = item.id || item.materialId || ""; 
-        deductAmount = item.quantity || item.qty || item.amount || 0;
+        qtyUsed = item.quantity || item.qty || item.amount || 1;
       }
 
       if (!chemicalId) return;
 
       // 2. BUSCAR PRODUCTO (En el array en memoria)
-      // Buscamos por ID primero
       let product = chemicalProducts.find((p) => p.id === chemicalId);
       
       if (!product) {
-         // Fallback búsqueda por nombre si no se encuentra por ID (para consistencia con lógica legacy)
+         // Fallback búsqueda por nombre
          const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
          product = chemicalProducts.find(p => {
             const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
@@ -858,32 +859,28 @@ export const batchDeductInventoryByRecipe = (
 
       if (!product) return;
 
-      // 3. CÁLCULO DE STOCK (Usando datos en memoria)
-      const amountToSubtract = deductAmount > 0 ? deductAmount : 1;
-
-      let currentYieldRemaining = product.currentYieldRemaining ?? product.yieldPerUnit ?? product.yield ?? 1;
-      let stock = product.stock ?? 0;
-      const yieldPerUnit = product.yieldPerUnit ?? product.yield ?? 1;
-
-      // Restamos la cantidad
-      currentYieldRemaining = currentYieldRemaining - amountToSubtract;
-
-      // Lógica de reposición
-      if (currentYieldRemaining <= 0) {
-        const bottlesConsumed = Math.ceil(Math.abs(currentYieldRemaining) / yieldPerUnit) || 1; 
-        stock = Math.max(0, stock - bottlesConsumed); 
-        const remainder = Math.abs(currentYieldRemaining) % yieldPerUnit;
-        currentYieldRemaining = remainder === 0 ? yieldPerUnit : (yieldPerUnit - remainder);
+      // 3. CÁLCULO DE DESCUENTO FRACCIONADO
+      // La capacidad del envase (contenido neto total)
+      const capacity = product.quantity || product.yield || 1;
+      
+      // Evitar división por cero
+      if (capacity <= 0) {
+        console.warn(`⚠️ Producto ${product.name} tiene capacidad inválida (${capacity})`);
+        return;
       }
 
-      // 4. ACTUALIZAR BATCH
+      // FÓRMULA: deduction = cantidadUsada / capacidadEnvase
+      // Ejemplo: Usé 50ml de un bote de 500ml → deduction = 50/500 = 0.1 (10% de un bote)
+      const deduction = qtyUsed / capacity;
+
+      // 4. ACTUALIZAR BATCH CON INCREMENT (ATÓMICO)
       const productRef = doc(db, "chemical_products", product.id);
       
       batch.update(productRef, {
-          currentYieldRemaining,
-          stock,
-          // lastUpdated: new Date().toISOString() 
+          stock: increment(-deduction), // ✅ Descuento fraccionado atómico
       });
+      
+      // console.log(`✅ ${product.name}: -${qtyUsed}${product.unit} (${deduction.toFixed(3)} envases)`);
   });
 };
 
@@ -915,17 +912,161 @@ export const batchDeductConsumables = (
       const consumable = consumables.find(c => c.id === item.consumableId);
     
       if (consumable) {
-          const newQty = Math.max(0, consumable.stockQty - item.qty);
+          // DESCUENTO FRACCIONADO PARA CONSUMIBLES
+          // La capacidad del paquete (tamaño total)
+          const packageSize = consumable.packageSize || 1;
+          
+          // Evitar división por cero
+          if (packageSize <= 0) {
+            console.warn(`⚠️ Consumible ${consumable.name} tiene packageSize inválido (${packageSize})`);
+            return;
+          }
+
+          //  FÓRMULA: deduction = cantidadUsada / tamañoPaquete
+          // Ejemplo: Usé 50 unidades de un paquete de 100 → deduction = 50/100 = 0.5 (medio paquete)
+          const deduction = item.qty / packageSize;
           
           const consumibleRef = doc(db, "consumables", item.consumableId);
           
+          // ACTUALIZACIÓN ATÓMICA CON INCREMENT
           batch.update(consumibleRef, {
-              stockQty: newQty,
+              stockQty: increment(-deduction), // ✅ Descuento fraccionado atómico
               lastDeducted: new Date().toISOString(),
           });
+          
+          // console.log(`✅ ${consumable.name}: -${item.qty}${consumable.unit} (${deduction.toFixed(3)} paquetes)`);
       }
   });
 };
 export const isConsumableLowStock = (consumable: Consumable): boolean => {
   return consumable.stockQty <= consumable.minStockAlert;
+};
+
+// ====== Batch Restore Operations (For Service Deletion/Updates) ======
+
+export const batchRestoreInventoryByRecipe = (
+  batch: WriteBatch,
+  serviceId: string,
+  serviceName: string,
+  materialRecipes: MaterialRecipe[],
+  chemicalProducts: ChemicalProduct[],
+  catalogServices: CatalogService[] = []
+) => {
+  // 1. Buscar servicio en catálogo
+  const catalogService = catalogServices.find(
+    (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+  );
+
+  // 2. Determinar materiales a restaurar
+  let materialsToRestore: MaterialInput[] = [];
+  
+  if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
+    materialsToRestore = catalogService.manualMaterials;
+  } else {
+    const recipe = materialRecipes.find(
+      (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
+    );
+    materialsToRestore = recipe ? recipe.chemicalIds : [];
+  }
+
+  if (materialsToRestore.length === 0) return;
+
+  materialsToRestore.forEach((item) => {
+      let chemicalId: string = "";
+      let qtyUsed = 0;
+
+      if (typeof item === 'string') {
+        chemicalId = item;
+        qtyUsed = 1;
+      } else if (typeof item === 'object' && item !== null) {
+        chemicalId = item.id || item.materialId || ""; 
+        qtyUsed = item.quantity || item.qty || item.amount || 1;
+      }
+
+      if (!chemicalId) return;
+
+      // 2. BUSCAR PRODUCTO
+      let product = chemicalProducts.find((p) => p.id === chemicalId);
+      
+      if (!product) {
+         const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
+         product = chemicalProducts.find(p => {
+            const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+            return normalizedProductName === normalizedSearchName;
+         });
+      }
+
+      if (!product) return;
+
+      // 3. RESTAURACIÓN FRACCIONADA (INVERSA AL DESCUENTO)
+      const capacity = product.quantity || product.yield || 1;
+      
+      if (capacity <= 0) {
+        console.warn(`⚠️ Producto ${product.name} tiene capacidad inválida (${capacity})`);
+        return;
+      }
+
+      // FÓRMULA INVERSA: restauration = cantidadUsada / capacidadEnvase
+      // Ejemplo: Restauro 50ml de un bote de 500ml → restoration = 50/500 = +0.1 (10% de un bote)
+      const restoration = qtyUsed / capacity;
+
+      // 4. ACTUALIZAR BATCH CON INCREMENT POSITIVO (ATÓMICO)
+      const productRef = doc(db, "chemical_products", product.id);
+      
+      batch.update(productRef, {
+          stock: increment(restoration), // ✅ Restauración fraccionada atómica (+)
+      });
+      
+      // console.log(`🔄 ${product.name}: +${qtyUsed}${product.unit} (${restoration.toFixed(3)} envases)`);
+  });
+};
+
+export const batchRestoreConsumables = (
+  batch: WriteBatch,
+  serviceId: string,
+  serviceName: string,
+  serviceRecipes: ServiceRecipe[],
+  consumables: Consumable[],
+  catalogServices: CatalogService[] = []
+) => {
+  // 1. Buscar servicio en catálogo
+  const catalogService = catalogServices.find(
+    s => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+  );
+  
+  let itemsToRestore: { consumableId: string; qty: number }[] = [];
+  
+  if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {
+    itemsToRestore = catalogService.manualConsumables;
+  } else {
+    const recipe = serviceRecipes.find(r => r.serviceId === serviceId);
+    itemsToRestore = recipe?.items || [];
+  }
+
+  itemsToRestore.forEach(item => {
+      const consumable = consumables.find(c => c.id === item.consumableId);
+    
+      if (consumable) {
+          // RESTAURACIÓN FRACCIONADA PARA CONSUMIBLES
+          const packageSize = consumable.packageSize || 1;
+          
+          if (packageSize <= 0) {
+            console.warn(`⚠️ Consumible ${consumable.name} tiene packageSize inválido (${packageSize})`);
+            return;
+          }
+
+          // FÓRMULA INVERSA: restoration = cantidadUsada / tamañoPaquete
+          // Ejemplo: Restauro 50 unidades de un paquete de 100 → restoration = 50/100 = +0.5 (medio paquete)
+          const restoration = item.qty / packageSize;
+          
+          const consumibleRef = doc(db, "consumables", item.consumableId);
+          
+          // ACTUALIZACIÓN ATÓMICA CON INCREMENT POSITIVO
+          batch.update(consumibleRef, {
+              stockQty: increment(restoration), // ✅ Restauración fraccionada atómica (+)
+          });
+          
+          // console.log(`🔄 ${consumable.name}: +${item.qty}${consumable.unit} (${restoration.toFixed(3)} paquetes)`);
+      }
+  });
 };

@@ -28,11 +28,14 @@ import type {
   OwnerFilters,
   PaymentMethod,
   Toast,
+  ServiceRecipe,
+  Consumable,
 } from "../../../types";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import * as salonService from "../../../services/salonService";
 import * as inventoryService from "../../../services/inventoryService";
 import { CustomSelect } from "../../../components/ui/CustomSelect";
+import InventoryAlerts from "./InventoryAlerts";
 
 interface OwnerDashboardProps {
   services: Service[];
@@ -42,13 +45,16 @@ interface OwnerDashboardProps {
   materialRecipes: MaterialRecipe[];
   catalogServices: CatalogService[];
   chemicalProducts: ChemicalProduct[];
+  serviceRecipes: ServiceRecipe[];
+  consumables: Consumable[];
   showNotification: (message: string, type?: Toast["type"]) => void;
+  onNavigateToInventory?: (tab: "consumables" | "materials") => void;
   // Actions
   addExpense: (data: Omit<Expense, "id">) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   updateServiceCost: (id: string, cost: number) => Promise<void>;
-  softDeleteService: (id: string, userId?: string) => Promise<void>; // Admin version
-  permanentlyDeleteService: (id: string) => Promise<void>;
+  softDeleteService: (id: string, userId?: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; consumables: Consumable[]; chemicalProducts: ChemicalProduct[]; catalogServices: CatalogService[] }) => Promise<void>;
+  permanentlyDeleteService: (id: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; consumables: Consumable[]; chemicalProducts: ChemicalProduct[]; catalogServices: CatalogService[] }) => Promise<void>;
   restoreDeletedService: (id: string) => Promise<void>;
 }
 
@@ -68,7 +74,10 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   materialRecipes,
   catalogServices,
   chemicalProducts,
+  serviceRecipes,
+  consumables,
   showNotification,
+  onNavigateToInventory,
   addExpense,
   deleteExpense,
   updateServiceCost,
@@ -152,14 +161,50 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     setIsSubmitting(true);
     try {
       switch (actionToConfirm.type) {
-        case "soft_delete_service":
-          await softDeleteService(actionToConfirm.id, currentUser?.id);
-          showNotification("Servicio eliminado temporalmente");
+        case "soft_delete_service": {
+          // Buscar el servicio que se va a eliminar
+          const serviceToDelete = services.find(s => s.id === actionToConfirm.id);
+          
+          if (serviceToDelete && serviceToDelete.services && serviceToDelete.services.length > 0) {
+            // Pasar contexto de inventario para restaurar stock
+            await softDeleteService(actionToConfirm.id, currentUser?.id, {
+              service: serviceToDelete,
+              materialRecipes,
+              serviceRecipes,
+              consumables,
+              chemicalProducts,
+              catalogServices,
+            });
+            showNotification("Servicio eliminado e inventario restaurado");
+          } else {
+            // Sin servicios en la transacción, solo marcar como eliminado
+            await softDeleteService(actionToConfirm.id, currentUser?.id);
+            showNotification("Servicio eliminado temporalmente");
+          }
           break;
-        case "permanent_delete_service":
-          await permanentlyDeleteService(actionToConfirm.id);
-          showNotification("Servicio eliminado permanentemente");
+        }
+        case "permanent_delete_service": {
+          // Buscar el servicio que se va a eliminar permanentemente
+          const serviceToDelete = services.find(s => s.id === actionToConfirm.id);
+          
+          if (serviceToDelete && serviceToDelete.services && serviceToDelete.services.length > 0) {
+            // Pasar contexto de inventario para restaurar stock
+            await permanentlyDeleteService(actionToConfirm.id, {
+              service: serviceToDelete,
+              materialRecipes,
+              serviceRecipes,
+              consumables,
+              chemicalProducts,
+              catalogServices,
+            });
+            showNotification("Servicio eliminado e inventario restaurado");
+          } else {
+            // Sin servicios, solo borrar
+            await permanentlyDeleteService(actionToConfirm.id);
+            showNotification("Servicio eliminado permanentemente");
+          }
           break;
+        }
         case "delete_expense":
           await deleteExpense(actionToConfirm.id);
           showNotification("Gasto eliminado");
@@ -453,13 +498,12 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             <h2 className="text-2xl font-black text-text-main tracking-tight">
               Panel Financiero
             </h2>
-            <p className="text-text-muted font-medium">
-              Resumen de operaciones y rendimiento
-            </p>
+
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 bg-background p-2 rounded-2xl border border-border backdrop-blur-sm">
-            <div className="flex items-center gap-2 bg-surface px-3 py-2 rounded-xl border border-border shadow-sm focus-within:ring-2 focus-within:ring-primary-600/20 transition-all">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-background p-2 rounded-2xl border border-border backdrop-blur-sm w-full md:w-auto mb-6 md:mb-0">
+            {/* Search - Order 1 on mobile */}
+            <div className="order-1 flex items-center gap-2 bg-surface px-3 py-2 rounded-xl border border-border shadow-sm focus-within:ring-2 focus-within:ring-primary-600/20 transition-all w-full md:w-auto">
               <Search size={18} className="text-text-muted" />
               <input
                 type="text"
@@ -468,37 +512,37 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 onChange={(e) =>
                   setOwnerFilters({ ...ownerFilters, search: e.target.value })
                 }
-                className="bg-transparent text-sm w-32 focus:outline-none text-text-main font-medium placeholder-text-muted"
+                className="bg-transparent text-sm w-full md:w-32 focus:outline-none text-text-main font-medium placeholder-text-muted"
               />
             </div>
 
-            <div className="h-8 w-px bg-border mx-1 hidden md:block"></div>
+            <div className="h-8 w-px bg-border mx-1 hidden md:block order-2"></div>
 
-            <div className="flex items-center gap-2">
+            {/* Dates - Order 2 on mobile */}
+            <div className="order-2 flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
               <input
                 type="date"
                 value={ownerFilters.dateFrom}
                 onChange={(e) =>
                   setOwnerFilters({ ...ownerFilters, dateFrom: e.target.value })
                 }
-                className="bg-surface border border-border text-text-main text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm"
+                className="bg-surface border border-border text-text-main text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm w-full sm:flex-1 md:w-auto md:flex-none"
               />
-              <span className="text-text-muted font-bold">-</span>
+              <span className="text-text-muted font-bold hidden md:inline">-</span>
               <input
                 type="date"
                 value={ownerFilters.dateTo}
                 onChange={(e) =>
                   setOwnerFilters({ ...ownerFilters, dateTo: e.target.value })
                 }
-                className="bg-surface border border-border text-text-main text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm"
+                className="bg-surface border border-border text-text-main text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600/20 shadow-sm w-full sm:flex-1 md:w-auto md:flex-none"
               />
             </div>
 
-            <div className="h-8 w-px bg-border mx-1 hidden md:block"></div>
+            <div className="h-8 w-px bg-border mx-1 hidden md:block order-3"></div>
 
-
-
-            <div className="w-48">
+            {/* Payment Method - Order 3 on mobile */}
+            <div className="order-3 w-full md:w-48">
               <CustomSelect
                 value={ownerFilters.paymentMethod}
                 onChange={(val) =>
@@ -515,8 +559,6 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 placeholder="Método de Pago"
               />
             </div>
-
-
           </div>
         </div>
 
@@ -546,31 +588,31 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       </div>
 
       {/* Premium Stats Cards - Banking Style */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {/* Revenue Card - Oro Champagne Premium */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-400 rounded-[2rem] p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-            <DollarSign size={120} />
+        <div className="bg-gradient-to-br from-primary-600 to-primary-400 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
+            <DollarSign className="w-16 h-16 md:w-24 md:h-24" />
           </div>
-          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <DollarSign size={20} />
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <DollarSign size={16} className="md:w-5 md:h-5" />
               </div>
-              <span className="font-medium text-amber-50 text-sm uppercase tracking-wider">
-                Ingresos Brutos
+              <span className="font-medium text-amber-50 text-xs md:text-sm uppercase tracking-wider opacity-90">
+                Ingresos
               </span>
             </div>
             <div>
-              <h3 className="text-4xl font-black tracking-tight mb-1 mb-1">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1">
                 ${totalRevenue.toFixed(2)}
               </h3>
-              <div className="flex items-center gap-2 text-amber-100 text-xs font-medium bg-black/20 w-fit px-3 py-1 rounded-full mb-3">
+              <div className="hidden md:flex items-center gap-2 text-amber-100 text-xs font-medium bg-black/20 w-fit px-3 py-1 rounded-full mb-3">
                 <span>{filteredServices.length} transacciones</span>
               </div>
 
               {/* Desglose por método de pago */}
-              <div className="bg-black/10 rounded-xl p-2 flex items-center justify-between gap-2 backdrop-blur-sm border border-white/5">
+              <div className="hidden md:flex bg-black/10 rounded-xl p-2 items-center justify-between gap-2 backdrop-blur-sm border border-white/5">
                 <div className="flex items-center gap-1.5">
                   <div className="p-1 rounded-full bg-green-500/20 text-green-100">
                     <DollarSign size={10} />
@@ -594,24 +636,24 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Expenses Card - Rosa Ojo de Perdiz Premium */}
-        <div className="bg-gradient-to-br from-primary-700 to-primary-700 rounded-[2rem] p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-            <CreditCard size={120} />
+        <div className="bg-gradient-to-br from-primary-700 to-primary-700 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
+            <CreditCard className="w-16 h-16 md:w-24 md:h-24" />
           </div>
-          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <CreditCard size={20} />
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <CreditCard size={16} className="md:w-5 md:h-5" />
               </div>
-              <span className="font-medium text-rose-100 text-sm uppercase tracking-wider">
-                Gastos Totales
+              <span className="font-medium text-rose-100 text-xs md:text-sm uppercase tracking-wider opacity-90">
+                Gastos
               </span>
             </div>
             <div>
-              <h3 className="text-4xl font-black tracking-tight mb-1">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1">
                 ${totalExpenses.toFixed(2)}
               </h3>
-              <div className="flex items-center gap-2 text-rose-200 text-xs font-medium bg-rose-900/30 w-fit px-3 py-1 rounded-full">
+              <div className="hidden md:flex items-center gap-2 text-rose-200 text-xs font-medium bg-rose-900/30 w-fit px-3 py-1 rounded-full">
                 <span>{filteredExpenses.length} movimientos</span>
               </div>
             </div>
@@ -619,24 +661,24 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Replenishment Card - Slate Premium */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-900 rounded-[2rem] p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-            <Package size={120} />
+        <div className="bg-gradient-to-br from-neutral-900 to-neutral-900 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
+            <Package className="w-16 h-16 md:w-24 md:h-24" />
           </div>
-          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <Package size={20} />
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <Package size={16} className="md:w-5 md:h-5" />
               </div>
-              <span className="font-medium text-gray-200 text-sm uppercase tracking-wider">
+              <span className="font-medium text-gray-200 text-xs md:text-sm uppercase tracking-wider opacity-90">
                 Reposición
               </span>
             </div>
             <div>
-              <h3 className="text-4xl font-black tracking-tight mb-1">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1">
                 ${totalReplenishmentCost.toFixed(2)}
               </h3>
-              <div className="flex items-center gap-2 text-gray-300 text-xs font-medium bg-gray-800/50 w-fit px-3 py-1 rounded-full">
+              <div className="hidden md:flex items-center gap-2 text-gray-300 text-xs font-medium bg-gray-800/50 w-fit px-3 py-1 rounded-full">
                 <span>Costo materiales</span>
               </div>
             </div>
@@ -644,31 +686,38 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Net Profit Card - Violeta Real Premium */}
-        <div className="bg-gradient-to-br from-primary-700 to-primary-600 rounded-[2rem] p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ring-4 ring-violet-900/5">
+        <div className="bg-gradient-to-br from-primary-700 to-primary-600 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ring-4 ring-violet-900/5">
           <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-primary-700/40"></div>
-          <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
-            <Wallet size={120} />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
+            <Wallet className="w-16 h-16 md:w-24 md:h-24" />
           </div>
-          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shadow-lg">
-                <Wallet size={20} className="text-white" />
+          <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center shadow-lg">
+                <Wallet size={16} className="md:w-5 md:h-5 text-white" />
               </div>
-              <span className="font-bold text-violet-100 text-sm uppercase tracking-wider">
-                Ganancia Neta
+              <span className="font-bold text-violet-100 text-xs md:text-sm uppercase tracking-wider opacity-90">
+                Ganancia
               </span>
             </div>
             <div>
-              <h3 className="text-4xl font-black tracking-tight mb-1 text-white">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1 text-white">
                 ${netProfit.toFixed(2)}
               </h3>
-              <div className="flex items-center gap-2 text-violet-200 text-xs font-medium">
+              <div className="hidden md:flex items-center gap-2 text-violet-200 text-xs font-medium">
                 <span>Después de comisiones y costos</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Inventory Alerts Widget */}
+      <InventoryAlerts
+        consumables={consumables}
+        chemicals={chemicalProducts}
+        onNavigateToTab={onNavigateToInventory}
+      />
 
       {/* Main Content Areas Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

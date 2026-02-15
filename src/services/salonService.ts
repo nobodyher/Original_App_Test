@@ -34,7 +34,9 @@ import {
   restoreInventoryByRecipe, 
   restoreConsumables,
   batchDeductInventoryByRecipe,
-  batchDeductConsumables
+  batchDeductConsumables,
+  batchRestoreInventoryByRecipe,
+  batchRestoreConsumables,
 } from "./inventoryService";
 
 export interface NewServiceState {
@@ -297,29 +299,163 @@ export const updateServiceCost = async (
 export const softDeleteService = async (
   id: string,
   userId?: string,
+  inventoryContext?: {
+    service: Service;
+    materialRecipes: MaterialRecipe[];
+    serviceRecipes: ServiceRecipe[];
+    consumables: Consumable[];
+    chemicalProducts: ChemicalProduct[];
+    catalogServices: CatalogService[];
+  }
 ): Promise<void> => {
-  await updateDoc(doc(db, "services", id), {
-    deleted: true,
-    deletedAt: serverTimestamp(),
-    deletedBy: userId,
-  });
+  // Si hay contexto de inventario, restaurar antes de marcar como eliminado
+  if (inventoryContext?.service?.services) {
+    const batch = writeBatch(db);
+    
+    // Restaurar inventario de cada servicio
+    for (const serviceItem of inventoryContext.service.services) {
+      batchRestoreInventoryByRecipe(
+        batch,
+        serviceItem.serviceId,
+        serviceItem.serviceName,
+        inventoryContext.materialRecipes,
+        inventoryContext.chemicalProducts,
+        inventoryContext.catalogServices
+      );
+      
+      batchRestoreConsumables(
+        batch,
+        serviceItem.serviceId,
+        serviceItem.serviceName,
+        inventoryContext.serviceRecipes,
+        inventoryContext.consumables,
+        inventoryContext.catalogServices
+      );
+    }
+    
+    // Marcar como eliminado en el mismo batch
+    batch.update(doc(db, "services", id), {
+      deleted: true,
+      deletedAt: serverTimestamp(),
+      deletedBy: userId,
+    });
+    
+    // Ejecutar batch atómicamente
+    await batch.commit();
+    console.log("✅ Servicio eliminado e inventario restaurado");
+  } else {
+    // Si no hay inventario, solo marcar como eliminado  
+    await updateDoc(doc(db, "services", id), {
+      deleted: true,
+      deletedAt: serverTimestamp(),
+      deletedBy: userId,
+    });
+  }
 };
 
 export const softDeleteServiceAdmin = async (
-  serviceId: string,
+  id: string,
   userId?: string,
+  inventoryContext?: {
+    service: Service;
+    materialRecipes: MaterialRecipe[];
+    serviceRecipes: ServiceRecipe[];
+    consumables: Consumable[];
+    chemicalProducts: ChemicalProduct[];
+    catalogServices: CatalogService[];
+  }
 ): Promise<void> => {
-  await updateDoc(doc(db, "services", serviceId), {
-    deleted: true,
-    deletedAt: serverTimestamp(),
-    deletedBy: userId,
-  });
+  // Si hay contexto de inventario, restaurar antes de marcar como eliminado
+  if (inventoryContext?.service?.services) {
+    const batch = writeBatch(db);
+    
+    // Restaurar inventario de cada servicio
+    for (const serviceItem of inventoryContext.service.services) {
+      batchRestoreInventoryByRecipe(
+        batch,
+        serviceItem.serviceId,
+        serviceItem.serviceName,
+        inventoryContext.materialRecipes,
+        inventoryContext.chemicalProducts,
+        inventoryContext.catalogServices
+      );
+      
+      batchRestoreConsumables(
+        batch,
+        serviceItem.serviceId,
+        serviceItem.serviceName,
+        inventoryContext.serviceRecipes,
+        inventoryContext.consumables,
+        inventoryContext.catalogServices
+      );
+    }
+    
+    // Marcar como eliminado en el mismo batch
+    batch.update(doc(db, "services", id), {
+      deleted: true,
+      deletedAt: serverTimestamp(),
+      deletedBy: userId,
+    });
+    
+    // Ejecutar batch atómicamente
+    await batch.commit();
+    console.log("✅ Servicio eliminado (Admin) e inventario restaurado");
+  } else {
+    // Si no hay inventario, solo marcar como eliminado  
+    await updateDoc(doc(db, "services", id), {
+      deleted: true,
+      deletedAt: serverTimestamp(),
+      deletedBy: userId,
+    });
+  }
 };
 
 export const permanentlyDeleteService = async (
   serviceId: string,
+  inventoryContext?: {
+    service: Service;
+    materialRecipes: MaterialRecipe[];
+    serviceRecipes: ServiceRecipe[];
+    consumables: Consumable[];
+    chemicalProducts: ChemicalProduct[];
+    catalogServices: CatalogService[];
+  }
 ): Promise<void> => {
-  await deleteDoc(doc(db, "services", serviceId));
+  // Si hay contexto de inventario, restaurar antes de borrar permanentemente
+  if (inventoryContext?.service?.services) {
+    const batch = writeBatch(db);
+    
+    // Restaurar inventario de cada servicio
+    for (const serviceItem of inventoryContext.service.services) {
+      batchRestoreInventoryByRecipe(
+        batch,
+        serviceItem.serviceId,
+        serviceItem.serviceName,
+        inventoryContext.materialRecipes,
+        inventoryContext.chemicalProducts,
+        inventoryContext.catalogServices
+      );
+      
+      batchRestoreConsumables(
+        batch,
+        serviceItem.serviceId,
+        serviceItem.serviceName,
+        inventoryContext.serviceRecipes,
+        inventoryContext.consumables,
+        inventoryContext.catalogServices
+      );
+    }
+    
+    // Borrar documento en el mismo batch
+    batch.delete(doc(db, "services", serviceId));
+    
+    // Ejecutar batch atómicamente
+    await batch.commit();
+    console.log("✅ Servicio eliminado permanentemente e inventario restaurado");
+  } else {
+    // Si no hay inventario, solo borrar documento
+    await deleteDoc(doc(db, "services", serviceId));
+  }
 };
 
 export const restoreDeletedService = async (serviceId: string): Promise<void> => {

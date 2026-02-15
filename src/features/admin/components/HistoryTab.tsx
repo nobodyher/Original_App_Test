@@ -19,9 +19,9 @@ import {
   Users,
   Calendar as CalendarIcon,
   ShoppingBag,
-  Clock,
   Check,
 } from "lucide-react";
+import { UserAvatar } from "../../../components/ui/UserAvatar";
 import type { Service, AppUser, CatalogService } from "../../../types";
 
 interface HistoryTabProps {
@@ -39,6 +39,7 @@ export default function HistoryTab({
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [isEmployeeFilterOpen, setIsEmployeeFilterOpen] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   // --- Lógica de Filtrado de Servicios (Eliminados del Catálogo) ---
   const activeServices = useMemo(() => {
@@ -78,16 +79,28 @@ export default function HistoryTab({
 
   const daysWithActivity = useMemo(() => {
     const activitySet = new Set<string>();
-    activeServices.forEach((s) => activitySet.add(s.date)); // s.date es YYYY-MM-DD
+    activeServices.forEach((s) => {
+      // Use local date string if timestamp exists, otherwise fallback to s.date
+      const dateKey = s.timestamp ? s.timestamp.toDate().toLocaleDateString() : s.date; 
+      activitySet.add(dateKey);
+    });
     return activitySet;
   }, [activeServices]);
 
   // --- Lógica de Filtrado (Vista) ---
   const filteredServices = useMemo(() => {
-    const dateStr = format(selectedDate, "yyyy-MM-dd");
     return activeServices
       .filter((s) => {
-        const matchesDate = s.date === dateStr;
+        // Fix: Use local date string comparison to avoid UTC timezone issues
+        // This ensures that if a user records a service on the 14th PM local time (15th UTC),
+        // it still appears on the 14th filter.
+        let serviceDate = s.date; // Fallback
+        if (s.timestamp) {
+           serviceDate = s.timestamp.toDate().toLocaleDateString();
+        }
+        const selectedDateStr = selectedDate.toLocaleDateString();
+        
+        const matchesDate = serviceDate === selectedDateStr;
         const matchesEmployee =
           selectedEmployeeIds.length === 0 ||
           selectedEmployeeIds.includes(s.userId);
@@ -114,32 +127,34 @@ export default function HistoryTab({
     );
   };
 
-  const getUserColor = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    return user?.color || "bg-gray-500";
-  };
+
 
   const getUserName = (userId: string) => {
     const user = users.find((u) => u.id === userId);
     return user?.name || "??";
   };
 
+  const getUserPhoto = (userId: string) => {
+    const user = users.find((u) => u.id === userId);
+    return user?.photoURL || null;
+  };
+
   return (
     <div className="flex flex-col h-full bg-background animate-fade-in text-text-main">
       {/* --- HEADER --- */}
-      <div className="h-20 border-b border-border bg-surface flex items-center justify-between px-8 shrink-0 relative z-20">
-        <div className="flex items-center gap-6">
+      <div className="border-b border-border bg-surface flex flex-col md:flex-row items-center justify-between p-4 md:px-8 shrink-0 relative z-20 gap-4 md:h-20">
+        <div className="flex items-center gap-6 w-full md:w-auto">
           {/* Employee Filter */}
-          <div className="relative">
+          <div className="relative w-full md:w-auto">
             <button
               onClick={() => setIsEmployeeFilterOpen(!isEmployeeFilterOpen)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all w-full md:w-auto ${
                 selectedEmployeeIds.length > 0
                   ? "bg-primary-500 text-black shadow-lg shadow-primary-500/20"
                   : "bg-surface-highlight text-text-muted hover:text-text-main border border-border"
               }`}
             >
-              <Users size={18} />
+              <Users size={16} />
               {selectedEmployeeIds.length === 0
                 ? "Filtrar por Estilista"
                 : `${selectedEmployeeIds.length} Seleccionados`}
@@ -152,7 +167,7 @@ export default function HistoryTab({
                   className="fixed inset-0 z-10"
                   onClick={() => setIsEmployeeFilterOpen(false)}
                 />
-                <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-border rounded-xl shadow-2xl z-20 overflow-hidden transform transition-all">
+                <div className="absolute top-full left-0 mt-2 w-full md:w-64 bg-surface border border-border rounded-xl shadow-2xl z-20 overflow-hidden transform transition-all">
                   <div className="p-2 space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
                     {users.map((user) => (
                       <button
@@ -178,55 +193,57 @@ export default function HistoryTab({
               </>
             )}
           </div>
-
-          <div className="h-8 w-px bg-border/50" />
-
-          {/* Resumen Simple */}
-          <div className="flex items-center gap-2 text-text-muted">
-            <span className="font-bold text-text-main text-lg">
-              {filteredServices.length}
-            </span>
-            <span className="text-sm">servicios encontrados</span>
-          </div>
         </div>
 
-        {/* Total del día (Opcional) */}
-        <div className="flex flex-col items-end">
+        {/* Total del día */}
+        <div className="w-full md:w-auto flex flex-col items-center justify-center text-center md:items-end md:text-right">
           <span className="text-xs text-text-muted uppercase font-bold tracking-wider">
             Total Ventas
           </span>
-          <span className="text-xl font-black text-primary-500">
+          <span className="text-2xl md:text-4xl font-black text-primary-500">
             ${totalAmount.toFixed(2)}
           </span>
         </div>
       </div>
 
       {/* --- BODY --- */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col md:flex-row overflow-hidden relative">
         {/* COLUMNA 1: CALENDARIO */}
-        <div className="w-[400px] bg-surface border-r border-border flex flex-col shrink-0">
-          <div className="p-6 border-b border-border flex items-center justify-between">
-            <h2 className="text-lg font-bold capitalize text-text-main">
-              {format(currentMonth, "MMMM yyyy", { locale: es })}
-            </h2>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                className="p-2 hover:bg-white/5 rounded-full text-text-muted hover:text-white transition"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                className="p-2 hover:bg-white/5 rounded-full text-text-muted hover:text-white transition"
-              >
-                <ChevronRight size={20} />
-              </button>
+        <div className="w-full md:w-[400px] bg-surface border-b md:border-b-0 md:border-r border-border flex flex-col shrink-0 relative z-30">
+          <div className="p-4 md:p-6 border-b border-border flex items-center justify-between bg-surface relative z-10">
+            <button
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="p-2 hover:bg-white/5 rounded-full text-text-muted hover:text-white transition flex-shrink-0"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <div 
+              className="flex flex-col items-center justify-center mx-4 cursor-pointer hover:bg-white/5 px-4 py-1 rounded-lg transition-colors"
+              onClick={() => setShowCalendar(!showCalendar)}
+            >
+              <span className="text-lg font-bold capitalize leading-none text-text-main flex items-center gap-2">
+                {format(currentMonth, "MMMM", { locale: es })}
+                <span className={`text-[10px] md:hidden transform transition-transform ${showCalendar ? 'rotate-180' : ''}`}>▼</span>
+              </span>
+              <span className="text-xs text-text-muted font-medium leading-none mt-1">
+                {format(currentMonth, "yyyy")}
+              </span>
             </div>
+
+            <button
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="p-2 hover:bg-white/5 rounded-full text-text-muted hover:text-white transition flex-shrink-0"
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
 
-          {/* Grid Semanal */}
-          <div className="p-6 overflow-y-auto">
+          {/* Grid Semanal (Collapsible on Mobile) */}
+          <div className={`
+             md:block bg-surface
+             ${showCalendar ? 'absolute top-full left-0 w-full shadow-2xl border-b border-border z-50 p-6 animate-in slide-in-from-top-5' : 'hidden md:block p-6 overflow-y-auto'}
+          `}>
             <div className="grid grid-cols-7 mb-4">
               {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
                 <div
@@ -239,7 +256,8 @@ export default function HistoryTab({
             </div>
             <div className="grid grid-cols-7 gap-2">
               {calendarDays.map((day) => {
-                const dateKey = format(day, "yyyy-MM-dd");
+                // Fix: Use local date string for key matching
+                const dateKey = day.toLocaleDateString();
                 const isSelected = isSameDay(day, selectedDate);
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const hasActivity = daysWithActivity.has(dateKey);
@@ -248,13 +266,16 @@ export default function HistoryTab({
                 return (
                   <button
                     key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
+                    onClick={() => {
+                      setSelectedDate(day);
+                      setShowCalendar(false); // Close on select (mobile)
+                    }}
                     className={`
                       relative aspect-square rounded-full flex items-center justify-center text-sm font-medium transition-all
                       ${!isCurrentMonth ? "text-text-muted/20" : ""}
                       ${
                         isSelected
-                          ? "bg-primary-500 text-black font-bold shadow-lg shadow-primary-500/20 scale-105"
+                          ? "bg-primary-600 text-white font-bold shadow-lg shadow-primary-600/20 scale-105"
                           : "text-text-muted hover:bg-white/5 hover:text-text-main"
                       }
                       ${
@@ -280,9 +301,9 @@ export default function HistoryTab({
         </div>
 
         {/* COLUMNA 2: LISTA DE SERVICIOS */}
-        <div className="flex-1 bg-background p-8 overflow-y-auto">
+        <div className="flex-1 bg-background p-4 md:p-8 overflow-y-auto w-full">
           <div className="max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold text-text-main mb-6 flex items-center gap-3">
+            <h3 className="text-xl md:text-2xl font-bold text-text-main mb-4 md:mb-6 flex items-center gap-3">
               <CalendarIcon className="text-primary-500" />
               {format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
             </h3>
@@ -300,67 +321,86 @@ export default function HistoryTab({
                 </p>
               </div>
             ) : (
-              <div className="grid gap-4">
-                {filteredServices.map((service) => (
-                  <div
-                    key={service.id}
-                    className="group bg-surface hover:bg-surface-highlight border border-border rounded-2xl p-4 flex items-center justify-between transition-all duration-300 hover:shadow-lg hover:border-primary-500/20"
-                  >
-                    <div className="flex items-center gap-5">
-                      {/* Hora */}
-                      <div className="w-16 flex flex-col items-center justify-center border-r border-border/50 pr-4">
-                        <span className="text-sm font-bold text-text-main">
-                          {service.timestamp
-                            ? format(service.timestamp.toDate(), "HH:mm")
-                            : "--:--"}
-                        </span>
-                        <Clock size={12} className="text-text-muted mt-1" />
-                      </div>
+              <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                <table className="w-full table-fixed">
+                  <thead className="bg-surface-highlight border-b border-border">
+                    <tr>
+                      <th className="w-[60px] md:w-32 px-1 py-2 text-center text-xs font-bold text-text-muted uppercase tracking-wider">
+                        <span className="md:hidden">Día</span>
+                        <span className="hidden md:inline">Fecha</span>
+                      </th>
+                      <th className="w-auto px-2 py-2 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
+                        Servicio
+                      </th>
+                      <th className="w-20 md:w-28 px-2 py-2 text-right text-xs font-bold text-text-muted uppercase tracking-wider">
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredServices.map((service) => {
+                      const dateObj = service.timestamp 
+                        ? service.timestamp.toDate() 
+                        : new Date(service.date + "T00:00:00");
+                        
+                      return (
+                        <tr key={service.id} className="hover:bg-surface-highlight/50 transition-colors">
+                          {/* Fecha */}
+                          <td className="px-1 py-3 text-center align-middle">
+                             {/* MÓVIL: Stacked */}
+                             <div className="flex flex-col items-center justify-center md:hidden leading-tight">
+                                <span className="text-base font-bold text-text-main">
+                                    {format(dateObj, 'dd')}
+                                </span>
+                                <span className="text-[10px] uppercase text-text-muted font-bold">
+                                    {format(dateObj, 'MMM', { locale: es }).replace('.', '')}
+                                </span>
+                             </div>
+                             {/* PC: Fecha Completa */}
+                             <div className="hidden md:block text-sm text-text-muted">
+                                {format(dateObj, 'dd/MM/yyyy')}
+                             </div>
+                          </td>
 
-                      {/* Info Principal */}
-                      <div className="flex items-center gap-4">
-                        {/* Avatar del empleado */}
-                        <div
-                          className={`w-10 h-10 rounded-full bg-gradient-to-br ${getUserColor(service.userId)} p-0.5 shadow-sm`}
-                          title={getUserName(service.userId)}
-                        >
-                          <div className="w-full h-full bg-surface rounded-full flex items-center justify-center text-xs font-bold text-white uppercase">
-                            {getUserName(service.userId).substring(0, 2)}
-                          </div>
-                        </div>
+                          {/* Servicios */}
+                          <td className="px-2 py-3 align-middle">
+                            <div className="flex items-center gap-3">
+                               <div className="shrink-0">
+                                  <UserAvatar
+                                    image={getUserPhoto(service.userId)}
+                                    name={getUserName(service.userId)}
+                                    size="w-8 h-8"
+                                  />
+                               </div>
+                               <div className="min-w-0 flex-1 overflow-hidden">
+                                  <p className="text-sm font-bold text-text-main truncate">
+                                     {service.service}
+                                  </p>
+                                  <div className="flex items-center gap-1 text-xs text-text-muted mt-0.5 truncate">
+                                     <span className="text-primary-400 font-medium">@{service.client}</span>
+                                     <span>•</span>
+                                     <span className="capitalize">{service.paymentMethod === "cash" ? "Efect." : "Trans."}</span>
+                                  </div>
+                               </div>
+                            </div>
+                          </td>
 
-                        <div>
-                          <h4 className="font-bold text-text-main text-lg">
-                            {service.service}
-                          </h4>
-                          <div className="flex items-center gap-2 text-xs text-text-muted">
-                            <span className="font-medium text-primary-400">
-                              @{service.client}
-                            </span>
-                            <span>•</span>
-                            <span className="capitalize">
-                              {service.paymentMethod === "cash"
-                                ? "Efectivo"
-                                : "Transferencia"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Precio */}
-                    <div className="text-right pl-4">
-                      <span className="block text-xl font-black text-text-main">
-                        ${service.cost}
-                      </span>
-                      {service.services && service.services.length > 1 && (
-                        <span className="text-xs text-text-muted bg-white/5 px-2 py-0.5 rounded-full">
-                          {service.services.length} items
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                          {/* Precio */}
+                          <td className="px-2 py-3 text-right align-middle">
+                             <span className="block text-sm md:text-base font-bold text-text-main">
+                               ${service.cost}
+                             </span>
+                             {service.services && service.services.length > 1 && (
+                               <span className="text-[10px] text-text-muted inline-block bg-surface-highlight px-1.5 py-0.5 rounded-full mt-1">
+                                 {service.services.length} it.
+                               </span>
+                             )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

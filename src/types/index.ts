@@ -86,6 +86,7 @@ export type Filters = {
   search: string;
   dateFrom: string;
   dateTo: string;
+  page?: number;
 };
 
 export type CatalogService = {
@@ -179,6 +180,9 @@ export type Client = {
   id: string;
   name: string;
   phone?: string;
+  email?: string; // Contacto
+  phoneNumber?: string; // Contacto
+  createdAt?: any; // Timestamp creation
   firstVisit: string;
   lastVisit: string;
   totalSpent: number;

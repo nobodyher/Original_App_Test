@@ -60,24 +60,38 @@ export const useAuth = (enabled: boolean) => {
     return () => unsub();
   }, [initialized, enabled]);
 
-  // 3. Restaurar sesión (LÓGICA CORREGIDA)
+  // 3. Restaurar sesión (LÓGICA CORREGIDA & MEJORADA)
   useEffect(() => {
     // Solo procedemos si YA recibimos datos de Firebase (dataLoaded)
     if (dataLoaded) {
-      if (users.length > 0) {
-        const savedUserId = sessionStorage.getItem("salon_user_id");
+      const savedUserId = sessionStorage.getItem("salon_user_id");
 
-        if (savedUserId && !currentUser) {
-          const foundUser = users.find((u) => u.id === savedUserId);
-          if (foundUser) {
-            setCurrentUser(foundUser);
+      if (savedUserId && users.length > 0) {
+        const foundUser = users.find((u) => u.id === savedUserId);
+        
+        if (foundUser) {
+          // ACTUALIZACIÓN EN TIEMPO REAL:
+          // Solo actualizamos si el usuario NO está logueado o si los datos han cambiado
+          // Para evitar loops infinitos, comparamos la versión stringificada
+          const currentUserStr = JSON.stringify(currentUser);
+          const foundUserStr = JSON.stringify(foundUser);
+          
+          if (currentUserStr !== foundUserStr) {
+             setCurrentUser(foundUser);
           }
+        } else {
+             // Si el usuario guardado ya no existe en la lista (fue borrado), logout
+            if (currentUser) {
+                setCurrentUser(null);
+                sessionStorage.removeItem("salon_user_id");
+            }
         }
       }
-      // Solo ahora quitamos el loading. ¡Adiós al flash!
+      
       setLoading(false);
     }
-  }, [users, dataLoaded]); // Dependemos de dataLoaded, no de initialized
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users, dataLoaded]); // Removemos currentUser de dependencias para evitar el loop advertido, la lógica interna maneja la comparación
 
   const login = (user: AppUser) => {
     sessionStorage.setItem("salon_user_id", user.id);

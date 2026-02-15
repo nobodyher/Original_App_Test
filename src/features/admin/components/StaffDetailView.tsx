@@ -11,7 +11,10 @@ import {
   Briefcase,
   TrendingUp,
   Trash2,
+  Camera,
 } from "lucide-react";
+import { UserAvatar } from "../../../components/ui/UserAvatar";
+import { uploadToCloudinary } from "../../../services/cloudinaryService";
 import type { AppUser, Service } from "../../../types";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 
@@ -43,6 +46,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     email: staff.email || "",
     commissionPct: staff.commissionPct || 0,
     isActive: staff.active ?? true,
+    photoURL: staff.photoURL || null,
     // Note: 'active' property in AppUser, 'isActive' in form.
   });
 
@@ -57,26 +61,70 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         email: staff.email || "",
         commissionPct: staff.commissionPct || 0,
         isActive: staff.active !== undefined ? staff.active : true,
+        photoURL: staff.photoURL || null,
       });
     }
   }, [staff]);
 
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
+      let finalPhotoURL = formData.photoURL;
+
+      // Si hay una nueva imagen pendiente de subida, subirla a Cloudinary
+      if (fileToUpload) {
+        try {
+          finalPhotoURL = await uploadToCloudinary(fileToUpload);
+        } catch (uploadError) {
+           console.error("Error uploading image:", uploadError);
+           alert("Error al subir la imagen. Intenta de nuevo.");
+           setIsSubmitting(false);
+           return;
+        }
+      }
+
       await onUpdate({
         phoneNumber: formData.phoneNumber,
         email: formData.email,
         birthDate: formData.birthDate,
         commissionPct: Number(formData.commissionPct),
         active: formData.isActive,
+        photoURL: finalPhotoURL || undefined,
       });
       // Optional: Show success notification handled by parent or here
+      // Limpiar archivo pendiente después de guardar exitoso
+      setFileToUpload(null);
     } catch (error) {
       console.error("Error updating staff:", error);
+      alert("Error al guardar los cambios.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Manejador de selección de archivo
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor selecciona un archivo de imagen válido");
+      return;
+    }
+
+    // Validar tamaño (max 10MB para Cloudinary está bien, pero mantenemos un límite razonable)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("La imagen es demasiado grande. Máximo 10MB.");
+      return;
+    }
+
+    // Previsualización local inmediata
+    const localPreviewUrl = URL.createObjectURL(file);
+    setFormData((prev) => ({ ...prev, photoURL: localPreviewUrl }));
+    setFileToUpload(file);
   };
 
   // Filter Transactions
@@ -98,6 +146,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
     return transactions
       .filter((t) => t.userId === staff.id)
+      .filter((t) => !t.deleted) // ✅ Excluir transacciones eliminadas (soft delete)
       .filter((t) => {
         // Usar timestamp si existe para precisión de zona horaria, si no, fallar a string date
         const tDate =
@@ -167,19 +216,35 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
           </div>
 
           <div className="p-6 flex flex-col items-center">
-            {/* Avatar */}
-            <div className="relative mb-4">
-              <div className="w-32 h-32 rounded-full border-4 border-surface shadow-xl flex items-center justify-center text-4xl bg-gradient-to-br from-primary-100 to-white text-primary-600 font-bold overflow-hidden">
-                {staff.photoURL ? (
-                  <img
-                    src={staff.photoURL}
-                    alt={staff.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  staff.name.slice(0, 2).toUpperCase()
-                )}
+            {/* Avatar with Upload */}
+            <div className="relative mb-4 group">
+              <div className="w-32 h-32 rounded-full border-4 border-surface shadow-xl overflow-hidden">
+                <UserAvatar
+                  image={formData.photoURL}
+                  name={staff.name}
+                  size="w-full h-full"
+                  className="text-4xl"
+                />
               </div>
+
+              {/* Hover Overlay for Upload */}
+              <label
+                htmlFor="avatar-upload"
+                className="absolute inset-0 rounded-full bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-all"
+              >
+                <Camera size={32} className="text-white" />
+              </label>
+
+              {/* Hidden File Input */}
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+
+              {/* Status Badge */}
               <div
                 className={`absolute bottom-2 right-2 w-6 h-6 rounded-full border-4 border-surface ${
                   formData.isActive ? "bg-emerald-500" : "bg-gray-400"
@@ -287,61 +352,55 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                 </div>
               </div>
 
-              {/* Active Switch */}
-              <div className="flex items-center justify-between p-3 bg-surface-highlight rounded-xl border border-border">
-                <div className="flex items-center gap-2">
-                  <Power size={18} className="text-text-muted" />
-                  <span className="text-sm font-medium text-text-main">
-                    Cuenta Activa
-                  </span>
-                </div>
-                <button
-                  onClick={() =>
-                    setFormData({ ...formData, isActive: !formData.isActive })
-                  }
-                  className={`relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out ${
-                    formData.isActive ? "bg-emerald-500" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${
-                      formData.isActive ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
 
-              {/* Save Button */}
-              <button
-                onClick={handleSave}
-                disabled={isSubmitting}
-                className="w-full mt-4 bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-primary-600/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Save size={18} />
-                {isSubmitting ? "Guardando..." : "Guardar Cambios"}
-              </button>
-
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isSubmitting}
-                className="w-full mt-3 bg-white hover:bg-red-50 text-red-500 hover:text-red-600 border border-transparent hover:border-red-200 font-bold py-3 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                <Trash2 size={18} />
-                Eliminar Personal
-              </button>
             </div>
           </div>
         </div>
 
         {/* RIGHT COLUMN: Performance */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Action Bar */}
+          <div className="flex items-center justify-end gap-2 mb-4">
+             {/* Toggle Active */}
+            <button
+               onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+               className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all ${
+                 formData.isActive
+                   ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                   : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+               }`}
+             >
+               <Power size={16} />
+               <span>{formData.isActive ? "Activo" : "Inactivo"}</span>
+             </button>
+
+            {/* Delete Button */}
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-transparent hover:border-red-200"
+            >
+              <Trash2 size={18} />
+              Eliminar
+            </button>
+
+            {/* Save Button */}
+            <button
+              onClick={handleSave}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm hover:shadow active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Save size={18} />
+              Guardar
+            </button>
+          </div>
           {/* Filters */}
-          <div className="bg-surface p-2 rounded-xl border border-border inline-flex gap-1 shadow-sm">
+          <div className="flex w-full overflow-x-auto no-scrollbar gap-2 px-1 pb-2 justify-start md:justify-center bg-surface p-2 rounded-xl border border-border shadow-sm">
             {(["today", "week", "month", "total"] as TimeFilter[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 py-2 text-sm whitespace-nowrap rounded-lg font-medium transition-all ${
                   filter === f
                     ? "bg-primary-600 text-white shadow-md"
                     : "text-text-muted hover:text-text-main hover:bg-surface-highlight"
@@ -418,79 +477,80 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
           </div>
 
           {/* History Table */}
-          <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden flex-1">
-            <div className="px-6 py-4 border-b border-border bg-surface-highlight/30">
+          <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden flex-1 flex flex-col">
+            <div className="px-6 py-4 border-b border-border bg-surface-highlight/30 flex justify-between items-center">
               <h3 className="font-bold text-text-main">
                 Historial de Servicios
               </h3>
               <p className="text-xs text-text-muted">
-                {stats.totalServices} registros encontrados
+                {stats.totalServices} registros
               </p>
             </div>
-            <div className="overflow-y-auto max-h-[400px]">
-              <table className="w-full">
-                <thead className="bg-surface-highlight sticky top-0">
-                  <tr>
-                    <th className="text-left py-3 px-6 text-xs font-medium text-text-muted uppercase">
-                      Servicio
-                    </th>
-                    <th className="text-left py-3 px-6 text-xs font-medium text-text-muted uppercase">
-                      Fecha
-                    </th>
-                    <th className="text-right py-3 px-6 text-xs font-medium text-text-muted uppercase">
-                      Monto
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filteredTransactions.length > 0 ? (
-                    filteredTransactions.map((t) => {
-                      const transactionDate = t.timestamp
-                        ? t.timestamp.toDate()
-                        : new Date(t.date);
+            
+            <div className="flex-1 overflow-y-auto p-4 max-h-[500px]">
+              {filteredTransactions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredTransactions.map((t) => {
+                    const transactionDate = t.timestamp
+                      ? t.timestamp.toDate()
+                      : new Date(t.date);
+                    
+                    const isToday =
+                      transactionDate.toDateString() ===
+                      new Date().toDateString();
 
-                      return (
-                        <tr
-                          key={t.id}
-                          className="hover:bg-surface-highlight transition-colors"
-                        >
-                          <td className="py-3 px-6 text-sm text-text-main font-medium">
-                            {t.services?.[0]?.serviceName ||
-                              t.service ||
-                              "Servicio Gral."}
-                            {t.services && t.services.length > 1 && (
-                              <span className="text-xs text-text-muted ml-1">
-                                (+{t.services.length - 1})
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-6 text-sm text-text-muted">
-                            {transactionDate.toLocaleDateString()}
-                            <span className="text-xs ml-2 opacity-50">
+                    return (
+                      <div
+                        key={t.id}
+                        className="bg-surface p-4 rounded-xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col gap-2 group hover:border-primary-500/30"
+                      >
+                        {/* Header: Date */}
+                        <div className="flex justify-between items-start">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-primary-600 uppercase tracking-wider bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded-md w-fit">
+                              {isToday ? "Hoy" : transactionDate.toLocaleDateString()}
+                            </span>
+                            <span className="text-xs text-text-muted mt-0.5 font-medium ml-1">
                               {transactionDate.toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
                               })}
                             </span>
-                          </td>
-                          <td className="py-3 px-6 text-sm text-text-main font-bold text-right">
-                            ${t.cost.toFixed(2)}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className="py-8 text-center text-text-muted"
-                      >
-                        No hay servicios en este periodo.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                          </div>
+                          
+                          {/* Price Tag */}
+                          <div className="text-right">
+                             <span className="block text-lg font-black text-text-main">
+                              ${t.cost.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Body: Client & Service */}
+                        <div className="mt-1 pt-2 border-t border-border/50">
+                          <p className="text-sm font-bold text-text-main truncate">
+                             {t.client || "Cliente General"}
+                          </p>
+                          <div className="text-xs text-text-muted mt-1 flex flex-col gap-0.5">
+                             <span className="flex items-center gap-1">
+                                {t.services?.[0]?.serviceName || t.service || "Servicio"}
+                             </span>
+                             {t.services && t.services.length > 1 && (
+                               <span className="text-primary-600 font-semibold">
+                                 +{t.services.length - 1} servicios más
+                               </span>
+                             )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-text-muted">
+                  <p>No hay servicios en este periodo.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

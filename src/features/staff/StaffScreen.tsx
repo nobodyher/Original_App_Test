@@ -16,6 +16,7 @@ import NotificationToast from "../../components/ui/NotificationToast";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import ThemeToggle from "../../components/ui/ThemeToggle";
+import { UserAvatar } from "../../components/ui/UserAvatar";
 import type {
   AppUser,
   Service,
@@ -253,16 +254,17 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
       <NotificationToast notification={notification} />
 
-      {/* Header with Glassmorphism */}
-      <div className="relative z-10 overflow-hidden bg-surface backdrop-blur-xl border-b border-primary-400/20 pb-12 pt-8 px-6 shadow-none">
-        <div className="relative max-w-7xl mx-auto flex justify-between items-end">
+      {/* Header with Glassmorphism - COMPACTED */}
+      <div className="relative z-10 overflow-hidden bg-surface backdrop-blur-xl border-b border-primary-400/20 pb-3 pt-3 px-6 shadow-none">
+        <div className="relative max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div
-                className={`w-12 h-12 rounded-full bg-gradient-to-tr from-primary-600 to-primary-700 flex items-center justify-center shadow-sm`}
-              >
-                <User className="text-white" size={24} />
-              </div>
+              <UserAvatar
+                image={currentUser.photoURL}
+                name={currentUser.name}
+                size="w-12 h-12"
+                className="shadow-md ring-2 ring-primary-600/20"
+              />
               <div>
                 <p className="text-text-muted font-bold uppercase tracking-wider text-xs">
                   Panel de Staff
@@ -290,46 +292,10 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 -mt-8 relative z-10 space-y-8">
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-none transition-all">
-            <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
-              <Check size={80} className="text-primary-600" />
-            </div>
-            <p className="text-text-muted text-xs font-bold uppercase tracking-wider">
-              Servicios Hoy
-            </p>
-            <p className="text-5xl font-black text-text-main">
-              {userServices.length}
-            </p>
-          </Card>
-          <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-none transition-all">
-            <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
-              <TrendingUp size={80} className="text-primary-400" />
-            </div>
-            <p className="text-text-muted text-xs font-bold uppercase tracking-wider">
-              Ventas Totales
-            </p>
-            <p className="text-5xl font-black text-text-main">
-              ${totalToday.toFixed(2)}
-            </p>
-          </Card>
-          <div className="bg-gradient-to-br from-primary-600 to-neutral-900 rounded-[2rem] shadow-none p-6 flex flex-col justify-between h-32 relative overflow-hidden text-white group">
-            <div className="absolute right-0 top-0 p-5 opacity-10 group-hover:scale-110 transition-transform">
-              <Crown size={80} className="text-primary-400" />
-            </div>
-            <p className="text-white/60 text-xs font-bold uppercase tracking-wider">
-              Tu Comisión Est.
-            </p>
-            <p className="text-5xl font-black text-neutral-50">
-              ${finalTotalCommission.toFixed(2)}
-            </p>
-          </div>
-        </div>
-
-        {/* Creates New Service Section */}
+      <div className="max-w-7xl mx-auto px-4 mt-6 relative z-10 space-y-8">
+        {/* BLOQUE A: Action Buttons - Nueva Venta (Moved to top for quick access) */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+
           {/* Left Column: Form Inputs (8 cols) */}
           <div className="xl:col-span-8 space-y-6">
             {/* 1. Client & Basics Card */}
@@ -649,7 +615,46 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
           </div>
         </div>
 
-        {/* Services List - Modern Card View */}
+        {/* BLOQUE B: Statistics Cards - Resumen de Hoy (Moved below action buttons) */}
+        <div className="my-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-none transition-all">
+              <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
+                <Check size={80} className="text-primary-600" />
+              </div>
+              <p className="text-text-muted text-xs font-bold uppercase tracking-wider">
+                Servicios Hoy
+              </p>
+              <p className="text-5xl font-black text-text-main">
+                {userServices.length}
+              </p>
+            </Card>
+            <Card className="p-6 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-none transition-all">
+              <div className="absolute right-0 top-0 p-5 opacity-5 group-hover:scale-110 transition-transform">
+                <TrendingUp size={80} className="text-primary-400" />
+              </div>
+              <p className="text-text-muted text-xs font-bold uppercase tracking-wider">
+                Ventas Totales
+              </p>
+              <p className="text-5xl font-black text-text-main">
+                ${totalToday.toFixed(2)}
+              </p>
+            </Card>
+            <div className="bg-gradient-to-br from-primary-600 to-neutral-900 rounded-[2rem] shadow-none p-6 flex flex-col justify-between h-32 relative overflow-hidden text-white group">
+              <div className="absolute right-0 top-0 p-5 opacity-10 group-hover:scale-110 transition-transform">
+                <Crown size={80} className="text-primary-400" />
+              </div>
+              <p className="text-white/60 text-xs font-bold uppercase tracking-wider">
+                Tu Comisión Est.
+              </p>
+              <p className="text-5xl font-black text-neutral-50">
+                ${finalTotalCommission.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* BLOQUE C: Services List - Modern Card View (History at bottom) */}
         <div className="pt-16 pb-12">
           <div className="flex flex-col sm:flex-row justify-between items-end mb-8 gap-4">
             <h2 className="text-3xl font-black text-text-main tracking-tight">
@@ -676,7 +681,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-0 divide-y divide-gray-200 dark:divide-gray-700 bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
             {filteredServices.length === 0 ? (
               <EmptyState
                 icon={ClipboardList}
@@ -684,76 +689,91 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                 message="Tus servicios realizados aparecerán aquí."
               />
             ) : (
-              filteredServices
-                .slice()
-                .reverse()
-                .map((service) => {
-                  const isCash = service.paymentMethod === "cash";
+              <>
+                {filteredServices
+                  .slice()
+                  .reverse()
+                  .slice((filters.page || 0) * 10, ((filters.page || 0) + 1) * 10)
+                  .map((service) => {
+                    const serviceDate =
+                      service.timestamp && typeof service.timestamp.toDate === "function"
+                        ? service.timestamp.toDate()
+                        : new Date(service.date + "T00:00:00");
 
-                  return (
-                    <Card
-                      key={service.id}
-                      className="group p-6 relative overflow-hidden transition-all hover:shadow-none hover:bg-surface hover:-translate-y-1"
-                    >
+                    const day = serviceDate.getDate();
+                    const month = serviceDate.toLocaleString('es-ES', { month: 'short' });
+                    // const displayDate = `${day} ${month}`; 
+
+                    return (
                       <div
-                        className={`absolute top-0 left-0 w-1.5 h-full ${isCash ? "bg-primary-400" : "bg-primary-600"}`}
-                      />
-
-                      <div className="pl-4 flex justify-between items-start mb-5">
-                        <div>
-                          <h4 className="font-bold text-text-main text-xl mb-1">
-                            {service.client}
-                          </h4>
-                          <p className="text-text-muted text-xs font-bold uppercase tracking-wide">
-                            {service.date}
-                          </p>
+                        key={service.id}
+                        className="flex items-center justify-between p-4 hover:bg-surface-highlight transition-colors group cursor-default"
+                      >
+                        {/* 1. Fecha (Izquierda) */}
+                        <div className="flex flex-col w-12 text-center mr-3 border-r border-border/50 pr-3 items-center justify-center">
+                          <span className="text-lg font-black text-text-main leading-none">
+                            {day}
+                          </span>
+                          <span className="text-[10px] font-bold text-text-muted uppercase leading-none mt-1">
+                            {month.replace('.', '')}
+                          </span>
                         </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-black text-text-main tracking-tight">
+
+                        {/* 2. Detalles (Centro) */}
+                        <div className="flex-1 min-w-0 flex flex-col mr-4">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-bold text-text-main truncate">
+                              {service.client || "Cliente"}
+                            </span>
+                          </div>
+                          <span className="text-xs text-text-muted truncate flex items-center gap-1">
+                            {service.services?.[0]?.serviceName || "Servicio"}
+                            {service.services && service.services.length > 1 && (
+                               <span className="font-semibold text-text-main">
+                                 +{service.services.length - 1}
+                               </span>
+                             )}
+                            {service.extras && service.extras.length > 0 && (
+                              <span className="text-primary-600 dark:text-primary-400 font-medium ml-1">
+                                (+ {service.extras.length} extras)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+
+                        {/* 3. Precio (Derecha) */}
+                        <div className="text-right pl-2 flex flex-col items-end gap-1">
+                          <span className="block text-sm font-black text-emerald-600 dark:text-emerald-400 px-2 py-0 rounded-lg">
                             ${Number(service.cost).toFixed(2)}
-                          </p>
-                          <span
-                            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                              isCash
-                                ? "bg-primary-400/10 text-primary-400"
-                                : "bg-primary-600/10 text-primary-600"
-                            }`}
-                          >
-                            {isCash ? "Efectivo" : "Transferencia"}
                           </span>
                         </div>
                       </div>
-
-                      <div className="pl-4 bg-background rounded-2xl p-4 mb-2 border border-border">
-                        {service.services?.map((s, i) => (
-                          <div
-                            key={i}
-                            className="flex justify-between items-center text-sm mb-2 last:mb-0"
-                          >
-                            <span className="text-text-muted font-semibold">
-                              {s.serviceName}
-                            </span>
-                          </div>
-                        ))}
-                        {service.extras && service.extras.length > 0 && (
-                          <div className="mt-3 text-xs border-t border-border pt-3 space-y-1.5">
-                            {service.extras.map((e, i) => (
-                              <div
-                                key={i}
-                                className="flex justify-between text-text-muted font-medium"
-                              >
-                                <span>+ {e.extraName}</span>
-                                <span className="bg-surface px-1.5 rounded text-text-muted">
-                                  {e.nailsCount}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  );
-                })
+                    );
+                  })}
+                  
+                  {/* Pagination Controls */}
+                  {filteredServices.length > 10 && (
+                    <div className="p-4 flex justify-between items-center bg-surface-highlight/20 border-t border-border">
+                        <button
+                            onClick={() => setFilters(prev => ({ ...prev, page: Math.max(0, (prev.page || 0) - 1) }))}
+                            disabled={!filters.page || filters.page === 0}
+                            className="text-sm font-bold text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1"
+                        >
+                            Anterior
+                        </button>
+                        <span className="text-xs text-text-muted font-medium">
+                            Página {(filters.page || 0) + 1} de {Math.ceil(filteredServices.length / 10)}
+                        </span>
+                        <button
+                            onClick={() => setFilters(prev => ({ ...prev, page: Math.min(Math.ceil(filteredServices.length / 10) - 1, (prev.page || 0) + 1) }))}
+                            disabled={(filters.page || 0) >= Math.ceil(filteredServices.length / 10) - 1}
+                            className="text-sm font-bold text-text-muted hover:text-text-main disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                  )}
+              </>
             )}
           </div>
         </div>

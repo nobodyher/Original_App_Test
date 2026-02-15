@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { TrendingUp, Crown, User, Lock, ArrowLeft, Delete } from "lucide-react";
+import { Crown, User, Lock, ArrowLeft, Delete } from "lucide-react";
 import NotificationToast from "../../components/ui/NotificationToast";
 import { Card } from "../../components/ui/Card";
 import type { AppUser, Toast } from "../../types";
 
 import ThemeToggle from "../../components/ui/ThemeToggle";
+import { UserAvatar } from "../../components/ui/UserAvatar";
+import neonLogo from "../../assets/neon_logo.png";
 
 interface LoginScreenProps {
   users: AppUser[];
@@ -50,6 +52,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     if (!selectedUser) return;
 
     if (pin === selectedUser.pin) {
+      // ✅ Reset view to Dashboard on explicit login
+      localStorage.setItem("owner_currentView", "dashboard");
+      
       onLogin(selectedUser);
       showNotification(`¡Bienvenida ${selectedUser.name}!`);
       setPin("");
@@ -115,14 +120,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         {!selectedUser && (
           <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="inline-flex p-4 rounded-3xl bg-surface/40 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/20 mb-4 ring-1 ring-white/5">
-              <TrendingUp
-                className="text-primary-500"
-                size={48}
-                strokeWidth={1.5}
+              <img 
+                src={neonLogo} 
+                alt="Logo" 
+                className="w-16 h-16 object-contain"
               />
             </div>
             <h1 className="text-5xl text-text-main tracking-tight drop-shadow-lg font-bold">
-              Nombre<span className="text-primary-500">Local</span>
+              <span className="text-primary-500">Voidly</span>
             </h1>
             <p className="text-text-muted text-sm uppercase tracking-wider font-semibold">
               Selecciona tu usuario
@@ -141,19 +146,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               >
                 <div className="relative w-24 h-24 rounded-full p-[3px] bg-gradient-to-tr from-primary-500 to-primary-600 shadow-lg shadow-primary-500/20 mb-4 group-hover:shadow-primary-500/40 transition-shadow">
                   <div className="w-full h-full rounded-full bg-surface-highlight flex items-center justify-center border-2 border-surface overflow-hidden">
-                    {user.icon === "crown" ? (
-                      <Crown
-                        className="text-primary-400 group-hover:text-white transition-colors"
-                        size={32}
-                        strokeWidth={1.5}
-                      />
-                    ) : (
-                      <User
-                        className="text-primary-500 group-hover:text-white transition-colors"
-                        size={32}
-                        strokeWidth={1.5}
-                      />
-                    )}
+                    <UserAvatar
+                      image={user.photoURL}
+                      name={user.name}
+                      size="w-full h-full"
+                      className="rounded-full"
+                    />
                   </div>
                 </div>
                 <span className="text-lg font-bold text-text-muted group-hover:text-primary-500 transition-colors">
@@ -185,20 +183,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               {/* User Info with Void Glow */}
               <div className="text-center mb-8 mt-4">
                 <div className="relative w-24 h-24 mx-auto mb-4 rounded-full p-[3px] bg-gradient-to-tr from-primary-500 to-primary-600 shadow-lg shadow-primary-500/40 ring-4 ring-primary-500/20 animate-pulse-slow">
-                  <div className="w-full h-full rounded-full bg-surface-highlight flex items-center justify-center border-2 border-surface">
-                    {selectedUser.icon === "crown" ? (
-                      <Crown
-                        className="text-primary-400"
-                        size={40}
-                        strokeWidth={1.5}
-                      />
-                    ) : (
-                      <User
-                        className="text-primary-500"
-                        size={40}
-                        strokeWidth={1.5}
-                      />
-                    )}
+                  <div className="w-full h-full rounded-full bg-surface-highlight flex items-center justify-center border-2 border-surface overflow-hidden">
+                    <UserAvatar
+                      image={selectedUser.photoURL}
+                      name={selectedUser.name}
+                      size="w-full h-full"
+                      className="rounded-full"
+                    />
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-text-main mb-1">
