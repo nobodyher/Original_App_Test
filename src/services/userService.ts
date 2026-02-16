@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import type { AppUser } from "../types";
+import { hashPin } from "../utils/security";
 
 export const initializeDefaultUsers = async (): Promise<void> => {
   await runTransaction(db, async (tx) => {
@@ -84,9 +85,11 @@ export const createNewUser = async (userData: Partial<AppUser>) => {
     throw new Error("PIN debe tener al menos 4 dígitos");
   }
 
+  const hashedPin = await hashPin(pin.trim());
+
   await addDoc(collection(db, "users"), {
     name: name.trim(),
-    pin: pin.trim(),
+    pin: hashedPin,
     role: "staff",
     color: color || "from-gray-500 to-gray-600",
     icon: "user",
@@ -158,7 +161,7 @@ export const updateUser = async (userId: string, updates: Partial<AppUser>) => {
       if (pinStr.length < 4) {
         throw new Error("El PIN debe tener al menos 4 dígitos.");
       }
-      dataToUpdate.pin = pinStr;
+      dataToUpdate.pin = await hashPin(pinStr);
     }
 
     // 5. Validar Nombre (si se está actualizando)

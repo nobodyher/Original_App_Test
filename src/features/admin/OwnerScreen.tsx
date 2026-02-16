@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calendar,
   LayoutDashboard,
@@ -18,97 +18,23 @@ import OwnerDashboard from "./components/OwnerDashboard";
 import HistoryTab from "./components/HistoryTab";
 import AnalyticsTab from "./components/AnalyticsTab";
 import OwnerConfigTab from "./components/OwnerConfigTab";
+import { ClientsManager } from "./components/tabs/ClientsManager";
 import type { ConfigTab } from "./components/OwnerConfigTab";
 import ThemeToggle from "../../components/ui/ThemeToggle";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 import { usePhotoUpload } from "../../hooks/usePhotoUpload";
-import type {
-  AppUser,
-  Service,
-  Expense,
-  CatalogService,
-  ServiceRecipe,
-  CatalogExtra,
-  MaterialRecipe,
-  Consumable,
-  ChemicalProduct,
-  Toast,
-  Client,
-} from "../../types";
-import { DashboardSkeleton, TableSkeleton } from "../../components/ui/Skeleton";
 
-interface OwnerScreenProps {
-  users: AppUser[];
-  currentUser: AppUser | null;
-  services: Service[];
-  expenses: Expense[];
-  catalogServices: CatalogService[];
-  catalogExtras: CatalogExtra[];
-  materialRecipes: MaterialRecipe[];
-  serviceRecipes: ServiceRecipe[];
-  consumables: Consumable[];
-  chemicalProducts: ChemicalProduct[];
-  clients: Client[];
-  showNotification: (message: string, type?: Toast["type"]) => void;
-  onLogout: () => void;
-
-  // Actions passed down
-  addExpense: (data: any) => Promise<void>;
-  deleteExpense: (id: string) => Promise<void>;
-  updateServiceCost: (id: string, cost: number) => Promise<void>;
-  softDeleteService: (id: string, userId?: string) => Promise<void>;
-  permanentlyDeleteService: (id: string) => Promise<void>;
-  restoreDeletedService: (id: string) => Promise<void>;
-
-  createNewUser: (data: any) => Promise<void>;
-  updateUser: (userId: string, data: Partial<AppUser>) => Promise<void>;
-  updateUserCommission: (
-    userId: string,
-    newCommission: number,
-  ) => Promise<void>;
-  deactivateUser: (userId: string) => Promise<void>;
-  deleteUserPermanently: (userId: string) => Promise<void>;
-
-  addCatalogService: (
-    name: string,
-    category: "manicura" | "pedicura",
-    price: number,
-  ) => Promise<string>;
-  updateCatalogService: (
-    id: string,
-    data: Partial<CatalogService>,
-  ) => Promise<void>;
-  deleteCatalogService: (id: string) => Promise<void>;
-
-  addExtra: (name: string, price: number) => Promise<void>;
-  updateExtra: (id: string, data: Partial<CatalogExtra>) => Promise<void>;
-  deleteExtra: (id: string) => Promise<void>;
-
-  addConsumable: (data: any) => Promise<void>;
-  updateConsumable: (id: string, data: Partial<Consumable>) => Promise<void>;
-  deleteConsumable: (id: string) => Promise<void>;
-
-  addChemicalProduct: (data: any) => Promise<void>;
-  updateChemicalProduct: (
-    id: string,
-    updates: Partial<ChemicalProduct>,
-    currentProduct?: ChemicalProduct,
-  ) => Promise<void>;
-  deleteChemicalProduct: (id: string) => Promise<void>;
-
-  initializeMaterialsData: () => Promise<void>;
-  deleteClient: (clientId: string) => Promise<void>;
-}
+import { useSalonContext } from "../../context/SalonContext";
 
 // Helper functions for persistence
-const getInitialView = (): "dashboard" | "history" | "analytics" | "admin" => {
+const getInitialView = (): "dashboard" | "history" | "analytics" | "clients" | "admin" => {
   try {
     const saved = localStorage.getItem("owner_currentView");
     if (
       saved &&
-      ["dashboard", "history", "analytics", "admin"].includes(saved)
+      ["dashboard", "history", "analytics", "clients", "admin"].includes(saved)
     ) {
-      return saved as "dashboard" | "history" | "analytics" | "admin";
+      return saved as "dashboard" | "history" | "analytics" | "clients" | "admin";
     }
   } catch (e) {
     console.warn("Failed to read view preference", e);
@@ -128,40 +54,76 @@ const getInitialAdminTab = (): ConfigTab => {
   return "services";
 };
 
-const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
+const OwnerScreen: React.FC = () => {
+  const {
+    users,
+    currentUser,
+    services,
+    expenses,
+    catalogServices,
+    catalogExtras,
+    materialRecipes,
+    serviceRecipes,
+    consumables,
+    chemicalProducts,
+    clients,
+    showNotification,
+    onLogout,
+    addExpense,
+    deleteExpense,
+    updateServiceCost,
+    softDeleteService,
+    permanentlyDeleteService,
+    restoreDeletedService,
+    createNewUser,
+    updateUser,
+    updateUserCommission,
+    deactivateUser,
+    deleteUserPermanently,
+    addCatalogService,
+    updateCatalogService,
+    deleteCatalogService,
+    addExtra,
+    updateExtra,
+    deleteExtra,
+    addConsumable,
+    updateConsumable,
+    deleteConsumable,
+    addChemicalProduct,
+    updateChemicalProduct,
+    deleteChemicalProduct,
+    initializeMaterialsData,
+    deleteClient,
+  } = useSalonContext();
+
   const [currentView, setCurrentView] = useState<
-    "dashboard" | "history" | "analytics" | "admin"
+    "dashboard" | "history" | "analytics" | "clients" | "admin"
   >(getInitialView);
   const [adminSubTab, setAdminSubTab] = useState<ConfigTab>(getInitialAdminTab);
-  const [isAdminOpen, setIsAdminOpen] = useState(currentView === "admin"); // Initialize open if we start in admin
+  const [isAdminOpen, setIsAdminOpen] = useState(currentView === "admin");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const { isUploading, handlePhotoChange } = usePhotoUpload(props.currentUser, props.showNotification);
+
+  const { isUploading, handlePhotoChange } = usePhotoUpload(currentUser, showNotification);
 
   // Persist state changes
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem("owner_currentView", currentView);
   }, [currentView]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem("owner_adminSubTab", adminSubTab);
   }, [adminSubTab]);
 
   // Sync admin accordion state with current view
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentView === "admin") {
       setIsAdminOpen(true);
     }
   }, [currentView]);
 
-  // Trigger loading state on view change
-  React.useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, [currentView, adminSubTab]);
+
 
   const handleAdminClick = () => {
     if (!isSidebarOpen) {
@@ -227,8 +189,8 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
                   disabled={isUploading}
                 />
                 <UserAvatar
-                  image={props.currentUser?.photoURL}
-                  name={props.currentUser?.name || "Admin"}
+                  image={currentUser?.photoURL}
+                  name={currentUser?.name || "Admin"}
                   size="w-8 h-8"
                   className="shadow-sm ring-1 ring-primary-600/20"
                 />
@@ -314,6 +276,22 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
                 <span>Analíticas</span>
               </button>
 
+              {/* Clients */}
+              <button
+                onClick={() => {
+                  setCurrentView("clients");
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-semibold ${
+                  currentView === "clients"
+                    ? "bg-primary-900/20 text-primary-500"
+                    : "text-text-muted hover:bg-surface-highlight hover:text-text-main"
+                }`}
+              >
+                <Users size={20} />
+                <span>Clientes</span>
+              </button>
+
               {/* Administration Accordion */}
               <div className="pt-2">
                 <button
@@ -360,7 +338,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
 
             <div className="p-4 border-t border-border">
                <button
-                onClick={props.onLogout}
+                onClick={onLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
               >
                 <LogOut size={20} />
@@ -455,6 +433,24 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
             {isSidebarOpen && <span>Analíticas</span>}
           </button>
 
+          {/* Clients */}
+          <button
+            onClick={() => setCurrentView("clients")}
+            className={`w-full flex items-center ${isSidebarOpen ? "justify-start px-4 gap-4" : "justify-center px-2 gap-0"} py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
+              currentView === "clients"
+                ? "bg-primary-900/20 text-primary-500 border-r-2 border-primary-500 rounded-r-none"
+                : "text-text-muted hover:bg-surface-highlight hover:text-text-main"
+            }`}
+            title={!isSidebarOpen ? "Clientes" : undefined}
+          >
+            <Users
+              size={20}
+              strokeWidth={currentView === "clients" ? 2 : 1.5}
+              className={`transition-colors duration-200 ${currentView === "clients" ? "text-primary-500" : "text-text-dim group-hover:text-text-main"}`}
+            />
+            {isSidebarOpen && <span>Clientes</span>}
+          </button>
+
           {/* Administration (Accordion) */}
           <div className="pt-2">
             <button
@@ -540,8 +536,8 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
                       disabled={isUploading}
                     />
                     <UserAvatar
-                      image={props.currentUser?.photoURL}
-                      name={props.currentUser?.name || "Admin"}
+                      image={currentUser?.photoURL}
+                      name={currentUser?.name || "Admin"}
                       size="w-10 h-10"
                       className="shadow-sm ring-2 ring-primary-600/20 transition-transform group-hover:scale-105"
                     />
@@ -556,7 +552,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
             {isSidebarOpen && (
               <div className="flex-1 overflow-hidden transition-all duration-300 delay-100">
                 <p className="text-sm font-bold text-text-main truncate">
-                  {props.currentUser?.name}
+                  {currentUser?.name}
                 </p>
                 <p className="text-xs text-text-muted truncate">Propietario</p>
               </div>
@@ -568,7 +564,7 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
           </div>
 
           <button
-            onClick={props.onLogout}
+            onClick={onLogout}
             className={`flex items-center justify-center py-2.5 rounded-lg text-sm transition-all duration-200 group border border-red-500/20 text-red-400 hover:bg-red-500/10 ${
               isSidebarOpen ? "w-full gap-3 px-4" : "w-10 h-10 mx-auto"
             }`}
@@ -593,7 +589,9 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
             <div>
               <h2 className="text-3xl font-bold text-text-main tracking-tight">
                 {currentView === "dashboard" && "Resumen General"}
+                {currentView === "history" && "Historial de Ventas"}
                 {currentView === "analytics" && "Métricas y Reportes"}
+                {currentView === "clients" && "Gestión de Clientes"}
                 {currentView === "admin" && (
                   <span className="flex items-center gap-2">
                     Administración
@@ -621,88 +619,83 @@ const OwnerScreen: React.FC<OwnerScreenProps> = (props) => {
 
           {/* Content Switcher */}
           <div className="relative min-h-[500px]">
-            {isLoading ? (
-              <div className="absolute inset-0 z-10 bg-surface/50 backdrop-blur-sm flex items-start justify-center pt-20 rounded-3xl">
-                {currentView === "admin" ? (
-                  <TableSkeleton />
-                ) : (
-                  <DashboardSkeleton />
-                )}
-              </div>
-            ) : (
               <div className="animate-fade-in-up duration-500">
                 {currentView === "dashboard" && (
                   <OwnerDashboard
-                    services={props.services}
-                    expenses={props.expenses}
-                    users={props.users}
-                    currentUser={props.currentUser}
-                    materialRecipes={props.materialRecipes}
-                    catalogServices={props.catalogServices}
-                    chemicalProducts={props.chemicalProducts}
-                    serviceRecipes={props.serviceRecipes}
-                    consumables={props.consumables}
-                    showNotification={props.showNotification}
+                    services={services}
+                    expenses={expenses}
+                    users={users}
+                    currentUser={currentUser}
+                    materialRecipes={materialRecipes}
+                    catalogServices={catalogServices}
+                    chemicalProducts={chemicalProducts}
+                    serviceRecipes={serviceRecipes}
+                    consumables={consumables}
+                    showNotification={showNotification}
                     onNavigateToInventory={handleNavigateToInventory}
-                    addExpense={props.addExpense}
-                    deleteExpense={props.deleteExpense}
-                    updateServiceCost={props.updateServiceCost}
-                    softDeleteService={props.softDeleteService}
-                    permanentlyDeleteService={props.permanentlyDeleteService}
-                    restoreDeletedService={props.restoreDeletedService}
+                    addExpense={addExpense}
+                    deleteExpense={deleteExpense}
+                    updateServiceCost={updateServiceCost}
+                    softDeleteService={softDeleteService}
+                    permanentlyDeleteService={permanentlyDeleteService}
+                    restoreDeletedService={restoreDeletedService}
                   />
                 )}
 
                 {currentView === "history" && (
-                  <HistoryTab
-                    services={props.services}
-                    users={props.users}
-                    catalogServices={props.catalogServices}
-                  />
+                  <HistoryTab />
                 )}
 
                 {currentView === "analytics" && (
-                  <AnalyticsTab services={props.services} />
+                  <AnalyticsTab services={services} />
+                )}
+
+                {currentView === "clients" && (
+                  <ClientsManager
+                    clients={clients}
+                    currentUser={currentUser}
+                    deleteClient={deleteClient}
+                    showNotification={showNotification}
+                  />
                 )}
 
                 {currentView === "admin" && (
                   <OwnerConfigTab
                     initialTab={adminSubTab}
                     hideNavigation={true}
-                    users={props.users}
-                    catalogServices={props.catalogServices}
-                    catalogExtras={props.catalogExtras}
-                    materialRecipes={props.materialRecipes}
-                    serviceRecipes={props.serviceRecipes}
-                    consumables={props.consumables}
-                    chemicalProducts={props.chemicalProducts}
-                    clients={props.clients}
-                    currentUser={props.currentUser}
-                    showNotification={props.showNotification}
-                    createNewUser={props.createNewUser}
-                    updateUser={props.updateUser}
-                    updateUserCommission={props.updateUserCommission}
-                    deactivateUser={props.deactivateUser}
-                    deleteUserPermanently={props.deleteUserPermanently}
-                    addCatalogService={props.addCatalogService}
-                    updateCatalogService={props.updateCatalogService}
-                    deleteCatalogService={props.deleteCatalogService}
-                    addExtra={props.addExtra}
-                    updateExtra={props.updateExtra}
-                    deleteExtra={props.deleteExtra}
-                    addConsumable={props.addConsumable}
-                    updateConsumable={props.updateConsumable}
-                    deleteConsumable={props.deleteConsumable}
-                    addChemicalProduct={props.addChemicalProduct}
-                    updateChemicalProduct={props.updateChemicalProduct}
-                    deleteChemicalProduct={props.deleteChemicalProduct}
-                    initializeMaterialsData={props.initializeMaterialsData}
-                    deleteClient={props.deleteClient}
-                    transactions={props.services} // Pass transactions prop
+                    users={users}
+                    catalogServices={catalogServices}
+                    catalogExtras={catalogExtras}
+                    materialRecipes={materialRecipes}
+                    serviceRecipes={serviceRecipes}
+                    consumables={consumables}
+                    chemicalProducts={chemicalProducts}
+                    clients={clients}
+                    currentUser={currentUser}
+                    showNotification={showNotification}
+                    createNewUser={createNewUser}
+                    updateUser={updateUser}
+                    updateUserCommission={updateUserCommission}
+                    deactivateUser={deactivateUser}
+                    deleteUserPermanently={deleteUserPermanently}
+                    addCatalogService={addCatalogService}
+                    updateCatalogService={updateCatalogService}
+                    deleteCatalogService={deleteCatalogService}
+                    addExtra={addExtra}
+                    updateExtra={updateExtra}
+                    deleteExtra={deleteExtra}
+                    addConsumable={addConsumable}
+                    updateConsumable={updateConsumable}
+                    deleteConsumable={deleteConsumable}
+                    addChemicalProduct={addChemicalProduct}
+                    updateChemicalProduct={updateChemicalProduct}
+                    deleteChemicalProduct={deleteChemicalProduct}
+                    initializeMaterialsData={initializeMaterialsData}
+                    deleteClient={deleteClient}
+                    transactions={services}
                   />
                 )}
               </div>
-            )}
           </div>
         </div>
       </main>

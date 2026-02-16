@@ -717,6 +717,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         consumables={consumables}
         chemicals={chemicalProducts}
         onNavigateToTab={onNavigateToInventory}
+        onShowNotification={showNotification}
       />
 
       {/* Main Content Areas Layout */}

@@ -12,6 +12,9 @@ import {
   TrendingUp,
   Trash2,
   Camera,
+  Eye,
+  EyeOff,
+  Lock,
 } from "lucide-react";
 import { UserAvatar } from "../../../components/ui/UserAvatar";
 import { uploadToCloudinary } from "../../../services/cloudinaryService";
@@ -68,6 +71,10 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
 
+  // PIN Management State
+  const [newPin, setNewPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
+
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
@@ -85,14 +92,24 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         }
       }
 
-      await onUpdate({
+      const updateData: Partial<AppUser> = {
         phoneNumber: formData.phoneNumber,
         email: formData.email,
         birthDate: formData.birthDate,
         commissionPct: Number(formData.commissionPct),
         active: formData.isActive,
         photoURL: finalPhotoURL || undefined,
-      });
+      };
+
+      // Solo enviar PIN si se escribió algo
+      if (newPin.trim()) {
+        updateData.pin = newPin.trim();
+      }
+
+      await onUpdate(updateData);
+      
+      // Limpiar campo PIN
+      setNewPin("");
       // Optional: Show success notification handled by parent or here
       // Limpiar archivo pendiente después de guardar exitoso
       setFileToUpload(null);
@@ -323,6 +340,31 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                     placeholder="correo@ejemplo.com"
                     className="w-full pl-10 pr-4 py-2.5 bg-surface-highlight border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary-500/50 outline-none"
                   />
+                </div>
+              </div>
+
+              {/* PIN de Acceso */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-text-muted uppercase tracking-wider ml-1">
+                  PIN de Acceso
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+                    <Lock size={16} />
+                  </div>
+                  <input
+                    type={showPin ? "text" : "password"}
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    placeholder="Escribe para cambiar el PIN..."
+                    className="w-full pl-10 pr-10 py-2.5 bg-surface-highlight border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary-500/50 outline-none placeholder:text-text-muted/50"
+                  />
+                  <button
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-primary-500 transition-colors"
+                  >
+                    {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
 

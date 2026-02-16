@@ -225,11 +225,11 @@ export const ConsumablesManager: React.FC<ConsumablesManagerProps> = ({
               </p>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {lowStockConsumables.map((c) => (
               <div
                 key={c.id}
-                className="flex justify-between items-center bg-surface rounded-lg p-3"
+                className="flex justify-between items-center bg-surface rounded-lg p-3 h-full"
               >
                 <div>
                   <p className="font-semibold text-text-main">{c.name}</p>
@@ -242,7 +242,7 @@ export const ConsumablesManager: React.FC<ConsumablesManagerProps> = ({
                     setEditingConsumableItem(c);
                     setEditConsumableForm({ ...c });
                   }}
-                  className="px-3 py-1 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
+                  className="px-3 py-1 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors shrink-0 ml-2"
                 >
                   Actualizar Stock
                 </button>

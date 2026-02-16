@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ShoppingCart,
   Package,
@@ -136,6 +136,13 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
   const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab || "services");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Sync internal state with external prop changes (Sidebar navigation)
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // ==========================================================================
   // TAB CONFIGURATION

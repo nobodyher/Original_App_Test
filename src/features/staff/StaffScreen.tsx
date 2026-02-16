@@ -27,6 +27,7 @@ import type {
   CatalogExtra,
   MaterialRecipe,
   ChemicalProduct,
+  Client,
   Toast,
   Filters,
 } from "../../types";
@@ -36,6 +37,7 @@ import type { NewServiceState } from "../../services/salonService";
 interface StaffScreenProps {
   currentUser: AppUser | null;
   services: Service[];
+  clients: Client[];
   catalogServices: CatalogService[];
   catalogExtras: CatalogExtra[];
   materialRecipes: MaterialRecipe[];
@@ -72,6 +74,7 @@ const EmptyState = ({
 const StaffScreen: React.FC<StaffScreenProps> = ({
   currentUser,
   services,
+  clients,
   catalogServices,
   catalogExtras,
   materialRecipes,
@@ -92,12 +95,38 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
 
   const [showExtrasSelector, setShowExtrasSelector] = useState(false);
   const [showServiceList, setShowServiceList] = useState(false);
+  
+  // Autocomplete State
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
   const [filters, setFilters] = useState<Filters>({
     search: "",
     dateFrom: "",
     dateTo: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filter clients for autocomplete
+  const clientSuggestions = useMemo(() => {
+    if (!newService.client || newService.client.length < 2) return [];
+    const term = newService.client.toLowerCase();
+    return clients
+      .filter((c) => c.name.toLowerCase().includes(term))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, 5); // Limit to 5 suggestions
+  }, [newService.client, clients]);
+
+  const handleSelectClient = (clientName: string) => {
+    setNewService((prev) => ({ ...prev, client: clientName }));
+    setShowSuggestions(false);
+  };
+
+  const handleClientBlur = () => {
+    // Delay hiding to allow click event on suggestion to fire
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
+  };
 
   // Filter services for current staff user
   const today = new Date().toISOString().split("T")[0];
@@ -324,15 +353,44 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
                   <label className="text-xs font-bold text-text-muted uppercase ml-1">
                     Cliente
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Nombre del cliente"
-                    value={newService.client}
-                    onChange={(e) =>
-                      setNewService({ ...newService, client: e.target.value })
-                    }
-                    className="w-full h-14 px-5 rounded-2xl bg-background border border-primary-400/20 transition-all duration-200 focus:bg-surface focus:border-primary-600 focus:ring-4 focus:ring-primary-600/10 outline-none font-semibold text-text-main placeholder-text-muted"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Nombre del cliente"
+                      value={newService.client}
+                      onChange={(e) => {
+                        setNewService({ ...newService, client: e.target.value });
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={handleClientBlur}
+                      className="w-full h-14 px-5 rounded-2xl bg-background border border-primary-400/20 transition-all duration-200 focus:bg-surface focus:border-primary-600 focus:ring-4 focus:ring-primary-600/10 outline-none font-semibold text-text-main placeholder-text-muted"
+                      autoComplete="off"
+                    />
+                    
+                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && clientSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-primary-400/20 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-60 overflow-y-auto">
+                        <div className="py-2">
+                          {clientSuggestions.map((client) => (
+                            <button
+                              key={client.id}
+                              className="w-full text-left px-5 py-3 hover:bg-primary-500/10 hover:text-primary-500 transition-colors flex items-center gap-3 group"
+                              onClick={() => handleSelectClient(client.name)}
+                              type="button" // Prevent form submission if inside a form
+                            >
+                              <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 text-xs font-bold ring-1 ring-primary-500/30 group-hover:bg-primary-500 group-hover:text-white transition-all">
+                                {client.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="font-bold text-text-main group-hover:text-primary-500 transition-colors">
+                                {client.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </Card>

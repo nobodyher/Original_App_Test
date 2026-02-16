@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertTriangle, Package, ArrowRight } from "lucide-react";
+import { AlertTriangle, Package, ArrowRight, ClipboardCopy } from "lucide-react";
 import type { Consumable, ChemicalProduct } from "../../../types";
 
 interface InventoryAlertsProps {
@@ -7,6 +7,7 @@ interface InventoryAlertsProps {
   chemicals: ChemicalProduct[];
   onViewInventory?: () => void;
   onNavigateToTab?: (tab: "consumables" | "materials") => void;
+  onShowNotification?: (message: string, type?: "success" | "error") => void;
 }
 
 interface LowStockItem {
@@ -23,6 +24,7 @@ const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
   chemicals,
   onViewInventory,
   onNavigateToTab,
+  onShowNotification,
 }) => {
   // Filtrar consumibles con stock bajo
   const lowStockConsumables: LowStockItem[] = consumables
@@ -50,6 +52,39 @@ const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
 
   // Combinar ambas listas
   const allLowStockItems = [...lowStockConsumables, ...lowStockChemicals];
+
+  const handleCopyShoppingList = () => {
+    const today = new Date().toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+    let text = `🛒 *LISTA DE COMPRAS - ${today}*\n\n`;
+
+    if (lowStockChemicals.length > 0) {
+      text += `🧪 *Químicos:*\n`;
+      lowStockChemicals.forEach((item) => {
+        text += `- [ ] ${item.name}: ${item.currentStock}\n`;
+      });
+      text += `\n`;
+    }
+
+    if (lowStockConsumables.length > 0) {
+      text += `🧻 *Consumibles:*\n`;
+      lowStockConsumables.forEach((item) => {
+        text += `- [ ] ${item.name}: ${item.currentStock}\n`;
+      });
+    }
+
+    navigator.clipboard.writeText(text);
+
+    if (onShowNotification) {
+      onShowNotification("✅ Lista copiada", "success");
+    } else {
+      alert("✅ Lista copiada");
+    }
+  };
 
   // Si no hay productos con stock bajo, mostrar mensaje de éxito
   if (allLowStockItems.length === 0) {
@@ -79,18 +114,31 @@ const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
   return (
     <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 border-l-4 border-orange-500 dark:border-orange-400 rounded-xl p-3 shadow-sm animate-fade-in">
       {/* Header Compacto */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-orange-500/10 dark:bg-orange-500/20 rounded-lg">
-          <AlertTriangle size={16} className="text-orange-600 dark:text-orange-400" />
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-orange-500/10 dark:bg-orange-500/20 rounded-lg">
+            <AlertTriangle size={16} className="text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-none">
+              ⚠️ {allLowStockItems.length} producto{allLowStockItems.length !== 1 ? "s" : ""} por agotarse
+            </h3>
+            <p className="text-xs text-orange-700 dark:text-orange-300 font-medium mt-0.5 leading-tight">
+              Stock por debajo del mínimo
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-none">
-            ⚠️ {allLowStockItems.length} producto{allLowStockItems.length !== 1 ? "s" : ""} por agotarse
-          </h3>
-          <p className="text-xs text-orange-700 dark:text-orange-300 font-medium mt-0.5 leading-tight">
-            Stock por debajo del mínimo
-          </p>
-        </div>
+
+        {allLowStockItems.length > 0 && (
+          <button
+            onClick={handleCopyShoppingList}
+            className="flex items-center gap-1.5 bg-white/50 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 border border-orange-200 dark:border-orange-800 rounded px-2 py-1 text-xs font-medium text-orange-800 dark:text-orange-200 transition-colors"
+            title="Copiar lista de faltantes al portapapeles"
+          >
+            <ClipboardCopy size={12} />
+            Copiar Pedido
+          </button>
+        )}
       </div>
 
       {/* Grid Ultra Compacto */}

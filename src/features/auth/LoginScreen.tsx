@@ -7,6 +7,7 @@ import type { AppUser, Toast } from "../../types";
 import ThemeToggle from "../../components/ui/ThemeToggle";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 import neonLogo from "../../assets/neon_logo.png";
+import { verifyPin } from "../../utils/security";
 
 interface LoginScreenProps {
   users: AppUser[];
@@ -48,10 +49,24 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     setPin((prev) => prev.slice(0, -1));
   };
 
-  const handleLogin = React.useCallback(() => {
+  const handleLogin = React.useCallback(async () => {
     if (!selectedUser) return;
 
-    if (pin === selectedUser.pin) {
+    let isValid = false;
+    try {
+      // Retro-compatibilidad: Si el PIN empieza con $2, es un hash bcrypt
+      if (selectedUser.pin.startsWith("$2")) {
+        isValid = await verifyPin(pin, selectedUser.pin);
+      } else {
+        // Validación legada (texto plano)
+        isValid = pin === selectedUser.pin;
+      }
+    } catch (error) {
+      console.error("Error verifying PIN:", error);
+      isValid = false;
+    }
+
+    if (isValid) {
       // ✅ Reset view to Dashboard on explicit login
       localStorage.setItem("owner_currentView", "dashboard");
       
@@ -99,16 +114,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <ThemeToggle />
       </div>
       {/* Background Effects */}
-      <style>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob { animation: blob 10s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-      `}</style>
+
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary-900/10 via-background to-background -z-20" />
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary-900/20 rounded-full blur-[120px] -z-10 animate-blob" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary-800/10 rounded-full blur-[120px] -z-10 animate-blob animation-delay-2000" />

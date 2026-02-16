@@ -5,7 +5,6 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Mail,
   Phone,
   Calendar,
 } from "lucide-react";
@@ -68,6 +67,19 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
 
   const ITEMS_PER_PAGE = 7;
 
+  // Helper for relative time
+  const getTimeAgo = (dateStr?: string) => {
+    if (!dateStr) return "N/A";
+    const diff = new Date().getTime() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / (1000 * 3600 * 24));
+    
+    if (days === 0) return "Hoy";
+    if (days === 1) return "Ayer";
+    if (days < 30) return `Hace ${days} días`;
+    if (days < 365) return `Hace ${Math.floor(days / 30)} meses`;
+    return dateStr;
+  };
+
   // ==========================================================================
   // COMPUTED VALUES
   // ==========================================================================
@@ -77,7 +89,13 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
       .filter((c) => !deletedClientIds.has(c.id))
       .filter((c) =>
         c.name.toLowerCase().includes(clientsSearch.toLowerCase()),
-      );
+      )
+      .sort((a, b) => {
+        // Sort by lastVisit descending (newest first)
+        const dateA = a.lastVisit ? new Date(a.lastVisit).getTime() : 0;
+        const dateB = b.lastVisit ? new Date(b.lastVisit).getTime() : 0;
+        return dateB - dateA;
+      });
   }, [clients, clientsSearch, deletedClientIds]);
 
   const paginatedClients = useMemo(() => {
@@ -176,16 +194,22 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
             {/* Table Header */}
             <thead className="bg-surface-highlight">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
-                  Nombre
+                <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider w-1/4">
+                  Cliente
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
-                  Contacto
+                  Visitas Totales
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
-                  Registrado
+                  Gasto Total
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
+                  Primera Visita
+                </th>
+                 <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider">
+                  Última Visita
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-text-muted uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -221,69 +245,59 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-600 font-bold text-sm">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-sm shadow-md">
                           {client.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-semibold text-text-main">
+                          <p className="font-bold text-text-main text-base">
                             {client.name}
                           </p>
-                          {client.id && (
-                            <p className="text-xs text-text-muted font-mono">
-                              ID: {client.id.slice(0, 8)}...
-                            </p>
+                          {client.phoneNumber && (
+                             <p className="text-xs text-text-muted flex items-center gap-1">
+                               <Phone size={10} /> {client.phoneNumber}
+                             </p>
                           )}
                         </div>
                       </div>
                     </td>
 
-                    {/* Contact */}
+                    {/* Total Services (Visits) */}
                     <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        {client.email && (
-                          <div className="flex items-center gap-2 text-sm text-text-muted">
-                            <Mail size={14} />
-                            <span>{client.email}</span>
-                          </div>
-                        )}
-                        {client.phoneNumber && (
-                          <div className="flex items-center gap-2 text-sm text-text-muted">
-                            <Phone size={14} />
-                            <span>{client.phoneNumber}</span>
-                          </div>
-                        )}
-                        {!client.email && !client.phoneNumber && (
-                          <span className="text-sm text-text-muted italic">
-                            Sin contacto
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm border border-emerald-500/20">
+                          🏅 {client.totalServices || 0} visitas
+                        </span>
                       </div>
                     </td>
 
-                    {/* Registered Date */}
+                    {/* Total Spent */}
                     <td className="px-6 py-4">
-                      {client.createdAt ? (
-                        <div className="flex items-center gap-2 text-sm text-text-muted">
-                          <Calendar size={14} />
-                          <span>
-                            {new Date(
-                              typeof client.createdAt === "string"
-                                ? client.createdAt
-                                : client.createdAt.toDate
-                                  ? client.createdAt.toDate()
-                                  : new Date(),
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-text-muted italic">
-                          Fecha desconocida
-                        </span>
-                      )}
+                       <span className="font-black text-text-main text-base">
+                         ${(client.totalSpent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                       </span>
+                    </td>
+
+                    {/* First Visit */}
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-text-muted font-medium">
+                        {client.firstVisit || "N/A"}
+                      </span>
+                    </td>
+
+                     {/* Last Visit */}
+                    <td className="px-6 py-4">
+                      <div className={`flex items-center gap-2 text-sm font-bold ${
+                         getTimeAgo(client.lastVisit) === "Hoy" || getTimeAgo(client.lastVisit) === "Ayer" 
+                         ? "text-primary-500" 
+                         : "text-text-muted"
+                      }`}>
+                        <Calendar size={14} />
+                        <span>{getTimeAgo(client.lastVisit)}</span>
+                      </div>
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 text-right">
                       {currentUser?.role === "owner" && (
                         <button
                           onClick={() => handleDeleteClient(client.id)}

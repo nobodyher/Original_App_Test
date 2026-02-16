@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   collection,
   query,
@@ -6,7 +6,12 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  limit,
+  startAfter,
+  getDocs,
+  QueryDocumentSnapshot,
 } from "firebase/firestore";
+import type { DocumentData } from "firebase/firestore";
 import { db } from "../firebase";
 import type {
   Service,
@@ -35,6 +40,20 @@ export const useSalonData = (initialized: boolean) => {
   const [materialRecipes, setMaterialRecipes] = useState<MaterialRecipe[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
 
+  // Pagination / History State
+  const [historyServices, setHistoryServices] = useState<Service[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyFullyLoaded, setHistoryFullyLoaded] = useState(false);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  
+  // Ref to track if history has started loading, to avoid onSnapshot overwriting lastVisible
+  const historyStartedRef = useRef(false);
+
+  // Update ref when history changes
+  useEffect(() => {
+    historyStartedRef.current = historyServices.length > 0;
+  }, [historyServices]);
+
   // Cargar servicios
   useEffect(() => {
     if (!initialized) return;
@@ -42,6 +61,7 @@ export const useSalonData = (initialized: boolean) => {
     const q = query(
       collection(db, COLLECTIONS.SERVICES),
       orderBy("timestamp", "desc"),
+      limit(50)
     );
     const unsub = onSnapshot(
       q,
@@ -50,6 +70,11 @@ export const useSalonData = (initialized: boolean) => {
           (d) => ({ id: d.id, ...d.data() }) as Service,
         );
         setServices(data);
+
+        // Capture last visible only on initial load or if history hasn't started
+        if (!historyStartedRef.current && snap.docs.length > 0) {
+          setLastVisible(snap.docs[snap.docs.length - 1]);
+        }
       },
       (error) => {
         console.error("Error cargando servicios:", error);
@@ -58,6 +83,50 @@ export const useSalonData = (initialized: boolean) => {
 
     return () => unsub();
   }, [initialized]);
+
+  // Cargar historial bajo demanda
+  const loadHistory = async () => {
+    if (loadingHistory || historyFullyLoaded) return;
+
+    // Define pivot
+    const pivot = lastVisible;
+    if (!pivot) return;
+
+    setLoadingHistory(true);
+    try {
+      // Query para obtener el siguiente lote de historial
+      const q = query(
+        collection(db, COLLECTIONS.SERVICES),
+        orderBy("timestamp", "desc"),
+        startAfter(pivot),
+        limit(50)
+      );
+
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        setHistoryFullyLoaded(true);
+      } else {
+        const newHistoryData = snapshot.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as Service
+        );
+        
+        setHistoryServices((prev) => [...prev, ...newHistoryData]);
+        
+        // Update pivot for next load
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+        
+        // If we got fewer than 50 docs, we might have reached the end
+        if (snapshot.docs.length < 50) {
+          setHistoryFullyLoaded(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   // Cargar gastos
   useEffect(() => {
@@ -146,7 +215,7 @@ export const useSalonData = (initialized: boolean) => {
       // Sincronizar precios automáticamente desde EXTRAS_CATALOG
       for (const extra of data) {
         const catalogExtra = EXTRAS_CATALOG.find((e) => e.id === extra.id);
-        const currentPrice = (extra as any).price || extra.priceSuggested || 0;
+        const currentPrice = extra.price || extra.priceSuggested || 0;
 
         if (catalogExtra && (!currentPrice || currentPrice === 0)) {
           try {
@@ -228,5 +297,10 @@ export const useSalonData = (initialized: boolean) => {
     setMaterialRecipes,
     clients,
     setClients,
+    // History props
+    historyServices,
+    loadHistory,
+    loadingHistory,
+    historyFullyLoaded,
   };
 };

@@ -9,9 +9,11 @@ import LoadingScreen from "./components/ui/LoadingScreen";
 import NotificationToast from "./components/ui/NotificationToast";
 import * as userService from "./services/userService";
 import * as salonService from "./services/salonService";
-import { deleteClient } from "./services/salonService"; // Added deleteClient import
+
 import * as inventoryService from "./services/inventoryService";
 import * as expenseService from "./services/expenseService";
+
+import { SalonProvider } from "./context/SalonContext";
 
 import StaffScreen from "./features/staff/StaffScreen";
 import OwnerScreen from "./features/admin/OwnerScreen";
@@ -50,6 +52,10 @@ const App = () => {
     materialRecipes,
     serviceRecipes,
     clients,
+    historyServices,
+    loadHistory,
+    loadingHistory,
+    historyFullyLoaded,
   } = useSalonData(initialized && authReady);
 
   const [notification, setNotification] = useState<Toast | null>(null);
@@ -128,7 +134,7 @@ const App = () => {
             path="/admin"
             element={
               <ProtectedRoute currentUser={currentUser} allowedRole="owner">
-                <OwnerScreen
+                <SalonProvider
                   users={users}
                   currentUser={currentUser!}
                   services={services}
@@ -138,8 +144,13 @@ const App = () => {
                   materialRecipes={materialRecipes}
                   serviceRecipes={serviceRecipes}
                   consumables={consumables}
+
                   chemicalProducts={chemicalProducts}
                   clients={clients}
+                  historyServices={historyServices}
+                  loadHistory={loadHistory}
+                  loadingHistory={loadingHistory}
+                  historyFullyLoaded={historyFullyLoaded}
                   showNotification={showNotification}
                   addExpense={expenseService.addExpense}
                   deleteExpense={expenseService.deleteExpense}
@@ -174,7 +185,9 @@ const App = () => {
                     logout();
                     showNotification("Sesión cerrada correctamente", "info");
                   }}
-                />
+                >
+                  <OwnerScreen />
+                </SalonProvider>
               </ProtectedRoute>
             }
           />
@@ -186,6 +199,7 @@ const App = () => {
                 <StaffScreen
                   currentUser={currentUser!}
                   services={services}
+                  clients={clients}
                   catalogServices={catalogServices}
                   catalogExtras={catalogExtras}
                   materialRecipes={materialRecipes}
