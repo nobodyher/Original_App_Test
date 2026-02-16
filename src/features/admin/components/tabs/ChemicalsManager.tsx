@@ -407,7 +407,7 @@ export const ChemicalsManager: React.FC<ChemicalsManagerProps> = ({
                     {/* Purchase Price */}
                     <td className="px-6 py-4">
                       <p className="font-semibold text-text-main">
-                        ${chemical.purchasePrice.toFixed(2)}
+                        ${(chemical.purchasePrice || 0).toFixed(2)}
                       </p>
                     </td>
 
@@ -442,7 +442,7 @@ export const ChemicalsManager: React.FC<ChemicalsManagerProps> = ({
                       {/* Cost Per Unit */}
                       <td className="px-6 py-4">
                         <p className="font-bold text-primary-600">
-                          ${chemical.costPerService.toFixed(4)}/{(chemical.unit as string).toLowerCase() === 'l' ? 'ml' : chemical.unit}
+                          ${(chemical.costPerService || 0).toFixed(4)}/{(chemical.unit as string).toLowerCase() === 'l' ? 'ml' : chemical.unit}
                         </p>
                       </td>
 

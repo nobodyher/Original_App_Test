@@ -10,7 +10,6 @@ import {
   Package,
   Users,
   Plus,
-  Beaker,
   Menu,
   PanelLeftClose,
 } from "lucide-react";
@@ -67,6 +66,7 @@ const OwnerScreen: React.FC = () => {
     consumables,
     chemicalProducts,
     clients,
+    inventoryItems, // Unified items
     showNotification,
     onLogout,
     addExpense,
@@ -86,13 +86,6 @@ const OwnerScreen: React.FC = () => {
     addExtra,
     updateExtra,
     deleteExtra,
-    addConsumable,
-    updateConsumable,
-    deleteConsumable,
-    addChemicalProduct,
-    updateChemicalProduct,
-    deleteChemicalProduct,
-    initializeMaterialsData,
     deleteClient,
   } = useSalonContext();
 
@@ -139,7 +132,7 @@ const OwnerScreen: React.FC = () => {
     setAdminSubTab(tab);
   };
 
-  const handleNavigateToInventory = (tab: "consumables" | "materials") => {
+  const handleNavigateToInventory = (tab: "inventory") => {
     setCurrentView("admin");
     setAdminSubTab(tab as ConfigTab);
     setIsAdminOpen(true);
@@ -148,10 +141,10 @@ const OwnerScreen: React.FC = () => {
 
   const adminSubItems = [
     { id: "services", label: "Catálogo", icon: ShoppingCart },
-    { id: "consumables", label: "Consumibles", icon: Package },
+    { id: "inventory", label: "Inventario", icon: Package },
     { id: "personal", label: "Personal", icon: Users },
     { id: "extras", label: "Extras", icon: Plus },
-    { id: "materials", label: "Químicos", icon: Beaker },
+    { id: "clients", label: "Clientes", icon: Users },
   ];
 
   return (
@@ -628,9 +621,8 @@ const OwnerScreen: React.FC = () => {
                     currentUser={currentUser}
                     materialRecipes={materialRecipes}
                     catalogServices={catalogServices}
-                    chemicalProducts={chemicalProducts}
+                    inventoryItems={inventoryItems}
                     serviceRecipes={serviceRecipes}
-                    consumables={consumables}
                     showNotification={showNotification}
                     onNavigateToInventory={handleNavigateToInventory}
                     addExpense={addExpense}
@@ -671,6 +663,7 @@ const OwnerScreen: React.FC = () => {
                     consumables={consumables}
                     chemicalProducts={chemicalProducts}
                     clients={clients}
+                    inventoryItems={inventoryItems}
                     currentUser={currentUser}
                     showNotification={showNotification}
                     createNewUser={createNewUser}
@@ -684,13 +677,6 @@ const OwnerScreen: React.FC = () => {
                     addExtra={addExtra}
                     updateExtra={updateExtra}
                     deleteExtra={deleteExtra}
-                    addConsumable={addConsumable}
-                    updateConsumable={updateConsumable}
-                    deleteConsumable={deleteConsumable}
-                    addChemicalProduct={addChemicalProduct}
-                    updateChemicalProduct={updateChemicalProduct}
-                    deleteChemicalProduct={deleteChemicalProduct}
-                    initializeMaterialsData={initializeMaterialsData}
                     deleteClient={deleteClient}
                     transactions={services}
                   />

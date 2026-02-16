@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from "react";
 import {
   ShoppingCart,
-  Package,
   Users,
-  Beaker,
   PlusCircle,
   Star,
   Menu,
   X,
+  Database,
 } from "lucide-react";
+import ConfirmationModal from "../../../components/ui/ConfirmationModal";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "../../../firebase";
 import type {
   AppUser,
   CatalogService,
@@ -20,22 +29,21 @@ import type {
   Toast,
   Client,
   Service,
+  InventoryItem
 } from "../../../types";
 
 // Import Tab Manager Components
 import { ServicesManager } from "./tabs/ServicesManager";
 import { StaffManager } from "./tabs/StaffManager";
-import { ConsumablesManager } from "./tabs/ConsumablesManager";
-import { ChemicalsManager } from "./tabs/ChemicalsManager";
 import { ExtrasManager } from "./tabs/ExtrasManager";
 import { ClientsManager } from "./tabs/ClientsManager";
+import { InventoryManager } from "./tabs/InventoryManager";
 
 export type ConfigTab =
   | "services"
-  | "consumables"
+  | "inventory"
   | "personal"
   | "extras"
-  | "materials"
   | "clients";
 
 interface OwnerConfigTabProps {
@@ -49,6 +57,7 @@ interface OwnerConfigTabProps {
   clients: Client[];
   currentUser: AppUser | null;
   transactions?: Service[];
+  inventoryItems?: InventoryItem[]; // Unified items
   showNotification: (message: string, type?: Toast["type"]) => void;
 
   // Optional controlled props
@@ -80,22 +89,7 @@ interface OwnerConfigTabProps {
   addExtra: (name: string, price: number) => Promise<void>;
   updateExtra: (id: string, data: Partial<CatalogExtra>) => Promise<void>;
   deleteExtra: (id: string) => Promise<void>;
-
-  addConsumable: (data: Omit<Consumable, "id" | "active">) => Promise<void>;
-  updateConsumable: (id: string, data: Partial<Consumable>) => Promise<void>;
-  deleteConsumable: (id: string) => Promise<void>;
-
-  addChemicalProduct: (
-    data: Omit<ChemicalProduct, "id" | "active">,
-  ) => Promise<void>;
-  updateChemicalProduct: (
-    id: string,
-    updates: Partial<ChemicalProduct>,
-    currentProduct?: ChemicalProduct,
-  ) => Promise<void>;
-  deleteChemicalProduct: (id: string) => Promise<void>;
-
-  initializeMaterialsData: () => Promise<void>;
+  
   deleteClient: (clientId: string) => Promise<void>;
 }
 
@@ -122,14 +116,78 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   addExtra,
   updateExtra,
   deleteExtra,
-  addConsumable,
-  updateConsumable,
-  deleteConsumable,
-  addChemicalProduct,
-  updateChemicalProduct,
-  deleteChemicalProduct,
+
   deleteClient: deleteClientProp,
+  inventoryItems = [], // Unified items
 }) => {
+  // ==========================================================================
+  // INVENTORY HANDLERS (Unified)
+  // ==========================================================================
+  
+  const handleAddInventory = async (product: any) => {
+    try {
+      await addDoc(collection(db, "inventory"), {
+        ...product,
+        active: true,
+        createdAt: serverTimestamp(),
+      });
+      showNotification("Producto agregado al inventario");
+    } catch (error) {
+      console.error("Error adding inventory:", error);
+      showNotification("Error al agregar producto", "error");
+    }
+  };
+
+  const handleUpdateInventory = async (id: string, updates: any) => {
+    try {
+      const docRef = doc(db, "inventory", id);
+      await updateDoc(docRef, updates);
+      showNotification("Producto actualizado");
+    } catch (error) {
+      console.error("Error updating inventory:", error);
+      showNotification("Error al actualizar producto", "error");
+    }
+  };
+
+  // Confirmation Modal State
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isLoading?: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    isLoading: false,
+  });
+
+  const closeConfirmation = () =>
+    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+
+  const handleDeleteInventory = (id: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Eliminar Producto",
+      message:
+        "¿Estás seguro de que deseas eliminar este producto del inventario? Esta acción no se puede deshacer.",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isLoading: true }));
+        try {
+          await deleteDoc(doc(db, "inventory", id));
+          showNotification("Producto eliminado");
+          closeConfirmation();
+        } catch (error) {
+          console.error("Error deleting inventory:", error);
+          showNotification("Error al eliminar producto", "error");
+          setConfirmConfig((prev) => ({ ...prev, isLoading: false }));
+        }
+      },
+    });
+  };
   // ==========================================================================
   // STATE MANAGEMENT (Navigation Only)
   // ==========================================================================
@@ -161,16 +219,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       description: "Catálogo de servicios",
     },
     {
-      id: "consumables",
-      label: "Consumibles",
-      icon: Package,
-      description: "Productos desechables",
-    },
-    {
-      id: "materials",
-      label: "Químicos",
-      icon: Beaker,
-      description: "Productos químicos",
+      id: "inventory", // Unified tab
+      label: "Inventario",
+      icon: Database,
+      description: "Gestión unificada de stock",
     },
     {
       id: "extras",
@@ -220,11 +272,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
           {/* Sidebar */}
           <aside
-            className={`${
-              isMobileMenuOpen
-                ? "translate-x-0"
-                : "-translate-x-full lg:translate-x-0"
-            } fixed lg:sticky top-0 left-0 h-full w-64 bg-surface border-r border-border transition-transform duration-300 ease-in-out z-40 lg:block overflow-y-auto`}
+            className={"fixed lg:sticky top-0 left-0 h-full w-64 bg-surface border-r border-border transition-transform duration-300 ease-in-out z-40 lg:block overflow-y-auto " + (isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0")}
           >
             <div className="p-6 space-y-2">
               <h2 className="text-lg font-bold text-text-main mb-4 px-3">
@@ -290,6 +338,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             
             {/* Admin Profile Section - Visible on all tabs for quick access */}
 
+            {/* Admin Profile Section - Visible on all tabs for quick access */}
 
             {/* Services Tab */}
             {activeTab === "services" && (
@@ -299,6 +348,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 serviceRecipes={serviceRecipes || []}
                 consumables={consumables}
                 chemicalProducts={chemicalProducts}
+                inventoryItems={inventoryItems}
                 currentUser={currentUser}
                 addCatalogService={addCatalogService}
                 updateCatalogService={updateCatalogService}
@@ -320,27 +370,14 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               />
             )}
 
-            {/* Consumables Tab */}
-            {activeTab === "consumables" && (
-              <ConsumablesManager
-                consumables={consumables}
-                currentUser={currentUser}
-                addConsumable={addConsumable}
-                updateConsumable={updateConsumable}
-                deleteConsumable={deleteConsumable}
-                showNotification={showNotification}
-              />
-            )}
-
-            {/* Materials/Chemicals Tab */}
-            {activeTab === "materials" && (
-              <ChemicalsManager
-                chemicalProducts={chemicalProducts}
-                currentUser={currentUser}
-                addChemicalProduct={addChemicalProduct}
-                updateChemicalProduct={updateChemicalProduct}
-                deleteChemicalProduct={deleteChemicalProduct}
-                showNotification={showNotification}
+            {/* Inventory Unified Tab */}
+            {activeTab === "inventory" && (
+              <InventoryManager
+                inventoryItems={inventoryItems}
+                onAdd={handleAddInventory}
+                onUpdate={handleUpdateInventory}
+                onDelete={handleDeleteInventory}
+                onEdit={() => {}} // Handled internally by InventoryManager for now
               />
             )}
 
@@ -368,6 +405,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmConfig.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        isLoading={confirmConfig.isLoading}
+      />
     </div>
   );
 };

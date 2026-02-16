@@ -337,7 +337,7 @@ export const ConsumablesManager: React.FC<ConsumablesManagerProps> = ({
                           return (
                             <>
                               <p className="text-xs font-medium text-text-main mb-1">
-                                {Number(remainder.toFixed(1))} / {Number(consumable.packageSize)} {consumable.unit}
+                                {Number((remainder || 0).toFixed(1))} / {Number(consumable.packageSize || 0)} {consumable.unit}
                               </p>
                               <div className="w-full bg-gray-200/50 dark:bg-gray-700/50 rounded-full h-2">
                                 <div
@@ -364,7 +364,7 @@ export const ConsumablesManager: React.FC<ConsumablesManagerProps> = ({
                     {/* Purchase Price */}
                     <td className="px-6 py-4">
                       <p className="font-semibold text-text-main">
-                        ${consumable.purchasePrice.toFixed(2)}
+                        ${(consumable.purchasePrice || 0).toFixed(2)}
                       </p>
                     </td>
 

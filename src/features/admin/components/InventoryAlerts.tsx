@@ -1,12 +1,10 @@
-import React from "react";
 import { AlertTriangle, Package, ArrowRight, ClipboardCopy } from "lucide-react";
-import type { Consumable, ChemicalProduct } from "../../../types";
+import type { InventoryItem } from "../../../types";
 
 interface InventoryAlertsProps {
-  consumables: Consumable[];
-  chemicals: ChemicalProduct[];
+  inventoryItems: InventoryItem[];
   onViewInventory?: () => void;
-  onNavigateToTab?: (tab: "consumables" | "materials") => void;
+  onNavigateToTab?: (tab: "inventory") => void;
   onShowNotification?: (message: string, type?: "success" | "error") => void;
 }
 
@@ -16,42 +14,26 @@ interface LowStockItem {
   currentStock: number;
   minStock: number;
   type: "consumable" | "chemical";
-  tab: "consumables" | "materials";
+  tab: "inventory";
 }
 
 const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
-  consumables,
-  chemicals,
+  inventoryItems = [],
   onViewInventory,
   onNavigateToTab,
   onShowNotification,
 }) => {
-  // Filtrar consumibles con stock bajo
-  const lowStockConsumables: LowStockItem[] = consumables
-    .filter((c) => c.stockQty <= c.minStockAlert)
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      currentStock: Math.floor(c.stockQty),
-      minStock: c.minStockAlert,
-      type: "consumable" as const,
-      tab: "consumables" as const,
+  // Filtrar items con stock bajo
+  const allLowStockItems: LowStockItem[] = inventoryItems
+    .filter((item) => item.active && item.stock <= (item.minStock || 0))
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      currentStock: Math.floor(item.stock),
+      minStock: item.minStock || 0,
+      type: item.type === "consumable" ? ("consumable" as const) : ("chemical" as const),
+      tab: "inventory" as const,
     }));
-
-  // Filtrar químicos con stock bajo
-  const lowStockChemicals: LowStockItem[] = chemicals
-    .filter((ch) => ch.stock <= ch.minStock)
-    .map((ch) => ({
-      id: ch.id,
-      name: ch.name,
-      currentStock: Math.floor(ch.stock),
-      minStock: ch.minStock,
-      type: "chemical" as const,
-      tab: "materials" as const,
-    }));
-
-  // Combinar ambas listas
-  const allLowStockItems = [...lowStockConsumables, ...lowStockChemicals];
 
   const handleCopyShoppingList = () => {
     const today = new Date().toLocaleDateString("es-ES", {
@@ -62,8 +44,11 @@ const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
 
     let text = `🛒 *LISTA DE COMPRAS - ${today}*\n\n`;
 
+    const lowStockChemicals = allLowStockItems.filter(i => i.type === "chemical");
+    const lowStockConsumables = allLowStockItems.filter(i => i.type === "consumable");
+
     if (lowStockChemicals.length > 0) {
-      text += `🧪 *Químicos:*\n`;
+      text += `🧪 *Químicos/Materiales:*\n`;
       lowStockChemicals.forEach((item) => {
         text += `- [ ] ${item.name}: ${item.currentStock}\n`;
       });

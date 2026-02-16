@@ -28,6 +28,7 @@ export interface SalonContextType {
   consumables: Consumable[];
   chemicalProducts: ChemicalProduct[];
   clients: Client[];
+  inventoryItems: any[]; // Unified inventory items
   
   // History Pagination
   historyServices: Service[];
@@ -84,8 +85,6 @@ export interface SalonContextType {
     currentProduct?: ChemicalProduct
   ) => Promise<void>;
   deleteChemicalProduct: (id: string) => Promise<void>;
-
-  initializeMaterialsData: () => Promise<void>;
   deleteClient: (clientId: string) => Promise<void>;
 }
 

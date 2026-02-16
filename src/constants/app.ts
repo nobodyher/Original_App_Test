@@ -14,6 +14,7 @@ export const COLLECTIONS = {
   CLIENTS: "clients",
   SERVICE_RECIPES: "service_recipes",
   MATERIAL_RECIPES: "material_recipes",
+  INVENTORY: "inventory",
 } as const;
 
 export const PAYMENT_METHODS = {

@@ -56,6 +56,7 @@ const App = () => {
     loadHistory,
     loadingHistory,
     historyFullyLoaded,
+    inventoryItems,
   } = useSalonData(initialized && authReady);
 
   const [notification, setNotification] = useState<Toast | null>(null);
@@ -144,6 +145,7 @@ const App = () => {
                   materialRecipes={materialRecipes}
                   serviceRecipes={serviceRecipes}
                   consumables={consumables}
+                  inventoryItems={inventoryItems}
 
                   chemicalProducts={chemicalProducts}
                   clients={clients}
@@ -177,9 +179,6 @@ const App = () => {
                   addChemicalProduct={inventoryService.addChemicalProduct}
                   updateChemicalProduct={inventoryService.updateChemicalProduct}
                   deleteChemicalProduct={inventoryService.deleteChemicalProduct}
-                  initializeMaterialsData={
-                    inventoryService.initializeMaterialsData
-                  }
                   deleteClient={salonService.deleteClient}
                   onLogout={() => {
                     logout();
@@ -203,19 +202,17 @@ const App = () => {
                   catalogServices={catalogServices}
                   catalogExtras={catalogExtras}
                   materialRecipes={materialRecipes}
-                  chemicalProducts={chemicalProducts}
-                  consumables={consumables}
+                  inventoryItems={inventoryItems}
                   notification={notification}
                   showNotification={showNotification}
                   onLogout={logout}
-                  addService={(user, data, recipes, chemProducts, total) =>
+                  addService={(user, data, recipes, items, total) =>
                     salonService.addService(
                       user,
                       data,
                       recipes,
                       serviceRecipes,
-                      consumables,
-                      chemProducts,
+                      items,
                       catalogServices,
                       total,
                     )

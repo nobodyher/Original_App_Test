@@ -24,12 +24,11 @@ import type {
   Expense,
   MaterialRecipe,
   CatalogService,
-  ChemicalProduct,
   OwnerFilters,
   PaymentMethod,
   Toast,
   ServiceRecipe,
-  Consumable,
+  InventoryItem,
 } from "../../../types";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import * as salonService from "../../../services/salonService";
@@ -44,17 +43,16 @@ interface OwnerDashboardProps {
   currentUser: AppUser | null;
   materialRecipes: MaterialRecipe[];
   catalogServices: CatalogService[];
-  chemicalProducts: ChemicalProduct[];
+  inventoryItems: InventoryItem[];
   serviceRecipes: ServiceRecipe[];
-  consumables: Consumable[];
   showNotification: (message: string, type?: Toast["type"]) => void;
-  onNavigateToInventory?: (tab: "consumables" | "materials") => void;
+  onNavigateToInventory?: (tab: "inventory") => void;
   // Actions
   addExpense: (data: Omit<Expense, "id">) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   updateServiceCost: (id: string, cost: number) => Promise<void>;
-  softDeleteService: (id: string, userId?: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; consumables: Consumable[]; chemicalProducts: ChemicalProduct[]; catalogServices: CatalogService[] }) => Promise<void>;
-  permanentlyDeleteService: (id: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; consumables: Consumable[]; chemicalProducts: ChemicalProduct[]; catalogServices: CatalogService[] }) => Promise<void>;
+  softDeleteService: (id: string, userId?: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
+  permanentlyDeleteService: (id: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
   restoreDeletedService: (id: string) => Promise<void>;
 }
 
@@ -73,9 +71,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   currentUser,
   materialRecipes,
   catalogServices,
-  chemicalProducts,
+  inventoryItems,
   serviceRecipes,
-  consumables,
   showNotification,
   onNavigateToInventory,
   addExpense,
@@ -171,8 +168,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               service: serviceToDelete,
               materialRecipes,
               serviceRecipes,
-              consumables,
-              chemicalProducts,
+              inventoryItems,
               catalogServices,
             });
             showNotification("Servicio eliminado e inventario restaurado");
@@ -193,8 +189,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               service: serviceToDelete,
               materialRecipes,
               serviceRecipes,
-              consumables,
-              chemicalProducts,
+              inventoryItems,
               catalogServices,
             });
             showNotification("Servicio eliminado e inventario restaurado");
@@ -403,7 +398,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             s.services || [],
             materialRecipes,
             catalogServices,
-            chemicalProducts,
+            inventoryItems,
           ))
       );
     }, 0);
@@ -417,7 +412,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     filteredExpenses,
     materialRecipes,
     catalogServices,
-    chemicalProducts,
+    inventoryItems,
   ]);
 
   const netProfit = useMemo(
@@ -714,8 +709,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
       {/* Inventory Alerts Widget */}
       <InventoryAlerts
-        consumables={consumables}
-        chemicals={chemicalProducts}
+        inventoryItems={inventoryItems}
         onNavigateToTab={onNavigateToInventory}
         onShowNotification={showNotification}
       />

@@ -23,10 +23,9 @@ import type {
   ServiceItem,
   ExtraItem,
   CatalogService,
-  Consumable,
   CatalogExtra,
   MaterialRecipe,
-  ChemicalProduct,
+  InventoryItem,
   Client,
   Toast,
   Filters,
@@ -41,8 +40,7 @@ interface StaffScreenProps {
   catalogServices: CatalogService[];
   catalogExtras: CatalogExtra[];
   materialRecipes: MaterialRecipe[];
-  consumables: Consumable[];
-  chemicalProducts: ChemicalProduct[];
+  inventoryItems: InventoryItem[];
   notification: Toast | null;
   showNotification: (message: string, type?: Toast["type"]) => void;
   onLogout: () => void;
@@ -50,7 +48,7 @@ interface StaffScreenProps {
     user: AppUser,
     data: NewServiceState,
     recipes: MaterialRecipe[],
-    chemicalProducts: ChemicalProduct[],
+    inventoryItems: InventoryItem[],
     total: number,
   ) => Promise<void>;
 }
@@ -78,7 +76,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   catalogServices,
   catalogExtras,
   materialRecipes,
-  chemicalProducts,
+  inventoryItems,
   notification,
   showNotification,
   onLogout,
@@ -239,7 +237,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
         currentUser,
         newService,
         materialRecipes,
-        chemicalProducts,
+        inventoryItems,
         totalCost,
       );
       setNewService({

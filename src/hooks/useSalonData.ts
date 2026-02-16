@@ -39,6 +39,7 @@ export const useSalonData = (initialized: boolean) => {
   );
   const [materialRecipes, setMaterialRecipes] = useState<MaterialRecipe[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
 
   // Pagination / History State
   const [historyServices, setHistoryServices] = useState<Service[]>([]);
@@ -168,19 +169,35 @@ export const useSalonData = (initialized: boolean) => {
     return () => unsub();
   }, [initialized]);
 
-  // Cargar consumibles
+  // Cargar inventario unificado (Consumibles + Químicos)
   useEffect(() => {
     if (!initialized) return;
+    
     const q = query(
-      collection(db, COLLECTIONS.CONSUMABLES),
-      orderBy("name", "asc"),
+      collection(db, COLLECTIONS.INVENTORY),
+      orderBy("name", "asc")
     );
+    
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Consumable,
+        (d) => ({ id: d.id, ...d.data() })
       );
-      setConsumables(data);
+      setInventoryItems(data);
+
+      // Compatibilidad con la UI existente:
+      // Filtramos y asignamos a los estados antiguos
+      const legacyConsumables = data.filter(item => 
+        (item as any).type === "consumable" || (item as any).unit === "unidad"
+      ) as Consumable[];
+      
+      const legacyChemicals = data.filter(item => 
+        (item as any).type === "material" || ((item as any).unit !== "unidad" && (item as any).type !== "consumable")
+      ) as ChemicalProduct[];
+
+      setConsumables(legacyConsumables);
+      setChemicalProducts(legacyChemicals);
     });
+    
     return () => unsub();
   }, [initialized]);
 
@@ -235,21 +252,7 @@ export const useSalonData = (initialized: boolean) => {
     return () => unsub();
   }, [initialized]);
 
-  // Cargar productos químicos
-  useEffect(() => {
-    if (!initialized) return;
-    const q = query(
-      collection(db, COLLECTIONS.CHEMICAL_PRODUCTS),
-      orderBy("name", "asc"),
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as ChemicalProduct,
-      );
-      setChemicalProducts(data);
-    });
-    return () => unsub();
-  }, [initialized]);
+  // Legacy Chemical Products Effect Removed - Handled by Inventory Effect
 
   // Cargar recetas de materiales
   useEffect(() => {
@@ -302,5 +305,6 @@ export const useSalonData = (initialized: boolean) => {
     loadHistory,
     loadingHistory,
     historyFullyLoaded,
+    inventoryItems, // Nuevo estado expuesto
   };
 };

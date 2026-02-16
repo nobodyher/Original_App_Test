@@ -1,0 +1,100 @@
+﻿export const batchDeductInventoryByRecipe = (
+  batch: WriteBatch,
+  serviceId: string,
+  serviceName: string,
+  materialRecipes: MaterialRecipe[],
+  chemicalProducts: ChemicalProduct[],
+  catalogServices: CatalogService[] = []
+) => {
+  // 1. Buscar servicio en catÃ¡logo
+  const catalogService = catalogServices.find(
+    (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+  );
+
+  // 2. Determinar materiales a descontar
+  let materialsToDeduct: MaterialInput[] = [];
+  
+  // SI manualMaterials existe, usar eso
+  if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
+    materialsToDeduct = catalogService.manualMaterials;
+  } else {
+    // FALLBACK: Recetas antiguas
+    const recipe = materialRecipes.find(
+      (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
+    );
+    materialsToDeduct = recipe ? recipe.chemicalIds : [];
+  }
+
+  if (materialsToDeduct.length === 0) return;
+
+  materialsToDeduct.forEach((item) => {
+      // 1. DETECCIÃ“N DE TIPO BLINDADA
+      let chemicalId: string = "";
+      let qtyUsed = 0;
+
+      if (typeof item === 'string') {
+        chemicalId = item;
+        qtyUsed = 1; // Default: 1 unidad si no se especifica
+      } else if (typeof item === 'object' && item !== null) {
+        chemicalId = item.id || item.materialId || ""; 
+        qtyUsed = item.quantity || item.qty || item.amount || 1;
+      }
+
+      if (!chemicalId) return;
+
+      // 2. BUSCAR PRODUCTO (En el array en memoria)
+      let product = chemicalProducts.find((p) => p.id === chemicalId);
+      
+      if (!product) {
+         // Fallback bÃºsqueda por nombre
+         const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
+         product = chemicalProducts.find(p => {
+            const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+            return normalizedProductName === normalizedSearchName;
+         });
+      }
+
+      if (!product) return;
+
+      // 3. CÃLCULO DE DESCUENTO FRACCIONADO
+      // La capacidad del envase (contenido neto total)
+      const capacity = product.quantity || product.yield || 1;
+      
+      // Evitar divisiÃ³n por cero
+      if (capacity <= 0) {
+        console.warn(`âš ï¸ Producto ${product.name} tiene capacidad invÃ¡lida (${capacity})`);
+        return;
+      }
+
+      // FÃ“RMULA: deduction = cantidadUsada / capacidadEnvase
+      // Ejemplo: UsÃ© 50ml de un bote de 500ml â†’ deduction = 50/500 = 0.1 (10% de un bote)
+      const deduction = qtyUsed / capacity;
+
+      // 4. ACTUALIZAR BATCH CON INCREMENT (ATÃ“MICO)
+      const productRef = doc(db, "chemical_products", product.id);
+      
+      batch.update(productRef, {
+          stock: increment(-deduction), // âœ… Descuento fraccionado atÃ³mico
+      });
+      
+      // console.log(`âœ… ${product.name}: -${qtyUsed}${product.unit} (${deduction.toFixed(3)} envases)`);
+  });
+};
+
+export const batchDeductConsumables = (
+  batch: WriteBatch,
+  serviceId: string,
+  serviceName: string,
+  serviceRecipes: ServiceRecipe[],
+  consumables: Consumable[],
+  catalogServices: CatalogService[] = []
+) => {
+  // 1. Buscar servicio en catÃ¡logo
+  const catalogService = catalogServices.find(
+    s => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
+  );
+  
+  let itemsToDeduct: { consumableId: string; qty: number }[] = [];
+  
+  // PRIORIDAD 1: manualConsumables
+  if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {

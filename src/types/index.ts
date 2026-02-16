@@ -190,3 +190,25 @@ export type Client = {
   preferredStaffId?: string;
   active: boolean;
 };
+
+export type InventoryItem = {
+  id: string;
+  name: string;
+  stock: number; // Unified stock
+  minStock: number;
+  unit: string;
+  content: number; // Unified quantity/packageSize
+  purchasePrice: number;
+  active: boolean;
+  // Fallbacks for safety during transition
+  stockQty?: number;
+  minStockAlert?: number;
+  quantity?: number;
+  packageSize?: number;
+  // Legacy differentiation
+  type?: 'consumable' | 'material';
+  unitCost?: number;
+  needsReview?: boolean;
+  originalId?: string;
+  currentContent?: number; // Content remaining in the open package
+};

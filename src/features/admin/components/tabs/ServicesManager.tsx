@@ -14,7 +14,9 @@ import {
   Beaker,
   ChevronLeft,
   ChevronRight,
+  Package,
 } from "lucide-react";
+import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import type {
   CatalogService,
   MaterialRecipe,
@@ -23,6 +25,7 @@ import type {
   ChemicalProduct,
   Toast,
   AppUser,
+  InventoryItem,
 } from "../../../../types";
 
 // ============================================================================
@@ -36,6 +39,7 @@ export interface ServicesManagerProps {
   serviceRecipes: ServiceRecipe[];
   consumables: Consumable[];
   chemicalProducts: ChemicalProduct[];
+  inventoryItems?: InventoryItem[];
   currentUser: AppUser | null;
 
   // Actions
@@ -80,8 +84,9 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
   catalogServices,
   materialRecipes,
   serviceRecipes,
-  consumables,
+  // consumables, (Removed: Unused in new logic)
   chemicalProducts,
+  inventoryItems = [],
   currentUser,
   addCatalogService,
   updateCatalogService,
@@ -107,11 +112,11 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
 
   // Search States for Service Editor
   const [materialSearch, setMaterialSearch] = useState("");
-  const [consumableSearch, setConsumableSearch] = useState("");
+
 
   // Service Form Tabs
   const [serviceFormTab, setServiceFormTab] = useState<
-    "info" | "chemicals" | "consumables"
+    "info" | "materials"
   >("info");
 
   // Inline Editing State
@@ -147,37 +152,94 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
     );
   }, [catalogServices, servicesPage]);
 
+  // Unified Material List for Search
+  // 1. Unified Inventory Source
+  const allMaterials = useMemo(() => {
+    // Return inventoryItems directly, mapping to the expected format if needed
+    // The previous logic combined chemicalProducts and consumables. 
+    // Now we rely on inventoryItems which should contain everything.
+    
+    if (inventoryItems && inventoryItems.length > 0) {
+      return inventoryItems.map((item) => {
+        // Calculate unit cost safely if missing
+        const calculatedUnitCost = item.unitCost || (item.purchasePrice && item.content ? item.purchasePrice / item.content : 0);
+        
+        return {
+        id: item.id,
+        name: item.name,
+        type: item.type === "material" ? ("chemical" as const) : ("consumable" as const), // Map 'material' to 'chemical' for compatibility
+        unit: item.unit,
+        cost: calculatedUnitCost,
+        // Helper for filtering
+        _originalType: item.type
+      };
+      }).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return [];
+  }, [inventoryItems]);
+
+  // Unified Selected Items for Display
+  const allSelectedItems = useMemo(() => {
+    // Helper to find item details in inventoryItems or legacy lists
+    // Helper to find item details in inventoryItems or legacy lists
+    const findItemDetails = (id: string) => {
+        // Try inventory first (check both new ID and original legacy ID)
+        const invItem = inventoryItems.find(i => i.id === id || i.originalId === id);
+        if (invItem) {
+            const calculatedUnitCost = invItem.unitCost || (invItem.purchasePrice && invItem.content ? invItem.purchasePrice / invItem.content : 0);
+            return {
+                name: invItem.name,
+                unit: invItem.unit,
+                cost: calculatedUnitCost
+            };
+        }
+
+        return {
+            name: "Desconocido",
+            unit: "uds",
+            cost: 0
+        };
+    };
+
+    const selectedChems = selectedMaterials.map((s) => {
+      const details = findItemDetails(s.materialId);
+      return {
+        id: s.materialId,
+        qty: s.qty,
+        name: details.name,
+        type: "chemical" as const,
+        unit: details.unit,
+        cost: details.cost * s.qty,
+        unitCost: details.cost
+      };
+    });
+
+    const selectedConsums = selectedConsumables.map((s) => {
+      const details = findItemDetails(s.consumableId);
+      return {
+        id: s.consumableId,
+        qty: s.qty,
+        name: details.name,
+        type: "consumable" as const,
+        unit: details.unit,
+        cost: details.cost * s.qty,
+        unitCost: details.cost
+      };
+    });
+
+    return [...selectedChems, ...selectedConsums];
+  }, [selectedMaterials, selectedConsumables, inventoryItems]);
+
   // Dynamic Cost Calculation for Service Editing
   const totalEstimatedMaterialCost = useMemo(() => {
-    // 1. Chemicals Cost
-    const chemicalsCost = selectedMaterials.reduce((total, item) => {
-      const chem = chemicalProducts.find((c) => c.id === item.materialId);
-      if (!chem) return total;
-
-      // Formula: (Price / PackageQty) * UsageQty
-      const unitCost = (chem.purchasePrice || 0) / (chem.quantity || 1);
-      return total + unitCost * item.qty;
-    }, 0);
-
-    // 2. Consumables Cost
-    const consumablesCost = selectedConsumables.reduce((total, item) => {
-      const cons = consumables.find((c) => c.id === item.consumableId);
-      if (!cons) return total;
-
-      const unitCost =
-        cons.purchasePrice && cons.packageSize
-          ? cons.purchasePrice / cons.packageSize
-          : cons.unitCost || 0;
-
-      return total + unitCost * item.qty;
-    }, 0);
-
+    const total = allSelectedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
     return {
-      chemicals: chemicalsCost,
-      consumables: consumablesCost,
-      total: chemicalsCost + consumablesCost,
+      chemicals: 0,
+      consumables: 0,
+      total,
     };
-  }, [selectedMaterials, selectedConsumables, chemicalProducts, consumables]);
+  }, [allSelectedItems]);
 
   // ==========================================================================
   // EVENT HANDLERS
@@ -246,14 +308,44 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
     }
   };
 
-  const handleDeleteCatalogService = async (id: string) => {
-    try {
-      await deleteCatalogService(id);
-      showNotification("Servicio eliminado");
-    } catch (error) {
-      console.error("Error eliminando servicio:", error);
-      showNotification("Error al eliminar", "error");
-    }
+  // Confirmation Modal State
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isLoading?: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    isLoading: false,
+  });
+
+  const closeConfirmation = () =>
+    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+
+  const handleDeleteCatalogService = (id: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Eliminar Servicio",
+      message:
+        "¿Estás seguro de que deseas eliminar este servicio del catálogo? Esta acción no se puede deshacer.",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isLoading: true }));
+        try {
+          await deleteCatalogService(id);
+          showNotification("Servicio eliminado");
+          closeConfirmation();
+        } catch (error) {
+          console.error("Error eliminando servicio:", error);
+          showNotification("Error al eliminar", "error");
+          setConfirmConfig((prev) => ({ ...prev, isLoading: false }));
+        }
+      },
+    });
   };
 
   const handleToggleMaterial = (materialId: string) => {
@@ -320,7 +412,6 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
             setSelectedMaterials([]);
             setSelectedConsumables([]);
             setMaterialSearch("");
-            setConsumableSearch("");
           }}
           className="bg-primary-600 hover:bg-primary-600/80 text-white font-bold p-2 md:px-4 md:py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95 w-auto"
         >
@@ -372,28 +463,29 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                   paginatedServices.map((cs) => {
                     const isEditing = editingCatalogService === cs.id;
 
-                    // Calcular costo total de materiales y consumibles
+                      // Calcular costo total de materiales y consumibles
+                    // Helper logic to find cost in inventory or legacy
+                    // Helper logic to find cost in inventory or legacy
+                    const getRefCost = (id: string) => {
+                        const invItem = inventoryItems.find(i => i.id === id || i.originalId === id);
+                        if (invItem) {
+                           return invItem.unitCost || (invItem.purchasePrice && invItem.content ? invItem.purchasePrice / invItem.content : 0);
+                        }
+                        return 0;
+                    };
+
                     const materialsCost = (cs.manualMaterials || []).reduce(
                       (sum, m) => {
                         const id = typeof m === "string" ? m : m.materialId;
                         const qty = typeof m === "string" ? 1 : m.qty;
-                        const p = chemicalProducts.find((cp) => cp.id === id);
-                        return sum + (p?.costPerService || 0) * qty;
+                        return sum + getRefCost(id) * qty;
                       },
                       0,
                     );
 
                     const consumablesCost = (cs.manualConsumables || []).reduce(
                       (sum, c) => {
-                        const item = consumables.find(
-                          (i) => i.id === c.consumableId,
-                        );
-                        if (!item) return sum;
-                        const uCost =
-                          item.purchasePrice && item.packageSize
-                            ? item.purchasePrice / item.packageSize
-                            : item.unitCost || 0;
-                        return sum + uCost * c.qty;
+                        return sum + getRefCost(c.consumableId) * c.qty;
                       },
                       0,
                     );
@@ -516,7 +608,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                               {totalMaterialCost > 0 ? (
                                 <div
                                   className="flex flex-col"
-                                  title={`Químicos: $${materialsCost.toFixed(2)} | Desechables: $${consumablesCost.toFixed(2)}`}
+                                  title={`Costo Materiales: $${totalMaterialCost.toFixed(2)}`}
                                 >
                                   <span className="text-sm font-bold text-text-muted">
                                     ${totalMaterialCost.toFixed(2)}
@@ -544,7 +636,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                                     setEditingServiceItem(cs);
                                     setEditServiceForm(cs);
                                     setMaterialSearch("");
-                                    setConsumableSearch("");
+
 
                                     // Tarea 1: Prioridad de Guardado (Admin) - MATERIALES
                                     // SI manualMaterials existe (incluso si está vacío), NO buscar en recetas antiguas
@@ -825,33 +917,18 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                 Información
               </button>
               <button
-                onClick={() => setServiceFormTab("chemicals")}
+                onClick={() => setServiceFormTab("materials")}
                 className={`px-3 py-2 whitespace-nowrap rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
-                  serviceFormTab === "chemicals"
+                  serviceFormTab === "materials"
                     ? "bg-primary-600 text-white shadow-lg shadow-primary-600/20"
                     : "text-text-muted hover:bg-surface-highlight"
                 }`}
               >
                 <Beaker size={16} />
-                Químicos
-                {selectedMaterials.length > 0 && (
+                Materiales
+                {allSelectedItems.length > 0 && (
                   <span className="px-1.5 py-0.5 bg-white/20 rounded-full text-xs font-bold">
-                    {selectedMaterials.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setServiceFormTab("consumables")}
-                className={`px-3 py-2 whitespace-nowrap rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
-                  serviceFormTab === "consumables"
-                    ? "bg-primary-600 text-white shadow-lg shadow-primary-600/20"
-                    : "text-text-muted hover:bg-surface-highlight"
-                }`}
-              >
-                Consumibles
-                {selectedConsumables.length > 0 && (
-                  <span className="px-1.5 py-0.5 bg-white/20 rounded-full text-xs font-bold">
-                    {selectedConsumables.length}
+                    {allSelectedItems.length}
                   </span>
                 )}
               </button>
@@ -912,20 +989,8 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                     <h4 className="font-bold text-text-main text-sm">
                       Resumen de Costos
                     </h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-text-muted">Químicos:</span>
-                        <span className="float-right font-bold text-text-main">
-                          ${totalEstimatedMaterialCost.chemicals.toFixed(2)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-text-muted">Consumibles:</span>
-                        <span className="float-right font-bold text-text-main">
-                          ${totalEstimatedMaterialCost.consumables.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="col-span-2 pt-2 border-t border-border">
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <div className="pt-2">
                         <span className="text-text-muted">
                           Costo Total Materiales:
                         </span>
@@ -971,217 +1036,173 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                 </div>
               )}
 
-              {/* Tab: CHEMICALS */}
-              {serviceFormTab === "chemicals" && (
-                <div className="space-y-4">
-                  {/* Search */}
-                  <div className="space-y-2">
+              {/* Tab: MATERIALS (Unified) */}
+              {serviceFormTab === "materials" && (
+                <div className="space-y-6">
+                  {/* Search Interface */}
+                  <div className="space-y-2 relative">
                     <label className="text-sm font-medium text-text-muted">
-                      Buscar Químico
+                      Buscar Material
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Buscar por nombre..."
-                      value={materialSearch}
-                      onChange={(e) => setMaterialSearch(e.target.value)}
-                      className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                    />
-                  </div>
-
-                  {/* List */}
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {chemicalProducts
-                      .filter((p) =>
-                        p.name
-                          .toLowerCase()
-                          .includes(materialSearch.toLowerCase()),
-                      )
-                      .map((product) => {
-                        const isSelected = selectedMaterials.some(
-                          (m) => m.materialId === product.id,
-                        );
-                        const selectedItem = selectedMaterials.find(
-                          (m) => m.materialId === product.id,
-                        );
-
-                        return (
-                          <div
-                            key={product.id}
-                            className={`p-3 rounded-lg border transition-all ${
-                              isSelected
-                                ? "bg-primary-600/10 border-primary-600/30"
-                                : "bg-surface-highlight border-border hover:border-primary-600/20"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 flex-1">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() =>
-                                    handleToggleMaterial(product.id)
-                                  }
-                                  className="w-4 h-4 rounded border-border text-primary-600 focus:ring-primary-500"
-                                />
-                                <div className="flex-1">
-                                  <p className="font-medium text-text-main text-sm">
-                                    {product.name}
-                                  </p>
-                                  <p className="text-xs text-text-muted">
-                                    ${product.costPerService.toFixed(3)} por{" "}
-                                    {product.unit}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {isSelected && (
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value={selectedItem?.qty ?? 0}
-                                    onChange={(e) =>
-                                      handleMaterialQtyChange(
-                                        product.id,
-                                        parseFloat(e.target.value) || 0,
-                                      )
-                                    }
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-20 px-2 py-1 text-sm bg-surface border border-border rounded text-text-main focus:ring-2 focus:ring-primary-500 outline-none"
-                                  />
-                                  <span className="text-xs text-text-muted">
-                                    {product.unit}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-
-                  {/* Selected Summary */}
-                  {selectedMaterials.length > 0 && (
-                    <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                      <p className="text-sm font-bold text-emerald-600">
-                        {selectedMaterials.length} químico(s) seleccionado(s)
-                      </p>
-                      <p className="text-xs text-text-muted mt-1">
-                        Costo total: $
-                        {totalEstimatedMaterialCost.chemicals.toFixed(2)}
-                      </p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Buscar químico o consumible..."
+                        value={materialSearch}
+                        onChange={(e) => setMaterialSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-surface text-text-main border border-border rounded-xl transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none shadow-sm"
+                      />
+                      <div className="absolute left-3 top-3.5 text-gray-400">
+                        <Plus size={18} />
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
 
-              {/* Tab: CONSUMABLES */}
-              {serviceFormTab === "consumables" && (
-                <div className="space-y-4">
-                  {/* Search */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-muted">
-                      Buscar Consumible
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Buscar por nombre..."
-                      value={consumableSearch}
-                      onChange={(e) => setConsumableSearch(e.target.value)}
-                      className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                    />
+                    {/* Dropdown Results */}
+                    {materialSearch.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-surface border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                        {allMaterials
+                          .filter((m) =>
+                            m.name
+                              .toLowerCase()
+                              .includes(materialSearch.toLowerCase()),
+                          )
+                          .slice(0, 5) // Limit to 5 results
+                          .map((material) => (
+                            <button
+                              key={`${material.type}-${material.id}`}
+                              onClick={() => {
+                                if (material.type === "chemical") {
+                                  handleToggleMaterial(material.id);
+                                } else {
+                                  handleToggleConsumable(material.id);
+                                }
+                                setMaterialSearch(""); // Clear search after selection
+                              }}
+                              className="w-full text-left px-4 py-3 hover:bg-surface-highlight transition-colors flex justify-between items-center group border-b border-border last:border-0"
+                            >
+                              <div>
+                                <p className="font-medium text-text-main group-hover:text-primary-600 transition-colors">
+                                  {material.name}
+                                </p>
+                                <p className="text-xs text-text-muted">
+                                  ${material.cost.toFixed(3)} /{" "}
+                                  {material.unit}
+                                </p>
+                              </div>
+                              <Plus
+                                size={16}
+                                className="text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              />
+                            </button>
+                          ))}
+                        {allMaterials.filter((m) =>
+                          m.name
+                            .toLowerCase()
+                            .includes(materialSearch.toLowerCase()),
+                        ).length === 0 && (
+                          <div className="px-4 py-3 text-sm text-text-muted text-center">
+                            No se encontraron materiales
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* List */}
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {consumables
-                      .filter((c) =>
-                        c.name
-                          .toLowerCase()
-                          .includes(consumableSearch.toLowerCase()),
-                      )
-                      .map((consumable) => {
-                        const isSelected = selectedConsumables.some(
-                          (c) => c.consumableId === consumable.id,
-                        );
-                        const selectedItem = selectedConsumables.find(
-                          (c) => c.consumableId === consumable.id,
-                        );
+                  {/* Selected Items List */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-text-main flex items-center justify-between">
+                      <span>Materiales Seleccionados</span>
+                      <span className="text-xs font-normal text-text-muted bg-surface-highlight px-2 py-1 rounded-full">
+                        {allSelectedItems.length} items
+                      </span>
+                    </h4>
 
-                        const unitCost =
-                          consumable.purchasePrice && consumable.packageSize
-                            ? consumable.purchasePrice / consumable.packageSize
-                            : consumable.unitCost || 0;
-
-                        return (
+                    {allSelectedItems.length === 0 ? (
+                      <div className="text-center py-8 border-2 border-dashed border-border rounded-xl bg-surface-highlight/30">
+                        <Beaker
+                          size={32}
+                          className="mx-auto text-text-muted/50 mb-2"
+                        />
+                        <p className="text-sm text-text-muted">
+                          No hay materiales seleccionados
+                        </p>
+                        <p className="text-xs text-text-muted/70 mt-1">
+                          Usa el buscador para agregar productos
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                        {allSelectedItems.map((item) => (
                           <div
-                            key={consumable.id}
-                            className={`p-3 rounded-lg border transition-all ${
-                              isSelected
-                                ? "bg-primary-600/10 border-primary-600/30"
-                                : "bg-surface-highlight border-border hover:border-primary-600/20"
-                            }`}
+                            key={`${item.type}-${item.id}`}
+                            className="flex items-center gap-3 p-3 bg-surface border border-border rounded-xl shadow-sm hover:border-primary-500/30 transition-all group"
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 flex-1">
+                            <div
+                              className="p-2 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400"
+                            >
+                              <Package size={18} />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-text-main text-sm truncate">
+                                {item.name}
+                              </p>
+                              <p className="text-xs text-text-muted">
+                                Costo: ${item.cost.toFixed(2)}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center bg-surface-highlight rounded-lg border border-border">
                                 <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() =>
-                                    handleToggleConsumable(consumable.id)
-                                  }
-                                  className="w-4 h-4 rounded border-border text-primary-600 focus:ring-primary-500"
+                                  type="number"
+                                  min={item.type === "chemical" ? "0" : "1"}
+                                  step={item.type === "chemical" ? "0.1" : "1"}
+                                  value={item.qty}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    if (item.type === "chemical") {
+                                      handleMaterialQtyChange(item.id, val);
+                                    } else {
+                                      handleConsumableQtyChange(item.id, val);
+                                    }
+                                  }}
+                                  className="w-16 px-2 py-1 text-sm bg-transparent text-center focus:outline-none font-medium"
                                 />
-                                <div className="flex-1">
-                                  <p className="font-medium text-text-main text-sm">
-                                    {consumable.name}
-                                  </p>
-                                  <p className="text-xs text-text-muted">
-                                    ${unitCost.toFixed(3)} por{" "}
-                                    {consumable.unit}
-                                  </p>
-                                </div>
+                                <span className="pr-2 text-xs text-text-muted border-l border-border pl-2 py-1 bg-surface-highlight rounded-r-lg">
+                                  {item.unit}
+                                </span>
                               </div>
 
-                              {isSelected && (
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    step="1"
-                                    value={selectedItem?.qty ?? 1}
-                                    onChange={(e) =>
-                                      handleConsumableQtyChange(
-                                        consumable.id,
-                                        parseInt(e.target.value) || 1,
-                                      )
-                                    }
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-20 px-2 py-1 text-sm bg-surface border border-border rounded text-text-main focus:ring-2 focus:ring-primary-500 outline-none"
-                                  />
-                                  <span className="text-xs text-text-muted">
-                                    uds.
-                                  </span>
-                                </div>
-                              )}
+                              <button
+                                onClick={() => {
+                                  if (item.type === "chemical") {
+                                    handleToggleMaterial(item.id);
+                                  } else {
+                                    handleToggleConsumable(item.id);
+                                  }
+                                }}
+                                className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Selected Summary */}
-                  {selectedConsumables.length > 0 && (
-                    <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                      <p className="text-sm font-bold text-emerald-600">
-                        {selectedConsumables.length} consumible(s)
-                        seleccionado(s)
-                      </p>
-                      <p className="text-xs text-text-muted mt-1">
-                        Costo total: $
-                        {totalEstimatedMaterialCost.consumables.toFixed(2)}
-                      </p>
+                  {/* Cost Summary Footer */}
+                  {allSelectedItems.length > 0 && (
+                    <div className="p-4 bg-surface-highlight rounded-xl border border-border flex justify-between items-center">
+                      <span className="text-sm font-medium text-text-muted">
+                        Costo Total Estimado
+                      </span>
+                      <span className="text-lg font-bold text-primary-600">
+                        ${totalEstimatedMaterialCost.total.toFixed(2)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1208,6 +1229,14 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={confirmConfig.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        isLoading={confirmConfig.isLoading}
+      />
     </div>
   );
 };

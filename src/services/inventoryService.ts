@@ -1,4 +1,4 @@
-import {
+﻿import {
   collection,
   doc,
   addDoc,
@@ -21,12 +21,14 @@ import type {
   ServiceRecipe,
   ServiceItem,
   MaterialInput,
+  InventoryItem,
 } from "../types";
 
 // Collection names
 
 const CONSUMABLES_COLLECTION = "consumables";
 const CHEMICAL_PRODUCTS_COLLECTION = "chemical_products";
+export const INVENTORY_COLLECTION = "inventory";
 
 // ====== Catalog Management ======
 
@@ -45,24 +47,24 @@ export const initializeCatalog = async (): Promise<boolean> => {
             category: "manicura",
             basePrice: 12,
           },
-          { name: "Manicura con diseño", category: "manicura", basePrice: 15 },
+          { name: "Manicura con diseÃ±o", category: "manicura", basePrice: 15 },
           {
-            name: "Uñas acrílicas (base)",
+            name: "UÃ±as acrÃ­licas (base)",
             category: "manicura",
             basePrice: 25,
           },
-          { name: "Uñas poligel (base)", category: "manicura", basePrice: 25 },
+          { name: "UÃ±as poligel (base)", category: "manicura", basePrice: 25 },
           { name: "Pedicure 1 tono", category: "pedicura", basePrice: 15 },
           { name: "Pedicure francesa", category: "pedicura", basePrice: 18 },
           { name: "Pedicura limpieza", category: "pedicura", basePrice: 10 },
           { name: "Manicura limpieza", category: "manicura", basePrice: 7 },
           {
-            name: "Rubber uñas cortas 1 tono",
+            name: "Rubber uÃ±as cortas 1 tono",
             category: "manicura",
             basePrice: 20,
           },
           {
-            name: "Rubber uñas largas 1 tono",
+            name: "Rubber uÃ±as largas 1 tono",
             category: "manicura",
             basePrice: 25,
           },
@@ -88,7 +90,7 @@ export const initializeCatalog = async (): Promise<boolean> => {
         // Consumibles actualizados
         const defaultConsumables = [
           {
-            name: "Algodón",
+            name: "AlgodÃ³n",
             unit: "gramo",
             unitCost: 0.02,
             stockQty: 500,
@@ -102,7 +104,7 @@ export const initializeCatalog = async (): Promise<boolean> => {
             minStockAlert: 10,
           },
           {
-            name: "Campo quirúrgico",
+            name: "Campo quirÃºrgico",
             unit: "unidad",
             unitCost: 0.06,
             stockQty: 100,
@@ -190,7 +192,7 @@ export const addCatalogService = async (
   basePrice: number
 ): Promise<string> => {
   if (!name.trim() || basePrice <= 0) {
-    throw new Error("Datos inválidos");
+    throw new Error("Datos invÃ¡lidos");
   }
   
   const docRef = await addDoc(collection(db, "catalog_services"), {
@@ -219,7 +221,7 @@ export const deleteCatalogService = async (id: string): Promise<void> => {
 
 export const addExtra = async (name: string, price: number): Promise<void> => {
   if (!name.trim() || price < 0) {
-    throw new Error("Datos inválidos");
+    throw new Error("Datos invÃ¡lidos");
   }
 
   await addDoc(collection(db, "catalog_extras"), {
@@ -242,34 +244,12 @@ export const deleteExtra = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, "catalog_extras", id));
 };
 
-// ====== Consumables Management ======
 
-export const initializeMaterialsData = async (): Promise<void> => {
-  try {
-    const metaRef = doc(db, "meta", "materials");
-    const metaSnap = await getDoc(metaRef);
-
-    if (metaSnap.exists() && metaSnap.data()?.seeded) return;
-
-    await runTransaction(db, async (tx) => {
-      // Seeding initial materials if needed
-      // Logic from provided code snippet suggests we just set meta
-       tx.set(
-        metaRef,
-        { seeded: true, seededAt: serverTimestamp() },
-        { merge: true },
-      );
-    });
-  } catch (error) {
-     console.error("Error initializing materials:", error);
-     throw error;
-  }
-};
 
 export const addConsumable = async (
   consumable: Omit<Consumable, "id" | "active">
 ): Promise<void> => {
-  // CORRECCIÓN: Validamos purchasePrice en lugar de unitCost (que ahora es opcional)
+  // CORRECCIÃ“N: Validamos purchasePrice en lugar de unitCost (que ahora es opcional)
    if (
         !consumable.name ||
         !consumable.unit ||
@@ -277,7 +257,7 @@ export const addConsumable = async (
         consumable.stockQty < 0 ||
         consumable.minStockAlert < 0
       ) {
-        throw new Error("Datos inválidos");
+        throw new Error("Datos invÃ¡lidos");
       }
 
   await addDoc(collection(db, "consumables"), {
@@ -304,7 +284,7 @@ export const addChemicalProduct = async (
   product: Omit<ChemicalProduct, "id" | "active">
 ): Promise<void> => {
    if (!product.name || product.purchasePrice < 0 || product.yield <= 0) {
-       throw new Error("Datos inválidos");
+       throw new Error("Datos invÃ¡lidos");
    }
 
   await addDoc(collection(db, "chemical_products"), {
@@ -349,59 +329,50 @@ export const deleteChemicalProduct = async (id: string): Promise<void> => {
 
 // ====== Helpers for Service Logic (Shared) ======
 
+// 1. DEDUCT CONSUMABLES (Unified)
 export const deductConsumables = async (
   serviceId: string,
   serviceName: string,
   serviceRecipes: ServiceRecipe[],
-  consumables: Consumable[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ): Promise<void> => {
   try {
-    // Buscar servicio en catálogo
     const catalogService = catalogServices.find(
       s => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
     );
     
     let itemsToDeduct: { consumableId: string; qty: number }[] = [];
     
-    // PRIORIDAD 1: manualConsumables (selección manual del admin)
     if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {
       itemsToDeduct = catalogService.manualConsumables;
     } else {
-      // PRIORIDAD 2: serviceRecipes (recetas antiguas, fallback)
       const recipe = serviceRecipes.find(r => r.serviceId === serviceId);
       itemsToDeduct = recipe?.items || [];
-      
-      if (itemsToDeduct.length === 0) {
-        // console.warn(`⚠️ No se encontró receta de consumibles para ${serviceName}`);
-      }
     }
     
-    // Descontar cada consumible
     for (const item of itemsToDeduct) {
-      const consumable = consumables.find(c => c.id === item.consumableId);
+      let product = inventoryItems.find(p => p.id === item.consumableId || p.originalId === item.consumableId);
+      if (!product) product = inventoryItems.find(p => p.id === item.consumableId);
       
-      if (consumable) {
-        const newQty = Math.max(0, consumable.stockQty - item.qty);
+      if (product) {
+        let currentContent = product.currentContent ?? product.content ?? 0;
+        let stock = product.stock;
+        const contentPerUnit = product.content || 1;
         
-        // Actualizar en Firestore
-        const consumableRef = doc(db, CONSUMABLES_COLLECTION, item.consumableId);
-        await updateDoc(consumableRef, {
-          stockQty: newQty,
-          lastDeducted: new Date().toISOString(),
-        });
-        
-        
-        // Log con información de rendimiento
-        // const servicesRemaining = newQty; // Asumiendo 1 unidad por servicio
-        // console.log(`✅ Descuento: ${consumable.name} (-${item.qty} ${consumable.unit}) → Stock: ${newQty} (${servicesRemaining} servicios restantes)`);
-        
-        // Alerta de stock bajo
-        if (newQty <= consumable.minStockAlert) {
-          console.warn(`⚠️ STOCK BAJO: ${consumable.name} (${newQty}/${consumable.packageSize || 'N/A'})`);
+        currentContent -= item.qty;
+
+        while (currentContent < 0 && stock > 0) {
+            stock--;
+            currentContent += contentPerUnit;
         }
-      } else {
-        console.warn(`⚠️ Consumible no encontrado: ${item.consumableId}`);
+
+        const productRef = doc(db, INVENTORY_COLLECTION, product.id);
+        await updateDoc(productRef, {
+            stock: stock,
+            currentContent: parseFloat(currentContent.toFixed(2)),
+            lastDeducted: new Date().toISOString(),
+        });
       }
     }
   } catch (error) {
@@ -413,75 +384,59 @@ export const calculateTotalReplenishmentCost = (
   services: ServiceItem[],
   materialRecipes: MaterialRecipe[],
   catalogServices: CatalogService[] = [],
-  chemicalProducts: ChemicalProduct[] = [],
-  consumables: Consumable[] = []
+  inventoryItems: InventoryItem[] = []
 ): number => {
   let totalCost = 0;
 
   for (const service of services) {
     let serviceCost = 0;
-
-    // Buscar servicio en catálogo
     const catalogService = catalogServices.find(
       (cs) => cs.id === service.serviceId || 
               cs.name?.toLowerCase() === service.serviceName.toLowerCase()
     );
 
-    // --- 1. CÁLCULO DE QUÍMICOS (Materiales) ---
-    // PRIORIDAD: Configuración Manual
-    if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
-      for (const item of catalogService.manualMaterials) {
-        // Handle polymorphic item type
-        const isObject = typeof item === 'object' && item !== null;
-        // Si es objeto, usar materialId. Si es string, usar item directamente
-        const materialId = isObject ? (item as { materialId: string }).materialId : (item as string);
-        
-        const product = chemicalProducts.find(p => p.id === materialId);
-        
-        if (product) {
-          // El rendimiento total del producto (ej: 150ml)
-          const yieldTotal = product.quantity || product.yield || 1;
-          
-          // Costo por unidad de medida (ej: Precio / 150ml = Costo por ml)
-          const costPerUnitMeasure = (product.purchasePrice || 0) / yieldTotal;
-          
-          // Cantidad usada en este servicio
-          const qtyUsed = isObject ? (item as { qty: number }).qty : 1;
-          
-          serviceCost += costPerUnitMeasure * qtyUsed;
-        }
-      }
+    // 1. MATERIALES
+    let materialsToCalc: MaterialInput[] = [];
+    if (catalogService?.manualMaterials) {
+        materialsToCalc = catalogService.manualMaterials;
     } else {
-      // FALLBACK: Receta antigua (si existe)
-      const recipe = materialRecipes.find(
-        (r) => r.serviceName.toLowerCase() === service.serviceName.toLowerCase()
-      );
-
-      if (recipe) {
-        serviceCost += recipe.totalCost;
-      }
-      // NOTA: Se eliminó el fallback de costo fijo (0.50/0.33)
+         const recipe = materialRecipes.find(r => r.serviceName.toLowerCase() === service.serviceName.toLowerCase());
+         materialsToCalc = recipe ? recipe.chemicalIds : [];
     }
 
-    // --- 2. CÁLCULO DE CONSUMIBLES ---
-    // Solo si existen en el catálogo manual
-    if (catalogService?.manualConsumables !== undefined && catalogService?.manualConsumables !== null) {
-      for (const item of catalogService.manualConsumables) {
-        const consumable = consumables.find(c => c.id === item.consumableId);
-            
-        if (consumable) {
-          // Costo Unitario = (Precio Compra / Tamaño Paquete)
-          const packageSize = consumable.packageSize || 1;
-          const unitCost = packageSize > 0 ? (consumable.purchasePrice || 0) / packageSize : 0;
-          
-          serviceCost += unitCost * item.qty;
+    for (const item of materialsToCalc) {
+        let materialId = "";
+        let qty = 1;
+
+        if (typeof item === 'string') {
+            materialId = item;
+        } else if (typeof item === 'object' && item !== null) {
+             materialId = (item as any).id || (item as any).materialId;
+             qty = (item as any).quantity || (item as any).qty || (item as any).amount || 1;
         }
-      }
+
+        const product = inventoryItems.find(p => p.id === materialId || p.originalId === materialId);
+        if (product) {
+             const yieldTotal = product.content || 1;
+             const unitCost = yieldTotal > 0 ? (product.purchasePrice || 0) / yieldTotal : 0;
+             serviceCost += unitCost * qty;
+        }
+    }
+
+    // 2. CONSUMIBLES
+    if (catalogService?.manualConsumables) {
+        for (const item of catalogService.manualConsumables) {
+             const product = inventoryItems.find(p => p.id === item.consumableId || p.originalId === item.consumableId);
+             if (product) {
+                 const yieldTotal = product.content || 1;
+                 const unitCost = yieldTotal > 0 ? (product.purchasePrice || 0) / yieldTotal : 0;
+                 serviceCost += unitCost * item.qty;
+             }
+        }
     }
 
     totalCost += serviceCost;
   }
-
   return totalCost;
 };
 
@@ -491,25 +446,19 @@ export const deductInventoryByRecipe = async (
   serviceId: string,
   serviceName: string,
   materialRecipes: MaterialRecipe[],
-  chemicalProducts: ChemicalProduct[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = [] 
 ): Promise<void> => {
   try {
-    // Buscar servicio en catálogo
     const catalogService = catalogServices.find(
       (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
     );
     
-    // Usamos MaterialInput[] para soportar tanto strings (legacy) como objetos (nuevo)
     let materialsToDeduct: MaterialInput[] = [];
     
-    // SI manualMaterials existe, usar eso
     if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
       materialsToDeduct = catalogService.manualMaterials;
-      // console.log(`⚠️ Usando selección manual para ${serviceName}: ${materialsToDeduct.length} items`);
     } else {
-      // FALLBACK: Recetas antiguas
-      // console.log(`🔍 Usando recetas antiguas para ${serviceName}`);
       const recipe = materialRecipes.find(
         (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
       );
@@ -518,103 +467,47 @@ export const deductInventoryByRecipe = async (
     
     if (materialsToDeduct.length === 0) return;
 
-    // Ejecución del Rendimiento
     for (const item of materialsToDeduct) {
-      
-      // 1. DETECCIÓN DE TIPO BLINDADA (Polimorfismo Real)
-      let chemicalId: string = "";
-      let deductAmount = 0;
+      let materialId: string = "";
+      let qtyUsed = 0;
 
       if (typeof item === 'string') {
-        // Caso antiguo: ['id1', 'id2']
-        chemicalId = item;
+        materialId = item;
+        qtyUsed = 1;
       } else if (typeof item === 'object' && item !== null) {
-        // Caso nuevo: Soportamos variaciones de nombres (id vs materialId, quantity vs qty)
-        // Esto arregla el error "undefined"
-        chemicalId = item.id || item.materialId || ""; 
-        deductAmount = item.quantity || item.qty || item.amount || 0;
+        materialId = item.id || item.materialId || ""; 
+        qtyUsed = item.quantity || item.qty || item.amount || 1;
       }
 
-      // 🛑 VALIDACIÓN DE SEGURIDAD
-      // Si por alguna razón chemicalId sigue vacía, saltamos para evitar el crash
-      if (!chemicalId) {
-        console.warn("⚠️ Item de material inválido o corrupto encontrado:", item);
-        continue; 
+      if (!materialId) continue;
+      
+      let product = inventoryItems.find((p) => p.id === materialId || p.originalId === materialId);
+      if (!product && materialId) {
+             const normalizedSearchName = materialId.toLowerCase().replace(/_/g, ' ').trim();
+             product = inventoryItems.find(p => {
+                const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+                return normalizedProductName === normalizedSearchName;
+             });
       }
       
-      // 2. BUSCAR PRODUCTO
-      let product = chemicalProducts.find((p) => p.id === chemicalId);
-      let productRef = null;
-      let productSnap = null;
-      
-      if (!product) {
-        // Búsqueda fallback por nombre (ahora segura porque chemicalId existe)
-        const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
-        const chemicalProductsRef = collection(db, "chemical_products");
-        const allProductsSnap = await getDocs(chemicalProductsRef);
-        
-        for (const docSnap of allProductsSnap.docs) {
-          const data = docSnap.data() as ChemicalProduct;
-          const normalizedProductName = data.name.toLowerCase().replace(/_/g, ' ').trim();
-          
-          if (normalizedProductName === normalizedSearchName || 
-              normalizedProductName.includes(normalizedSearchName) ||
-              normalizedSearchName.includes(normalizedProductName)) {
-            product = { ...data, id: docSnap.id };
-            productRef = doc(db, "chemical_products", docSnap.id);
-            productSnap = docSnap;
-            break;
-          }
-        }
-      } else {
-        productRef = doc(db, "chemical_products", chemicalId);
-      }
-      
-      if (!product || !productRef) {
-        console.warn(`⚠️ Producto no encontrado: ${chemicalId}`);
-        continue;
+      if (!product) continue;
+
+      let currentContent = product.currentContent ?? product.content ?? 0;
+      let stock = product.stock;
+      const contentPerUnit = product.content || 1;
+
+      currentContent -= qtyUsed;
+
+      while (currentContent < 0 && stock > 0) {
+          stock--;
+          currentContent += contentPerUnit;
       }
 
-      if (!productSnap) productSnap = await getDoc(productRef);
-      if (!productSnap.exists()) continue;
-
-      const currentData = productSnap.data() as ChemicalProduct;
-      
-      // 3. CÁLCULO DE STOCK
-      // Si deductAmount viene del servicio (ej: 15ml), usamos eso. 
-      // Si no, usamos 1 (o lo que diga el producto).
-      const amountToSubtract = deductAmount > 0 ? deductAmount : 1;
-
-      let currentYieldRemaining = currentData.currentYieldRemaining ?? currentData.yieldPerUnit ?? currentData.yield ?? 1;
-      let stock = currentData.stock ?? 0;
-      const yieldPerUnit = currentData.yieldPerUnit ?? currentData.yield ?? 1;
-
-      // Restamos la cantidad
-      currentYieldRemaining = currentYieldRemaining - amountToSubtract;
-
-      // Lógica de reposición (abrir nueva botella si se acaba)
-      if (currentYieldRemaining <= 0) {
-        // Calculamos cuántas botellas enteras se consumieron (normalmente 1, pero si gastaste 2000ml de golpe...)
-        const bottlesConsumed = Math.ceil(Math.abs(currentYieldRemaining) / yieldPerUnit) || 1; 
-        
-        stock = Math.max(0, stock - bottlesConsumed); 
-        
-        // El remanente es lo que sobra de la nueva botella abierta
-        // Ej: Gasté 1050ml de botellas de 1000ml -> Gasté 1 botella entera y 50ml de la segunda.
-        // Nueva botella (1000) - 50 = 950 restantes.
-        const remainder = Math.abs(currentYieldRemaining) % yieldPerUnit;
-        currentYieldRemaining = remainder === 0 ? yieldPerUnit : (yieldPerUnit - remainder);
-        
-        // console.log(`🔄 Reposición: ${product.name} - Stock baja a ${stock}`);
-      }
-
-      // Guardar en Firebase
+      const productRef = doc(db, INVENTORY_COLLECTION, product.id);
       await updateDoc(productRef, {
-        currentYieldRemaining,
-        stock,
+        currentContent: parseFloat(currentContent.toFixed(2)),
+        stock
       });
-
-      // console.log(`✅ Descuento: ${product.name} (-${amountToSubtract}) | Restante: ${currentYieldRemaining}/${yieldPerUnit}`);
     }
   } catch (error) {
     console.error(`❌ Error al descontar inventario:`, error);
@@ -627,7 +520,7 @@ export const restoreInventoryByRecipe = async (
   serviceId: string,
   serviceName: string,
   materialRecipes: MaterialRecipe[],
-  chemicalProducts: ChemicalProduct[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ): Promise<void> => {
   try {
@@ -637,11 +530,9 @@ export const restoreInventoryByRecipe = async (
 
     let materialsToRestore: MaterialInput[] = [];
 
-    // Prioridad 1: Manual
     if (catalogService?.manualMaterials !== undefined && catalogService?.manualMaterials !== null) {
       materialsToRestore = catalogService.manualMaterials;
     } else {
-      // Fallback: Receta
       const recipe = materialRecipes.find(
         (r) => r.serviceId === serviceId || r.serviceName.toLowerCase() === serviceName.toLowerCase()
       );
@@ -651,78 +542,46 @@ export const restoreInventoryByRecipe = async (
     if (materialsToRestore.length === 0) return;
 
     for (const item of materialsToRestore) {
-      let chemicalId: string = "";
-      let restoreAmount = 0;
+      let materialId: string = "";
+      let qtyUsed = 0;
 
       if (typeof item === 'string') {
-        chemicalId = item;
+        materialId = item;
+        qtyUsed = 1;
       } else if (typeof item === 'object' && item !== null) {
-        chemicalId = item.id || item.materialId || "";
-        restoreAmount = item.quantity || item.qty || item.amount || 0;
+        materialId = item.id || item.materialId || "";
+        qtyUsed = item.quantity || item.qty || item.amount || 1;
       }
 
-      if (!chemicalId) continue;
+      if (!materialId) continue;
 
-      // Buscar producto
-      const product = chemicalProducts.find((p) => p.id === chemicalId);
-      
-      // Fallback search por nombre similar a deductInventoryByRecipe
+      let product = inventoryItems.find((p) => p.id === materialId || p.originalId === materialId);
       if (!product) {
-         // (Omitido para brevedad, asumimos que si se descontó, existe, pero idealmente deberíamos buscar igual)
-         // Para restauración es crítico encontrar el producto exacto. Si no está en memoria, RIP.
-         // En un escenario real, deberíamos hacer query a DB si no está en props.
-         continue; 
+            const normalizedSearchName = materialId.toLowerCase().replace(/_/g, ' ').trim();
+             product = inventoryItems.find(p => {
+                const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+                return normalizedProductName === normalizedSearchName;
+             });
       }
       
-      const productRef = doc(db, CHEMICAL_PRODUCTS_COLLECTION, product.id);
-      const productSnap = await getDoc(productRef);
+      if (!product) continue;
       
-      if (!productSnap.exists()) continue;
+      let currentContent = product.currentContent ?? product.content ?? 0;
+      let stock = product.stock;
+      const contentPerUnit = product.content || 1;
       
-      const currentData = productSnap.data() as ChemicalProduct;
-      const amountToAdd = restoreAmount > 0 ? restoreAmount : 1;
+      currentContent += qtyUsed;
       
-      let currentYieldRemaining = currentData.currentYieldRemaining ?? currentData.yieldPerUnit ?? currentData.yield ?? 1;
-      let stock = currentData.stock ?? 0;
-      const yieldPerUnit = currentData.yieldPerUnit ?? currentData.yield ?? 1;
-      
-      // Sumar cantidad
-      currentYieldRemaining += amountToAdd;
-      
-      // Si la botella actual "rebosa" (más que su capacidad), incrementamos stock de botellas cerradas
-      if (currentYieldRemaining > yieldPerUnit) {
-
-
-          // Ojo: Si currentYieldRemaining era muy bajo y sumamos mucho, podríamos restaurar botellas.
-          // Simplificación: Incrementar stock si pasamos el límite.
-          
-          // Lógica inversa a deduction:
-          // Si yield=1000, current=200, restore=900 -> total=1100. 
-          // 1 botella llena (stock++) y sobra 100 en current.
-          
-          const totalYield = currentYieldRemaining; 
-          const fullBottles = Math.floor(totalYield / yieldPerUnit);
-          const remainder = totalYield % yieldPerUnit; // Lo que queda en la botella abierta
-          
-          // Si totalYield es 1100 y yield 1000:
-          // fullBottles = 1
-          // remainder = 100
-          
-          // PERO, 'stock' cuenta botellas CERRADAS. 
-          // 'currentYieldRemaining' es la botella ABIERTA.
-          // Si currentYieldRemaining > yield, significa que hemos llenado la abierta y tenemos para más.
-          
-          stock += fullBottles;
-          currentYieldRemaining = remainder === 0 ? yieldPerUnit : remainder; 
-          // Si remainder 0, exacto, la botella abierta está llena (o nueva).
+      while (currentContent > contentPerUnit) {
+          stock++;
+          currentContent -= contentPerUnit;
       }
       
+      const productRef = doc(db, INVENTORY_COLLECTION, product.id);
       await updateDoc(productRef, {
-        currentYieldRemaining,
+        currentContent: parseFloat(currentContent.toFixed(2)),
         stock
       });
-      
-      // console.log(`🔄 Restaurado: ${product.name} (+${amountToAdd}) | Stock: ${stock}`);
     }
 
   } catch (error) {
@@ -730,11 +589,12 @@ export const restoreInventoryByRecipe = async (
   }
 };
 
+
 export const restoreConsumables = async (
   serviceId: string,
   serviceName: string,
   serviceRecipes: ServiceRecipe[],
-  consumables: Consumable[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ): Promise<void> => {
   try {
@@ -752,21 +612,33 @@ export const restoreConsumables = async (
     }
     
     for (const item of itemsToRestore) {
-        const consumable = consumables.find(c => c.id === item.consumableId);
-        if (consumable) {
-            const newQty = consumable.stockQty + item.qty;
-            const consumableRef = doc(db, CONSUMABLES_COLLECTION, item.consumableId);
+        let product = inventoryItems.find(c => c.id === item.consumableId || c.originalId === item.consumableId);
+        if (!product) product = inventoryItems.find(c => c.id === item.consumableId);
+
+        if (product) {
+            let currentContent = product.currentContent ?? product.content ?? 0;
+            let stock = product.stock;
+            const contentPerUnit = product.content || 1;
             
-            await updateDoc(consumableRef, {
-                stockQty: newQty
+            currentContent += item.qty;
+
+            while (currentContent > contentPerUnit) {
+                stock++;
+                currentContent -= contentPerUnit;
+            }
+
+            const productRef = doc(db, INVENTORY_COLLECTION, product.id);
+            await updateDoc(productRef, {
+               currentContent: parseFloat(currentContent.toFixed(2)),
+               stock
             });
-            // console.log(`🔄 Restaurado Consumible: ${consumable.name} (+${item.qty}) -> ${newQty}`);
         }
     }
   } catch (error) {
       console.error("❌ Error restaurando consumibles:", error);
   }
 };
+
 
 // ====== Consumables Helper Functions ======
 
@@ -797,7 +669,7 @@ export const getConsumableYield = (consumable: Consumable, qtyPerService: number
 };
 
 /**
- * Verifica si un consumible está en stock bajo
+ * Verifica si un consumible estÃ¡ en stock bajo
  */
 // ====== Batch Operations (New) ======
 
@@ -806,10 +678,10 @@ export const batchDeductInventoryByRecipe = (
   serviceId: string,
   serviceName: string,
   materialRecipes: MaterialRecipe[],
-  chemicalProducts: ChemicalProduct[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ) => {
-  // 1. Buscar servicio en catálogo
+  // 1. Buscar servicio en catÃ¡logo
   const catalogService = catalogServices.find(
     (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
   );
@@ -831,27 +703,28 @@ export const batchDeductInventoryByRecipe = (
   if (materialsToDeduct.length === 0) return;
 
   materialsToDeduct.forEach((item) => {
-      // 1. DETECCIÓN DE TIPO BLINDADA
-      let chemicalId: string = "";
+      // 1. DETECCIÃ“N DE TIPO BLINDADA
+      let materialId: string = "";
       let qtyUsed = 0;
 
       if (typeof item === 'string') {
-        chemicalId = item;
+        materialId = item;
         qtyUsed = 1; // Default: 1 unidad si no se especifica
       } else if (typeof item === 'object' && item !== null) {
-        chemicalId = item.id || item.materialId || ""; 
+        materialId = item.id || item.materialId || ""; 
         qtyUsed = item.quantity || item.qty || item.amount || 1;
       }
 
-      if (!chemicalId) return;
+      if (!materialId) return;
 
-      // 2. BUSCAR PRODUCTO (En el array en memoria)
-      let product = chemicalProducts.find((p) => p.id === chemicalId);
+      // 2. BUSCAR PRODUCTO (En el array de inventario unificado)
+      // Check ID or originalId
+      let product = inventoryItems.find((p) => p.id === materialId || p.originalId === materialId);
       
       if (!product) {
-         // Fallback búsqueda por nombre
-         const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
-         product = chemicalProducts.find(p => {
+         // Fallback bÃºsqueda por nombre
+         const normalizedSearchName = materialId.toLowerCase().replace(/_/g, ' ').trim();
+         product = inventoryItems.find(p => {
             const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
             return normalizedProductName === normalizedSearchName;
          });
@@ -859,40 +732,48 @@ export const batchDeductInventoryByRecipe = (
 
       if (!product) return;
 
-      // 3. CÁLCULO DE DESCUENTO FRACCIONADO
-      // La capacidad del envase (contenido neto total)
-      const capacity = product.quantity || product.yield || 1;
+      // 3. LOGICA DE DESCUENTO
+      // Usar currentContent y stock
+      let currentContent = product.currentContent ?? product.content ?? 0;
+      let stock = product.stock;
+      const contentPerUnit = product.content || 1;
       
-      // Evitar división por cero
-      if (capacity <= 0) {
-        console.warn(`⚠️ Producto ${product.name} tiene capacidad inválida (${capacity})`);
-        return;
+      // Restar cantidad usada
+      currentContent -= qtyUsed;
+
+      // Rollover: Si currentContent es negativo, consumir stock
+      // Ejemplo: currentContent = -5, content = 500. stock--. currentContent = 495.
+      while (currentContent < 0 && stock > 0) {
+          stock--;
+          currentContent += contentPerUnit;
       }
-
-      // FÓRMULA: deduction = cantidadUsada / capacidadEnvase
-      // Ejemplo: Usé 50ml de un bote de 500ml → deduction = 50/500 = 0.1 (10% de un bote)
-      const deduction = qtyUsed / capacity;
-
-      // 4. ACTUALIZAR BATCH CON INCREMENT (ATÓMICO)
-      const productRef = doc(db, "chemical_products", product.id);
+      
+      // Si aÃºn es negativo y no hay stock, se queda negativo para indicar dÃ©ficit real
+      // (o podriamos dejarlo en 0, pero negativo es mÃ¡s informativo para reabastecer)
+      
+      // 4. ACTUALIZAR BATCH
+      // Usar INVENTORY_COLLECTION (que debe estar definido en el archivo)
+      // Hardcoding string "inventory" just in case constant is far away or duplicated
+      const productRef = doc(db, "inventory", product.id);
       
       batch.update(productRef, {
-          stock: increment(-deduction), // ✅ Descuento fraccionado atómico
+          stock: stock,
+          currentContent: parseFloat(currentContent.toFixed(2)),
+          // updateAt?
       });
-      
-      // console.log(`✅ ${product.name}: -${qtyUsed}${product.unit} (${deduction.toFixed(3)} envases)`);
   });
 };
+
 
 export const batchDeductConsumables = (
   batch: WriteBatch,
   serviceId: string,
   serviceName: string,
   serviceRecipes: ServiceRecipe[],
-  consumables: Consumable[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ) => {
-  // 1. Buscar servicio en catálogo
+  // 1. Buscar servicio en catÃ¡logo
   const catalogService = catalogServices.find(
     s => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
   );
@@ -908,36 +789,47 @@ export const batchDeductConsumables = (
     itemsToDeduct = recipe?.items || [];
   }
 
-  itemsToDeduct.forEach(item => {
-      const consumable = consumables.find(c => c.id === item.consumableId);
-    
-      if (consumable) {
-          // DESCUENTO FRACCIONADO PARA CONSUMIBLES
-          // La capacidad del paquete (tamaño total)
-          const packageSize = consumable.packageSize || 1;
-          
-          // Evitar división por cero
-          if (packageSize <= 0) {
-            console.warn(`⚠️ Consumible ${consumable.name} tiene packageSize inválido (${packageSize})`);
-            return;
-          }
+  if (itemsToDeduct.length === 0) return;
 
-          //  FÓRMULA: deduction = cantidadUsada / tamañoPaquete
-          // Ejemplo: Usé 50 unidades de un paquete de 100 → deduction = 50/100 = 0.5 (medio paquete)
-          const deduction = item.qty / packageSize;
+  itemsToDeduct.forEach(item => {
+      // Check ID or originalId
+      // Note: Consumables in legacy might be mapped. 
+      let product = inventoryItems.find(p => p.id === item.consumableId || p.originalId === item.consumableId);
+      
+      if (!product) {
+          // Try name match if ID fails? Unlikely for consumables but safely
+          // Consumables typically don't fail by ID if data is clean.
+          // But strict generic search:
+          product = inventoryItems.find(p => p.id === item.consumableId);
+      }
+    
+      if (product) {
+          // LOGICA DE DESCUENTO UNIFICADA
+          let currentContent = product.currentContent ?? product.content ?? 0;
+          let stock = product.stock;
+          const contentPerUnit = product.content || 1; 
           
-          const consumibleRef = doc(db, "consumables", item.consumableId);
+          const qtyUsed = item.qty;
+
+          // Restar
+          currentContent -= qtyUsed;
+
+          // Rollover
+          while (currentContent < 0 && stock > 0) {
+              stock--;
+              currentContent += contentPerUnit;
+          }
           
-          // ACTUALIZACIÓN ATÓMICA CON INCREMENT
-          batch.update(consumibleRef, {
-              stockQty: increment(-deduction), // ✅ Descuento fraccionado atómico
-              lastDeducted: new Date().toISOString(),
+          const productRef = doc(db, "inventory", product.id);
+          
+          batch.update(productRef, {
+              stock: stock,
+              currentContent: parseFloat(currentContent.toFixed(2)),
           });
-          
-          // console.log(`✅ ${consumable.name}: -${item.qty}${consumable.unit} (${deduction.toFixed(3)} paquetes)`);
       }
   });
 };
+
 export const isConsumableLowStock = (consumable: Consumable): boolean => {
   return consumable.stockQty <= consumable.minStockAlert;
 };
@@ -949,10 +841,10 @@ export const batchRestoreInventoryByRecipe = (
   serviceId: string,
   serviceName: string,
   materialRecipes: MaterialRecipe[],
-  chemicalProducts: ChemicalProduct[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ) => {
-  // 1. Buscar servicio en catálogo
+  // 1. Buscar servicio en catÃ¡logo
   const catalogService = catalogServices.find(
     (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
   );
@@ -972,25 +864,25 @@ export const batchRestoreInventoryByRecipe = (
   if (materialsToRestore.length === 0) return;
 
   materialsToRestore.forEach((item) => {
-      let chemicalId: string = "";
+      let materialId: string = "";
       let qtyUsed = 0;
 
       if (typeof item === 'string') {
-        chemicalId = item;
+        materialId = item;
         qtyUsed = 1;
       } else if (typeof item === 'object' && item !== null) {
-        chemicalId = item.id || item.materialId || ""; 
+        materialId = item.id || item.materialId || ""; 
         qtyUsed = item.quantity || item.qty || item.amount || 1;
       }
 
-      if (!chemicalId) return;
+      if (!materialId) return;
 
       // 2. BUSCAR PRODUCTO
-      let product = chemicalProducts.find((p) => p.id === chemicalId);
+      let product = inventoryItems.find((p) => p.id === materialId || p.originalId === materialId);
       
       if (!product) {
-         const normalizedSearchName = chemicalId.toLowerCase().replace(/_/g, ' ').trim();
-         product = chemicalProducts.find(p => {
+         const normalizedSearchName = materialId.toLowerCase().replace(/_/g, ' ').trim();
+         product = inventoryItems.find(p => {
             const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
             return normalizedProductName === normalizedSearchName;
          });
@@ -998,38 +890,40 @@ export const batchRestoreInventoryByRecipe = (
 
       if (!product) return;
 
-      // 3. RESTAURACIÓN FRACCIONADA (INVERSA AL DESCUENTO)
-      const capacity = product.quantity || product.yield || 1;
-      
-      if (capacity <= 0) {
-        console.warn(`⚠️ Producto ${product.name} tiene capacidad inválida (${capacity})`);
-        return;
+      // 3. RESTAURACIÃ“N LÃ“GICA
+      let currentContent = product.currentContent ?? product.content ?? 0;
+      let stock = product.stock;
+      const contentPerUnit = product.content || 1;
+
+      // Restaurar cantidad
+      currentContent += qtyUsed;
+
+      // Rollover inverso: Si excede el contenido, aumentar stock
+      while (currentContent > contentPerUnit) {
+          stock++;
+          currentContent -= contentPerUnit;
       }
 
-      // FÓRMULA INVERSA: restauration = cantidadUsada / capacidadEnvase
-      // Ejemplo: Restauro 50ml de un bote de 500ml → restoration = 50/500 = +0.1 (10% de un bote)
-      const restoration = qtyUsed / capacity;
-
-      // 4. ACTUALIZAR BATCH CON INCREMENT POSITIVO (ATÓMICO)
-      const productRef = doc(db, "chemical_products", product.id);
+      // 4. ACTUALIZAR BATCH
+      const productRef = doc(db, "inventory", product.id);
       
       batch.update(productRef, {
-          stock: increment(restoration), // ✅ Restauración fraccionada atómica (+)
+          stock: stock,
+          currentContent: parseFloat(currentContent.toFixed(2)),
       });
-      
-      // console.log(`🔄 ${product.name}: +${qtyUsed}${product.unit} (${restoration.toFixed(3)} envases)`);
   });
 };
+
 
 export const batchRestoreConsumables = (
   batch: WriteBatch,
   serviceId: string,
   serviceName: string,
   serviceRecipes: ServiceRecipe[],
-  consumables: Consumable[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ) => {
-  // 1. Buscar servicio en catálogo
+  // 1. Buscar servicio en catÃ¡logo
   const catalogService = catalogServices.find(
     s => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
   );
@@ -1044,29 +938,63 @@ export const batchRestoreConsumables = (
   }
 
   itemsToRestore.forEach(item => {
-      const consumable = consumables.find(c => c.id === item.consumableId);
+      let product = inventoryItems.find(p => p.id === item.consumableId || p.originalId === item.consumableId);
+      
+      if (!product) {
+          product = inventoryItems.find(p => p.id === item.consumableId);
+      }
     
-      if (consumable) {
-          // RESTAURACIÓN FRACCIONADA PARA CONSUMIBLES
-          const packageSize = consumable.packageSize || 1;
+      if (product) {
+          // RESTAURACIÃ“N LÃ“GICA
+          let currentContent = product.currentContent ?? product.content ?? 0;
+          let stock = product.stock;
+          const contentPerUnit = product.content || 1;
           
-          if (packageSize <= 0) {
-            console.warn(`⚠️ Consumible ${consumable.name} tiene packageSize inválido (${packageSize})`);
-            return;
-          }
+          const qtyUsed = item.qty;
 
-          // FÓRMULA INVERSA: restoration = cantidadUsada / tamañoPaquete
-          // Ejemplo: Restauro 50 unidades de un paquete de 100 → restoration = 50/100 = +0.5 (medio paquete)
-          const restoration = item.qty / packageSize;
+          // Restaurar
+          currentContent += qtyUsed;
+
+          // Rollover inverso
+          while (currentContent > contentPerUnit) {
+              stock++;
+              currentContent -= contentPerUnit;
+          }
           
-          const consumibleRef = doc(db, "consumables", item.consumableId);
+          const productRef = doc(db, "inventory", product.id);
           
-          // ACTUALIZACIÓN ATÓMICA CON INCREMENT POSITIVO
-          batch.update(consumibleRef, {
-              stockQty: increment(restoration), // ✅ Restauración fraccionada atómica (+)
+          batch.update(productRef, {
+              stock: stock,
+              currentContent: parseFloat(currentContent.toFixed(2)),
           });
-          
-          // console.log(`🔄 ${consumable.name}: +${item.qty}${consumable.unit} (${restoration.toFixed(3)} paquetes)`);
       }
   });
+};
+
+
+// ====== Unified Inventory Management (New) ======
+
+
+
+export const addInventoryItem = async (item: any): Promise<void> => {
+  if (!item.name || item.purchasePrice < 0) {
+    throw new Error("Datos inválidos");
+  }
+
+  await addDoc(collection(db, INVENTORY_COLLECTION), {
+    ...item,
+    active: true,
+    createdAt: serverTimestamp(),
+  });
+};
+
+export const updateInventoryItem = async (
+  id: string,
+  updates: any
+): Promise<void> => {
+  await updateDoc(doc(db, INVENTORY_COLLECTION, id), updates);
+};
+
+export const deleteInventoryItem = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, INVENTORY_COLLECTION, id));
 };

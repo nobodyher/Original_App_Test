@@ -22,10 +22,9 @@ import type {
   Service,
   MaterialRecipe,
   ServiceRecipe,
-  Consumable,
-  ChemicalProduct,
   CatalogService,
   CreateServicePayload,
+  InventoryItem,
 } from "../types";
 import { 
   deductConsumables, 
@@ -81,8 +80,7 @@ export const addService = async (
   newService: NewServiceState,
   materialRecipes: MaterialRecipe[],
   serviceRecipes: ServiceRecipe[],
-  consumables: Consumable[],
-  chemicalProducts: ChemicalProduct[],
+  inventoryItems: InventoryItem[],
   catalogServices: CatalogService[],
   totalCost: number,
 ): Promise<void> => {
@@ -101,7 +99,7 @@ export const addService = async (
     newService.services,
     materialRecipes,
     catalogServices,
-    chemicalProducts
+    inventoryItems // Assuming calculateTotalReplenishmentCost also needs update!
   );
 
   // 1. INICIAR EL LOTE (El Camión) 🚚
@@ -192,7 +190,7 @@ export const addService = async (
       serviceItem.serviceId,
       serviceItem.serviceName,
       materialRecipes,
-      chemicalProducts,
+      inventoryItems,
       catalogServices
     );
     
@@ -202,7 +200,7 @@ export const addService = async (
       serviceItem.serviceId,
       serviceItem.serviceName,
       serviceRecipes,
-      consumables,
+      inventoryItems,
       catalogServices
     );
   });
@@ -225,8 +223,7 @@ export const updateService = async (
       oldService: Service;
       materialRecipes: MaterialRecipe[];
       serviceRecipes: ServiceRecipe[];
-      consumables: Consumable[];
-      chemicalProducts: ChemicalProduct[];
+      inventoryItems: InventoryItem[];
       catalogServices: CatalogService[];
   }
 ): Promise<void> => {
@@ -245,14 +242,14 @@ export const updateService = async (
               oldItem.serviceId,
               oldItem.serviceName,
               inventoryContext.materialRecipes,
-              inventoryContext.chemicalProducts,
+              inventoryContext.inventoryItems,
               inventoryContext.catalogServices
           );
           await restoreConsumables(
               oldItem.serviceId,
               oldItem.serviceName,
               inventoryContext.serviceRecipes,
-              inventoryContext.consumables,
+              inventoryContext.inventoryItems,
               inventoryContext.catalogServices
           );
       }
@@ -266,14 +263,14 @@ export const updateService = async (
               newItem.serviceId,
               newItem.serviceName,
               inventoryContext.materialRecipes,
-              inventoryContext.chemicalProducts,
+              inventoryContext.inventoryItems,
               inventoryContext.catalogServices
           );
           await deductConsumables(
               newItem.serviceId,
               newItem.serviceName,
               inventoryContext.serviceRecipes,
-              inventoryContext.consumables,
+              inventoryContext.inventoryItems,
               inventoryContext.catalogServices
           );
       }
@@ -303,8 +300,7 @@ export const softDeleteService = async (
     service: Service;
     materialRecipes: MaterialRecipe[];
     serviceRecipes: ServiceRecipe[];
-    consumables: Consumable[];
-    chemicalProducts: ChemicalProduct[];
+    inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
   }
 ): Promise<void> => {
@@ -319,7 +315,7 @@ export const softDeleteService = async (
         serviceItem.serviceId,
         serviceItem.serviceName,
         inventoryContext.materialRecipes,
-        inventoryContext.chemicalProducts,
+        inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
       
@@ -328,7 +324,7 @@ export const softDeleteService = async (
         serviceItem.serviceId,
         serviceItem.serviceName,
         inventoryContext.serviceRecipes,
-        inventoryContext.consumables,
+        inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
     }
@@ -360,8 +356,7 @@ export const softDeleteServiceAdmin = async (
     service: Service;
     materialRecipes: MaterialRecipe[];
     serviceRecipes: ServiceRecipe[];
-    consumables: Consumable[];
-    chemicalProducts: ChemicalProduct[];
+    inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
   }
 ): Promise<void> => {
@@ -376,7 +371,7 @@ export const softDeleteServiceAdmin = async (
         serviceItem.serviceId,
         serviceItem.serviceName,
         inventoryContext.materialRecipes,
-        inventoryContext.chemicalProducts,
+        inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
       
@@ -385,7 +380,7 @@ export const softDeleteServiceAdmin = async (
         serviceItem.serviceId,
         serviceItem.serviceName,
         inventoryContext.serviceRecipes,
-        inventoryContext.consumables,
+        inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
     }
@@ -416,8 +411,7 @@ export const permanentlyDeleteService = async (
     service: Service;
     materialRecipes: MaterialRecipe[];
     serviceRecipes: ServiceRecipe[];
-    consumables: Consumable[];
-    chemicalProducts: ChemicalProduct[];
+    inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
   }
 ): Promise<void> => {
@@ -432,7 +426,7 @@ export const permanentlyDeleteService = async (
         serviceItem.serviceId,
         serviceItem.serviceName,
         inventoryContext.materialRecipes,
-        inventoryContext.chemicalProducts,
+        inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
       
@@ -441,7 +435,7 @@ export const permanentlyDeleteService = async (
         serviceItem.serviceId,
         serviceItem.serviceName,
         inventoryContext.serviceRecipes,
-        inventoryContext.consumables,
+        inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
     }

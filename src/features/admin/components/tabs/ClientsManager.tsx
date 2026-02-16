@@ -8,6 +8,7 @@ import {
   Phone,
   Calendar,
 } from "lucide-react";
+import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import type { Client, Toast, AppUser } from "../../../../types";
 
 // ============================================================================
@@ -109,20 +110,50 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
   // EVENT HANDLERS
   // ==========================================================================
 
-  const handleDeleteClient = async (id: string) => {
+  // Confirmation Modal State
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isLoading?: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    isLoading: false,
+  });
+
+  const closeConfirmation = () =>
+    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+
+  const handleDeleteClient = (id: string) => {
     if (!currentUser || currentUser.role !== "owner") {
       showNotification("Solo el propietario puede eliminar clientes", "error");
       return;
     }
 
-    try {
-      await deleteClient(id);
-      setDeletedClientIds((prev) => new Set(prev).add(id));
-      showNotification("Cliente eliminado");
-    } catch (error) {
-      console.error("Error eliminando cliente:", error);
-      showNotification("Error al eliminar cliente", "error");
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: "Eliminar Cliente",
+      message:
+        "¿Estás seguro de que deseas eliminar este cliente? Se perderá todo su historial y esta acción no se puede deshacer.",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isLoading: true }));
+        try {
+          await deleteClient(id);
+          setDeletedClientIds((prev) => new Set(prev).add(id));
+          showNotification("Cliente eliminado");
+          closeConfirmation();
+        } catch (error) {
+          console.error("Error eliminando cliente:", error);
+          showNotification("Error al eliminar cliente", "error");
+          setConfirmConfig((prev) => ({ ...prev, isLoading: false }));
+        }
+      },
+    });
   };
 
   // ==========================================================================
@@ -136,6 +167,9 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
         <h3 className="text-2xl font-bold text-text-main flex items-center gap-2">
           <Users className="text-primary-600" />
           Clientes
+          <span className="ml-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            {clients.length} clientes
+          </span>
         </h3>
 
         {/* Search Bar */}
@@ -157,35 +191,7 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
         </div>
       </div>
 
-      {/* Stats Card */}
-      <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl p-6 text-white shadow-lg">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <p className="text-primary-100 text-xs font-medium uppercase">
-              Total Clientes
-            </p>
-            <p className="text-3xl font-bold mt-1">{clients.length}</p>
-          </div>
-          <div>
-            <p className="text-primary-100 text-xs font-medium uppercase">
-              Resultados
-            </p>
-            <p className="text-3xl font-bold mt-1">{filteredClients.length}</p>
-          </div>
-          <div>
-            <p className="text-primary-100 text-xs font-medium uppercase">
-              Página Actual
-            </p>
-            <p className="text-3xl font-bold mt-1">{clientsPage}</p>
-          </div>
-          <div>
-            <p className="text-primary-100 text-xs font-medium uppercase">
-              Total Páginas
-            </p>
-            <p className="text-3xl font-bold mt-1">{totalPages || 1}</p>
-          </div>
-        </div>
-      </div>
+
 
       {/* Clients Table */}
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
@@ -315,44 +321,43 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination (Simplified) */}
         {totalPages > 1 && (
-          <div className="flex justify-between items-center px-6 py-4 border-t border-border bg-surface-highlight">
-            <p className="text-sm text-text-muted">
-              Mostrando {paginatedClients.length} de {filteredClients.length}{" "}
-              clientes (Página {clientsPage} de {totalPages})
-            </p>
+          <div className="flex justify-end items-center px-4 py-3 border-t border-border bg-surface-highlight/30">
+            {/* Buttons only, no text */}
             <div className="flex gap-2">
               <button
                 onClick={() => setClientsPage((p) => Math.max(1, p - 1))}
                 disabled={clientsPage === 1}
-                className="p-2 rounded-lg bg-surface border border-border hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="p-1.5 rounded-lg bg-surface border border-border text-text-muted hover:text-text-main hover:bg-surface-highlight disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                title="Anterior"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() =>
                   setClientsPage((p) => Math.min(totalPages, p + 1))
                 }
                 disabled={clientsPage === totalPages}
-                className="p-2 rounded-lg bg-surface border border-border hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="p-1.5 rounded-lg bg-surface border border-border text-text-muted hover:text-text-main hover:bg-surface-highlight disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                title="Siguiente"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Info Note */}
-      <div className="bg-primary-600/5 border border-primary-600/20 rounded-xl p-4">
-        <p className="text-sm text-text-muted">
-          <span className="font-semibold text-primary-600">Nota:</span> Los
-          clientes se crean automáticamente cuando se registra un nuevo servicio
-          con un nombre de cliente. La base de datos mantiene un registro de
-          todos los clientes únicos.
-        </p>
-      </div>
+
+      <ConfirmationModal
+        isOpen={confirmConfig.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        isLoading={confirmConfig.isLoading}
+      />
     </div>
   );
 };

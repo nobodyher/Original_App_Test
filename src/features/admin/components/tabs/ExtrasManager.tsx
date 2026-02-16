@@ -11,6 +11,7 @@ import {
   ChevronRight,
   DollarSign,
 } from "lucide-react";
+import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import type { CatalogExtra, Toast, AppUser } from "../../../../types";
 
 // ============================================================================
@@ -128,14 +129,44 @@ export const ExtrasManager: React.FC<ExtrasManagerProps> = ({
     }
   };
 
-  const handleDeleteExtra = async (id: string) => {
-    try {
-      await deleteExtra(id);
-      showNotification("Extra eliminado");
-    } catch (error) {
-      console.error("Error eliminando extra:", error);
-      showNotification("Error al eliminar", "error");
-    }
+  // Confirmation Modal State
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isLoading?: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    isLoading: false,
+  });
+
+  const closeConfirmation = () =>
+    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+
+  const handleDeleteExtra = (id: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Eliminar Extra",
+      message:
+        "¿Estás seguro de que deseas eliminar este servicio extra? Esta acción no se puede deshacer.",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmConfig((prev) => ({ ...prev, isLoading: true }));
+        try {
+          await deleteExtra(id);
+          showNotification("Extra eliminado");
+          closeConfirmation();
+        } catch (error) {
+          console.error("Error eliminando extra:", error);
+          showNotification("Error al eliminar", "error");
+          setConfirmConfig((prev) => ({ ...prev, isLoading: false }));
+        }
+      },
+    });
   };
 
   const handleSaveEdit = () => {
@@ -461,6 +492,14 @@ export const ExtrasManager: React.FC<ExtrasManagerProps> = ({
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={confirmConfig.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        isLoading={confirmConfig.isLoading}
+      />
     </div>
   );
 };
