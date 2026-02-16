@@ -124,21 +124,58 @@ export const ChemicalsManager: React.FC<ChemicalsManagerProps> = ({
   const handleAddChemicalProduct = async () => {
     setIsSubmitting(true);
     try {
+      // 1. VALIDAZIONE
+      const name = newChemicalProduct.name.trim();
       const quantity = parseFloat(newChemicalProduct.quantity) || 0;
       const purchasePrice = parseFloat(newChemicalProduct.purchasePrice) || 0;
+      const stock = parseFloat(newChemicalProduct.stock || "0") || 0;
+      const minStock = parseFloat(newChemicalProduct.minStock || "0") || 0;
+
+      //  - Nombre obligatorio
+      if (!name) {
+        showNotification("El nombre del producto es obligatorio", "error");
+        return;
+      }
+
+      //  - Duplicados
+      const duplicate = chemicalProducts.find(
+        (p) => p.name.trim().toLowerCase() === name.toLowerCase()
+      );
+      if (duplicate) {
+        showNotification("Ya existe un producto con este nombre", "error");
+        return;
+      }
+
+      //  - Valores negativos
+      if (quantity < 0) {
+        showNotification("La cantidad no puede ser negativa", "error");
+        return;
+      }
+      if (purchasePrice < 0) {
+        showNotification("El precio no puede ser negativo", "error");
+        return;
+      }
+      if (stock < 0) {
+        showNotification("El stock no puede ser negativo", "error");
+        return;
+      }
+      if (minStock < 0) {
+        showNotification("El stock mínimo no puede ser negativo", "error");
+        return;
+      }
 
       // Costo por unidad (ml/g) = Precio / Cantidad
       const costPerUnit = quantity > 0 ? purchasePrice / quantity : 0;
 
       await addChemicalProduct({
-        name: newChemicalProduct.name,
+        name,
         quantity: quantity,
         unit: newChemicalProduct.unit as "ml" | "g" | "unid",
         purchasePrice: purchasePrice,
         yield: quantity, // Yield is now just the total content
         costPerService: costPerUnit, // Now storing Cost Per Unit
-        stock: parseFloat(newChemicalProduct.stock || "0") || 0,
-        minStock: parseFloat(newChemicalProduct.minStock || "0") || 0,
+        stock: stock,
+        minStock: minStock,
         yieldPerUnit: 0, // Deprecated
         currentYieldRemaining: 0, // Deprecated
       });
@@ -168,6 +205,46 @@ export const ChemicalsManager: React.FC<ChemicalsManagerProps> = ({
     updates: Partial<ChemicalProduct>,
   ) => {
     try {
+      // 1. Validaciones para edición
+      // Como 'updates' es Partial, solo validamos lo que viene
+      
+      // Check Nombre Duplicado (si se actualiza el nombre)
+      if (updates.name) {
+        const name = updates.name.trim();
+        if (!name) {
+             showNotification("El nombre no puede estar vacío", "error");
+             return;
+        }
+        const duplicate = chemicalProducts.find(
+            (p) => p.name.trim().toLowerCase() === name.toLowerCase() && p.id !== id
+        );
+        if (duplicate) {
+            showNotification("Ya existe otro producto con este nombre", "error");
+            return;
+        }
+        // Actualizamos el update con el nombre trimmeado
+        updates.name = name; 
+      }
+
+      // Check Negativos
+      if (updates.purchasePrice !== undefined && Number(updates.purchasePrice) < 0) {
+        showNotification("El precio no puede ser negativo", "error");
+        return;
+      }
+      if (updates.quantity !== undefined && Number(updates.quantity) < 0) {
+        showNotification("La cantidad no puede ser negativa", "error");
+        return;
+      }
+      if (updates.stock !== undefined && Number(updates.stock) < 0) {
+        showNotification("El stock no puede ser negativo", "error");
+        return;
+      }
+       if (updates.minStock !== undefined && Number(updates.minStock) < 0) {
+        showNotification("El stock mínimo no puede ser negativo", "error");
+        return;
+      }
+
+
       const currentProduct = chemicalProducts.find((p) => p.id === id);
       if (currentProduct) {
         const newPrice =

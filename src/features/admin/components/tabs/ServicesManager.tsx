@@ -125,7 +125,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
   >(null);
 
   // Pagination
-  const ITEMS_PER_PAGE = 7;
+  const ITEMS_PER_PAGE = 10;
   const [servicesPage, setServicesPage] = useState(1);
 
   // Reset tab when opening a service
@@ -249,12 +249,39 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
     if (!editingServiceItem) return;
 
     try {
+      // 1. Validaciones
+      const name = (editServiceForm.name || "").trim();
+      if (!name) {
+        showNotification("El nombre del servicio es obligatorio", "error");
+        return;
+      }
+
+      // Check duplicados
+      const duplicate = catalogServices.find(
+        (s) =>
+          s.name.trim().toLowerCase() === name.toLowerCase() &&
+          s.id !== editingServiceItem.id &&
+          s.id !== "new"
+      );
+
+      if (duplicate) {
+        showNotification("Ya existe un servicio con este nombre", "error");
+        return;
+      }
+
+      // Check negativos
+      const price = Number(editServiceForm.basePrice) || 0;
+      if (price < 0) {
+        showNotification("El precio base no puede ser negativo", "error");
+        return;
+      }
+
       if (editingServiceItem.id === "new") {
         // CREACIÓN
         const newId = await addCatalogService(
-          editServiceForm.name || "",
+          name,
           editServiceForm.category || "manicura",
-          editServiceForm.basePrice ? Number(editServiceForm.basePrice) : 0,
+          price,
         );
 
         // Guardar materiales inmediatamente
@@ -270,6 +297,8 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
         // EDICIÓN
         await updateCatalogService(editingServiceItem.id, {
           ...editServiceForm,
+          name, // Asegurar que se guarde el nombre trimmeado
+          basePrice: price,
           manualMaterials: selectedMaterials,
           manualConsumables: selectedConsumables,
         });

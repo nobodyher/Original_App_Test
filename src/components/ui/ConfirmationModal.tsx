@@ -8,6 +8,9 @@ interface ConfirmationModalProps {
   title: string;
   message: string;
   isLoading?: boolean;
+  showCancel?: boolean;
+  confirmText?: string;
+  variant?: 'danger' | 'info'; // 'danger' is red/alert-triangle, 'info' could be blue/info-icon
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -17,23 +20,23 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title,
   message,
   isLoading = false,
+  showCancel = true,
+  confirmText = 'Confirmar',
+  variant = 'danger',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   // Handle animation logic when isOpen changes
   useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
     if (isOpen) {
-      setIsVisible(true);
+      // Small delay to allow mounting before animation starts
+      timeout = setTimeout(() => setIsVisible(true), 10);
     } else {
-      // Small delay to allow exit animation if we were to implement one,
-      // but here we just sync state or rely on the parent unmounting it.
-      // For a simple implementation without an external animation library,
-      // we'll just set it to false immediately or rely on the parent not rendering it if logic prefers.
-      // However, usually modals are conditionally rendered by parent.
-      // If the parent keeps it mounted and toggles isOpen, this internal state helps.
-      const timer = setTimeout(() => setIsVisible(false), 300);
-      return () => clearTimeout(timer);
+      // Small delay to allow exit animation if we were to implement one
+      timeout = setTimeout(() => setIsVisible(false), 300);
     }
+    return () => clearTimeout(timeout);
   }, [isOpen]);
 
   if (!isOpen && !isVisible) return null;
@@ -87,17 +90,23 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </p>
 
           <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Cancelar
-            </button>
+            {showCancel && (
+              <button
+                onClick={onClose}
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Cancelar
+              </button>
+            )}
             <button
               onClick={onConfirm}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors min-w-[100px] justify-center"
+              className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors min-w-[100px] justify-center ${
+                variant === 'danger' 
+                  ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500' 
+                  : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+              }`}
             >
               {isLoading ? (
                 <>
@@ -108,7 +117,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                   <span>Procesando</span>
                 </>
               ) : (
-                'Confirmar'
+                confirmText
               )}
             </button>
           </div>

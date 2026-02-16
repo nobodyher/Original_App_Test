@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -65,6 +66,21 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Alert Modal State
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: "info" | "danger";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "danger",
+  });
+
+  const closeAlert = () => setAlertConfig((prev) => ({ ...prev, isOpen: false }));
 
   // Form State
   const initialFormState = {
@@ -146,38 +162,83 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     setFormData(initialFormState);
   };
 
+  /* ----------------------------------------------------------------------------------
+   * HANDLE SAVE (VALIDATION INCLUDED)
+   * ---------------------------------------------------------------------------------- */
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // 1. INPUT VALIDATION
+      const name = formData.name.trim();
+      const purchasePrice = parseFloat(String(formData.purchasePrice ?? 0)) || 0;
+      const content = parseFloat(String(formData.content ?? 0)) || 0;
+      const stock = parseFloat(String(formData.stock ?? 0)) || 0;
+      const minStock = parseFloat(String(formData.minStock ?? 0)) || 0;
+
+      //  - Required Fields
+      if (!name) {
+        throw new Error("El nombre del producto es obligatorio");
+      }
+
+      //  - Duplicate Name Check (Case-insensitive)
+      const duplicate = inventoryItems.find(
+        (item) =>
+          item.name.trim().toLowerCase() === name.toLowerCase() &&
+          item.id !== editingItem?.id // Ignore self if editing
+      );
+
+      if (duplicate) {
+        throw new Error("Ya existe un producto con este nombre");
+      }
+
+      //  - Negative Values Check
+      if (purchasePrice < 0) throw new Error("El precio de compra no puede ser negativo");
+      if (content < 0) throw new Error("El contenido no puede ser negativo");
+      if (stock < 0) throw new Error("El stock no puede ser negativo");
+      if (minStock < 0) throw new Error("El stock mínimo no puede ser negativo");
+
+
+      // 2. PREPARE PAYLOAD
       const payload = {
-        name: formData.name,
-        purchasePrice: parseFloat(String(formData.purchasePrice ?? 0)) || 0,
-        content: parseFloat(String(formData.content ?? 0)) || 0,
+        name,
+        purchasePrice,
+        content,
         // Initialization logic: If currentContent is missing or 0, and we have stock, assume full first unit
         currentContent: editingItem?.currentContent && editingItem.currentContent > 0
           ? editingItem.currentContent 
-          : (parseFloat(String(formData.content ?? 0)) || 0),
+          : content,
         unit: formData.unit ?? "unid",
-        stock: parseFloat(String(formData.stock ?? 0)) || 0,
-        minStock: parseFloat(String(formData.minStock ?? 0)) || 0,
-        unitCost: (parseFloat(String(formData.purchasePrice ?? 0)) || 0) / (parseFloat(String(formData.content ?? 0)) || 1), // Avoid division by zero
+        stock,
+        minStock,
+        unitCost: content > 0 ? purchasePrice / content : 0, // Avoid division by zero
         // Legacy/Compatibility fields
-        quantity: parseFloat(formData.content.toString()) || 0,
-        packageSize: parseFloat(formData.content.toString()) || 0,
-        stockQty: parseFloat(formData.stock.toString()) || 0,
-        minStockAlert: parseFloat(formData.minStock.toString()) || 0,
+        quantity: content,
+        packageSize: content,
+        stockQty: stock,
+        minStockAlert: minStock,
         active: true,
       };
 
+      // 3. EXECUTE ACTION
       if (editingItem) {
         await onUpdate(editingItem.id, payload);
       } else {
         await onAdd(payload);
       }
       handleCloseModal();
+      handleCloseModal();
     } catch (error) {
       console.error("Error saving inventory item:", error);
+      const message = error instanceof Error ? error.message : "Error al guardar";
+      
+      // Use Custom Alert Modal instead of window.alert
+      setAlertConfig({
+        isOpen: true,
+        title: "Atención",
+        message: message,
+        variant: "info", // Using 'info' style as requested
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -594,6 +655,16 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={alertConfig.isOpen}
+        onClose={closeAlert}
+        onConfirm={closeAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        showCancel={false}
+        confirmText="OK"
+        variant={alertConfig.variant}
+      />
     </div>
   );
 };
