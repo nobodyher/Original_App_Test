@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   ShoppingCart,
   Users,
-  PlusCircle,
-  Star,
   Menu,
   X,
   Database,
@@ -24,25 +22,21 @@ import type {
   CatalogExtra,
   
   
+  
   Toast,
-  Client,
   Service,
   InventoryItem
 } from "../../../types";
 
 // Import Tab Manager Components
-import { ServicesManager } from "./tabs/ServicesManager";
 import { StaffManager } from "./tabs/StaffManager";
-import { ExtrasManager } from "./tabs/ExtrasManager";
-import { ClientsManager } from "./tabs/ClientsManager";
 import { InventoryManager } from "./tabs/InventoryManager";
+import { CatalogManager } from "./tabs/CatalogManager";
 
 export type ConfigTab =
-  | "services"
+  | "catalog"
   | "inventory"
-  | "personal"
-  | "extras"
-  | "clients";
+  | "personal";
 
 interface OwnerConfigTabProps {
   users: AppUser[];
@@ -50,7 +44,6 @@ interface OwnerConfigTabProps {
   catalogExtras: CatalogExtra[];
   
   
-  clients: Client[];
   currentUser: AppUser | null;
   transactions?: Service[];
   inventoryItems?: InventoryItem[]; // Unified items
@@ -86,17 +79,12 @@ interface OwnerConfigTabProps {
   addExtra: (name: string, price: number, tenantId: string) => Promise<void>;
   updateExtra: (id: string, data: Partial<CatalogExtra>) => Promise<void>;
   deleteExtra: (id: string) => Promise<void>;
-  
-  deleteClient: (clientId: string) => Promise<void>;
 }
 
 const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   users,
   catalogServices,
   catalogExtras,
-  
-  
-  clients,
   currentUser,
   transactions = [],
   showNotification,
@@ -111,8 +99,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   addExtra,
   updateExtra,
   deleteExtra,
-
-  deleteClient: deleteClientProp,
   inventoryItems = [], // Unified items
 }) => {
   // ==========================================================================
@@ -192,7 +178,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   // STATE MANAGEMENT (Navigation Only)
   // ==========================================================================
 
-  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab || "services");
+  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab || "catalog");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Sync internal state with external prop changes (Sidebar navigation)
@@ -213,10 +199,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     description: string;
   }[] = [
     {
-      id: "services",
-      label: "Servicios",
+      id: "catalog",
+      label: "Catálogo",
       icon: ShoppingCart,
-      description: "Catálogo de servicios",
+      description: "Servicios y Extras",
     },
     {
       id: "inventory", // Unified tab
@@ -225,22 +211,10 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       description: "Gestión unificada de stock",
     },
     {
-      id: "extras",
-      label: "Extras",
-      icon: PlusCircle,
-      description: "Servicios adicionales",
-    },
-    {
       id: "personal",
       label: "Personal",
       icon: Users,
       description: "Gestión de empleados",
-    },
-    {
-      id: "clients",
-      label: "Clientes",
-      icon: Star,
-      description: "Base de datos de clientes",
     },
   ];
 
@@ -340,14 +314,12 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
             {/* Admin Profile Section - Visible on all tabs for quick access */}
 
-            {/* Services Tab */}
-            {activeTab === "services" && (
-              <ServicesManager
+            {/* Catalog Tab (Unified Services & Extras) */}
+            {activeTab === "catalog" && (
+              <CatalogManager
+                // Services props
                 catalogServices={catalogServices}
-                
-                
                 inventoryItems={inventoryItems}
-                currentUser={currentUser}
                 addCatalogService={async (name, price) => {
                   if (!currentUser?.tenantId) {
                     throw new Error("No se puede crear un servicio sin tenantId válido");
@@ -356,7 +328,32 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 }}
                 updateCatalogService={updateCatalogService}
                 deleteCatalogService={deleteCatalogService}
+                // Extras props
+                catalogExtras={catalogExtras}
+                addExtra={async (name, price) => {
+                  if (!currentUser?.tenantId) {
+                    throw new Error("No se puede crear un extra sin tenantId válido");
+                  }
+                  return addExtra(name, price, currentUser.tenantId);
+                }}
+                updateExtra={updateExtra}
+                deleteExtra={deleteExtra}
+                // Shared props
+                currentUser={currentUser}
                 showNotification={showNotification}
+              />
+            )}
+
+            {/* Inventory Unified Tab */}
+            {activeTab === "inventory" && (
+              <InventoryManager
+                inventoryItems={inventoryItems}
+                currentUser={currentUser}
+                showNotification={showNotification}
+                onAdd={handleAddInventory}
+                onUpdate={handleUpdateInventory}
+                onDelete={handleDeleteInventory}
+                onEdit={() => {}} // Handled internally by InventoryManager for now
               />
             )}
 
@@ -369,44 +366,6 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
                 createNewUser={createNewUser}
                 updateUser={updateUser}
                 deleteUserPermanently={deleteUserPermanently}
-                showNotification={showNotification}
-              />
-            )}
-
-            {/* Inventory Unified Tab */}
-            {activeTab === "inventory" && (
-              <InventoryManager
-                inventoryItems={inventoryItems}
-                onAdd={handleAddInventory}
-                onUpdate={handleUpdateInventory}
-                onDelete={handleDeleteInventory}
-                onEdit={() => {}} // Handled internally by InventoryManager for now
-              />
-            )}
-
-            {/* Extras Tab */}
-            {activeTab === "extras" && (
-              <ExtrasManager
-                catalogExtras={catalogExtras}
-                currentUser={currentUser}
-                addExtra={async (name, price) => {
-                  if (!currentUser?.tenantId) {
-                    throw new Error("No se puede crear un extra sin tenantId válido");
-                  }
-                  return addExtra(name, price, currentUser.tenantId);
-                }}
-                updateExtra={updateExtra}
-                deleteExtra={deleteExtra}
-                showNotification={showNotification}
-              />
-            )}
-
-            {/* Clients Tab */}
-            {activeTab === "clients" && (
-              <ClientsManager
-                clients={clients}
-                currentUser={currentUser}
-                deleteClient={deleteClientProp}
                 showNotification={showNotification}
               />
             )}

@@ -9,12 +9,17 @@ import { db } from "../firebase";
 import type { Expense } from "../types";
 
 export const addExpense = async (
-  expenseData: Omit<Expense, "id" | "deleted">
+  expenseData: Omit<Expense, "id" | "deleted">,
+  tenantId: string
 ): Promise<void> => {
   const { date, description, category, amount, userId } = expenseData;
 
   if (!date || !description || !category || !amount) {
     throw new Error("Completa todos los campos");
+  }
+
+  if (!tenantId) {
+    throw new Error("Error interno: No se identificó la organización (tenantId)");
   }
 
   const numAmount = Number(amount);
@@ -28,6 +33,7 @@ export const addExpense = async (
     category,
     amount: numAmount,
     userId: userId || null,
+    tenantId,
     timestamp: serverTimestamp(),
   });
 };

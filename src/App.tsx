@@ -158,7 +158,9 @@ const App = () => {
                   loadingHistory={loadingHistory}
                   historyFullyLoaded={historyFullyLoaded}
                   showNotification={showNotification}
-                  addExpense={expenseService.addExpense}
+                  addExpense={(data) => 
+                    expenseService.addExpense(data, currentUser?.tenantId || "")
+                  }
                   deleteExpense={expenseService.deleteExpense}
                   updateServiceCost={salonService.updateServiceCost}
                   softDeleteService={salonService.softDeleteServiceAdmin}

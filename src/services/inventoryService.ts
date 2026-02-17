@@ -550,11 +550,17 @@ export const deleteInventoryItem = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, INVENTORY_COLLECTION, id));
 };
 
-export const openNewInventoryUnit = async (item: InventoryItem): Promise<void> => {
+export const openNewInventoryUnit = async (
+  item: InventoryItem,
+  reason: string,
+  notes: string = "",
+  user: { uid: string; displayName: string; tenantId: string }
+): Promise<void> => {
   if (item.stock <= 0) {
     throw new Error("No hay unidades selladas en stock para abrir.");
   }
 
+  // 1. Update Stock
   const stock = item.stock - 1;
   const content = item.content || item.quantity || item.packageSize || 0;
 
@@ -564,5 +570,152 @@ export const openNewInventoryUnit = async (item: InventoryItem): Promise<void> =
     lastOpened: serverTimestamp(),
   };
 
-  await updateDoc(doc(db, INVENTORY_COLLECTION, item.id), updates);
+  const batch = runTransaction(db, async (transaction) => {
+      const productRef = doc(db, INVENTORY_COLLECTION, item.id);
+      
+      // Update main doc
+      transaction.update(productRef, updates);
+
+      // 2. Add History Entry
+      const historyRef = doc(collection(db, INVENTORY_COLLECTION, item.id, "history"));
+      transaction.set(historyRef, {
+          action: "open_unit",
+          timestamp: serverTimestamp(),
+          userId: user.uid,
+          userDisplayName: user.displayName,
+          reason,
+          notes,
+          previousStock: item.stock,
+          newStock: stock
+      });
+
+      // 3. Create Expense if Loss/Damage
+      if (reason === "Derrame/Accidente" || reason === "Producto dañado") {
+          // Determine cost
+          const cost = item.purchasePrice || 0;
+          if (cost > 0) {
+              const expenseRef = doc(collection(db, "expenses"));
+              transaction.set(expenseRef, {
+                  date: new Date().toISOString().split('T')[0],
+                  category: "Inventario/Pérdida",
+                  description: `Pérdida por ${reason} - ${item.name}`,
+                  amount: cost,
+                  userId: user.uid,
+                  tenantId: user.tenantId,
+                  timestamp: serverTimestamp(),
+                  relatedInventoryId: item.id
+              });
+          }
+      }
+  });
+  
+  await batch;
+};
+
+export const reportInventoryIncident = async (
+  item: InventoryItem,
+  type: 'minor' | 'medium' | 'total' | 'damaged',
+  user: { uid: string; displayName: string; tenantId: string }
+): Promise<void> => {
+  // 1. Calculate Loss
+  const currentContent = item.currentContent ?? item.content ?? 0;
+  const totalCapacity = item.content || 1;
+  
+  let lostQty = 0;
+  let newContent = currentContent;
+  let actionDescription = "";
+
+  if (type === 'minor') {
+      lostQty = currentContent * 0.25;
+      newContent = currentContent - lostQty;
+      actionDescription = "Derrame Leve (25%)";
+  } else if (type === 'medium') {
+      lostQty = currentContent * 0.50;
+      newContent = currentContent - lostQty;
+      actionDescription = "Derrame Medio (50%)";
+  } else if (type === 'total') {
+      lostQty = currentContent;
+      newContent = 0; 
+      actionDescription = "Pérdida Total / Abrir Nueva";
+  } else if (type === 'damaged') {
+      lostQty = currentContent;
+      newContent = 0;
+      actionDescription = "Producto dañado / Defectuoso";
+  }
+
+  // Calculate Value of Loss
+  // Cost per unit of content = PurchasePrice / TotalCapacity
+  const unitCost = item.purchasePrice / totalCapacity;
+  const lossValue = lostQty * unitCost;
+
+  const batch = runTransaction(db, async (transaction) => {
+      const productRef = doc(db, INVENTORY_COLLECTION, item.id);
+      
+      if (type === 'total' || type === 'damaged') {
+         // TOTAL/DAMAGED LOSS LOGIC:
+         // 1. Register expense for remaining content
+         // 2. Open new unit (decrement stock, reset content)
+         
+         if (item.stock <= 0) {
+             throw new Error("No hay stock para reposición inmediata, pero se registrará la pérdida.");
+         }
+
+         const newStock = item.stock > 0 ? item.stock - 1 : 0;
+         const resetContent = item.content || 0;
+
+         transaction.update(productRef, {
+             stock: newStock,
+             currentContent: resetContent,
+             lastOpened: serverTimestamp()
+         });
+
+         // History for Open Unit
+         const historyRefOpen = doc(collection(db, INVENTORY_COLLECTION, item.id, "history"));
+         transaction.set(historyRefOpen, {
+             action: "open_unit_loss",
+             timestamp: serverTimestamp(),
+             userId: user.uid,
+             userDisplayName: user.displayName,
+             reason: type === 'damaged' ? "Reposición por Producto Dañado" : "Reposición por Pérdida Total",
+             previousStock: item.stock,
+             newStock: newStock
+         });
+
+      } else {
+          // PARTIAL LOSS LOGIC
+          transaction.update(productRef, {
+              currentContent: parseFloat(newContent.toFixed(2))
+          });
+      }
+
+      // 2. History Entry for LOSS
+      const historyRefLoss = doc(collection(db, INVENTORY_COLLECTION, item.id, "history"));
+      transaction.set(historyRefLoss, {
+          action: "loss_incident",
+          timestamp: serverTimestamp(),
+          userId: user.uid,
+          userDisplayName: user.displayName,
+          type,
+          lostQty,
+          lossValue,
+          description: actionDescription
+      });
+
+      // 3. Register Expense
+      if (lossValue > 0) {
+          const expenseRef = doc(collection(db, "expenses"));
+          transaction.set(expenseRef, {
+              date: new Date().toISOString().split('T')[0],
+              category: "Inventario/Mermas",
+              description: `Merma: ${item.name} (${actionDescription})`,
+              amount: parseFloat(lossValue.toFixed(2)),
+              userId: user.uid,
+              tenantId: user.tenantId,
+              timestamp: serverTimestamp(),
+              relatedInventoryId: item.id
+          });
+      }
+  });
+
+  await batch;
 };

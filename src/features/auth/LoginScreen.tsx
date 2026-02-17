@@ -134,7 +134,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               <img 
                 src={neonLogo} 
                 alt="Logo" 
-                className="w-16 h-16 object-contain"
+                className="w-16 h-16 object-contain dark:filter-none filter invert"
               />
             </div>
             <h1 className="text-5xl text-text-main tracking-tight drop-shadow-lg font-bold">

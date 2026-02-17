@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Inbox,
+  Users,
 } from "lucide-react";
 import type {
   AppUser,
@@ -579,44 +581,44 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
       {/* Premium Stats Cards - Banking Style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        {/* Revenue Card - Oro Champagne Premium */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-400 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+        {/* Revenue Card - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
-            <DollarSign className="w-16 h-16 md:w-24 md:h-24" />
+            <DollarSign className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>
           <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <DollarSign size={16} className="md:w-5 md:h-5" />
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary-600/10 backdrop-blur-md flex items-center justify-center border border-primary-600/20">
+                <DollarSign size={16} className="md:w-5 md:h-5 text-primary-600" />
               </div>
-              <span className="font-medium text-amber-50 text-xs md:text-sm uppercase tracking-wider opacity-90">
+              <span className="font-medium text-text-muted text-xs md:text-sm uppercase tracking-wider opacity-90">
                 Ingresos
               </span>
             </div>
             <div>
-              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1 text-text-main">
                 ${totalRevenue.toFixed(2)}
               </h3>
-              <div className="hidden md:flex items-center gap-2 text-amber-100 text-xs font-medium bg-black/20 w-fit px-3 py-1 rounded-full mb-3">
+              <div className="hidden md:flex items-center gap-2 text-primary-600 text-xs font-medium bg-primary-600/10 w-fit px-3 py-1 rounded-full mb-3">
                 <span>{filteredServices.length} transacciones</span>
               </div>
 
               {/* Desglose por método de pago */}
-              <div className="hidden md:flex bg-black/10 rounded-xl p-2 items-center justify-between gap-2 backdrop-blur-sm border border-white/5">
+              <div className="hidden md:flex bg-background rounded-xl p-2 items-center justify-between gap-2 backdrop-blur-sm border border-border">
                 <div className="flex items-center gap-1.5">
-                  <div className="p-1 rounded-full bg-green-500/20 text-green-100">
+                  <div className="p-1 rounded-full bg-green-500/10 text-green-500">
                     <DollarSign size={10} />
                   </div>
-                  <span className="text-xs font-bold text-white/90">
+                  <span className="text-xs font-bold text-text-main">
                     ${totalCash.toFixed(0)}
                   </span>
                 </div>
-                <div className="w-px h-3 bg-white/20"></div>
+                <div className="w-px h-3 bg-border"></div>
                 <div className="flex items-center gap-1.5">
-                  <div className="p-1 rounded-full bg-blue-500/20 text-blue-100">
+                  <div className="p-1 rounded-full bg-blue-500/10 text-blue-500">
                     <CreditCard size={10} />
                   </div>
-                  <span className="text-xs font-bold text-white/90">
+                  <span className="text-xs font-bold text-text-main">
                     ${totalTransfer.toFixed(0)}
                   </span>
                 </div>
@@ -625,76 +627,75 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
           </div>
         </div>
 
-        {/* Expenses Card - Rosa Ojo de Perdiz Premium */}
-        <div className="bg-gradient-to-br from-primary-700 to-primary-700 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+        {/* Expenses Card - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
-            <CreditCard className="w-16 h-16 md:w-24 md:h-24" />
+            <CreditCard className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>
           <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <CreditCard size={16} className="md:w-5 md:h-5" />
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-rose-500/10 backdrop-blur-md flex items-center justify-center border border-rose-500/20">
+                <CreditCard size={16} className="md:w-5 md:h-5 text-rose-500" />
               </div>
-              <span className="font-medium text-rose-100 text-xs md:text-sm uppercase tracking-wider opacity-90">
+              <span className="font-medium text-text-muted text-xs md:text-sm uppercase tracking-wider opacity-90">
                 Gastos
               </span>
             </div>
             <div>
-              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1 text-text-main">
                 ${totalExpenses.toFixed(2)}
               </h3>
-              <div className="hidden md:flex items-center gap-2 text-rose-200 text-xs font-medium bg-rose-900/30 w-fit px-3 py-1 rounded-full">
+              <div className="hidden md:flex items-center gap-2 text-rose-500 text-xs font-medium bg-rose-500/10 w-fit px-3 py-1 rounded-full">
                 <span>{filteredExpenses.length} movimientos</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Replenishment Card - Slate Premium */}
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-900 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+        {/* Replenishment Card - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
-            <Package className="w-16 h-16 md:w-24 md:h-24" />
+            <Package className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>
           <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                <Package size={16} className="md:w-5 md:h-5" />
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-500/10 backdrop-blur-md flex items-center justify-center border border-gray-500/20">
+                <Package size={16} className="md:w-5 md:h-5 text-gray-400" />
               </div>
-              <span className="font-medium text-gray-200 text-xs md:text-sm uppercase tracking-wider opacity-90">
+              <span className="font-medium text-text-muted text-xs md:text-sm uppercase tracking-wider opacity-90">
                 Reposición
               </span>
             </div>
             <div>
-              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1 text-text-main">
                 ${totalReplenishmentCost.toFixed(2)}
               </h3>
-              <div className="hidden md:flex items-center gap-2 text-gray-300 text-xs font-medium bg-gray-800/50 w-fit px-3 py-1 rounded-full">
+              <div className="hidden md:flex items-center gap-2 text-gray-500 text-xs font-medium bg-gray-500/10 w-fit px-3 py-1 rounded-full">
                 <span>Costo materiales</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Net Profit Card - Violeta Real Premium */}
-        <div className="bg-gradient-to-br from-primary-700 to-primary-600 rounded-[2rem] p-3 md:p-6 text-white shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ring-4 ring-violet-900/5">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-primary-700/40"></div>
+        {/* Net Profit Card - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ring-4 ring-white/5">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
-            <Wallet className="w-16 h-16 md:w-24 md:h-24" />
+            <Wallet className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>
           <div className="relative z-10 flex flex-col justify-between h-full min-h-[100px] md:min-h-[160px]">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center shadow-lg">
-                <Wallet size={16} className="md:w-5 md:h-5 text-white" />
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-violet-500/10 flex items-center justify-center shadow-lg border border-violet-500/20">
+                <Wallet size={16} className="md:w-5 md:h-5 text-violet-500" />
               </div>
-              <span className="font-bold text-violet-100 text-xs md:text-sm uppercase tracking-wider opacity-90">
+              <span className="font-bold text-text-muted text-xs md:text-sm uppercase tracking-wider opacity-90">
                 Ganancia
               </span>
             </div>
             <div>
-              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1 text-white">
+              <h3 className="text-lg md:text-4xl font-black tracking-tight mb-1 text-text-main">
                 ${netProfit.toFixed(2)}
               </h3>
-              <div className="hidden md:flex items-center gap-2 text-violet-200 text-xs font-medium">
+              <div className="hidden md:flex items-center gap-2 text-violet-500 text-xs font-medium bg-violet-500/10 px-3 py-1 rounded-full w-fit">
                 <span>Después de comisiones y costos</span>
               </div>
             </div>
@@ -714,7 +715,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         {/* Left Column: Transactions & Financial Details (2 cols wide) */}
         <div className="xl:col-span-2 space-y-8">
           {/* Recent Services Table Container */}
-          <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 min-h-[600px] flex flex-col">
             <div className="px-8 py-6 border-b border-border flex flex-col md:flex-row justify-between items-center bg-background backdrop-blur-xl">
               <div>
                 <h3 className="text-xl font-bold text-text-main">
@@ -733,7 +734,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </button>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto flex-1">
               <table className="w-full">
                 <thead>
                   <tr className="bg-background border-b border-border">
@@ -759,9 +760,19 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                     <tr>
                       <td
                         colSpan={5}
-                        className="px-8 py-12 text-center text-text-muted font-medium"
+                        className="px-8 py-12 text-center"
                       >
-                        No se encontraron servicios.
+                        <div className="flex flex-col items-center justify-center h-[400px]">
+                          <div className="w-20 h-20 rounded-full bg-surface-highlight flex items-center justify-center mb-6 border border-border border-dashed">
+                             <Inbox className="w-10 h-10 text-text-muted opacity-30" />
+                          </div>
+                          <h4 className="text-lg font-bold text-text-main mb-2">
+                             No hay transacciones recientes
+                          </h4>
+                          <p className="text-text-muted text-sm max-w-xs mx-auto">
+                             Las transacciones de servicios aparecerán aquí una vez registradas.
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -967,14 +978,22 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {userStats.length === 0 ? (
-                <div className="py-8 text-center text-text-muted italic bg-surface rounded-2xl border border-border">
-                  Sin datos de rendimiento.
+                <div className="col-span-2 py-12 flex flex-col items-center justify-center text-center p-8 bg-surface rounded-[2rem] border border-border border-dashed">
+                  <div className="w-16 h-16 rounded-full bg-surface-highlight flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-text-muted opacity-50" />
+                  </div>
+                  <h4 className="text-lg font-bold text-text-main mb-1">
+                    Sin datos de rendimiento
+                  </h4>
+                  <p className="text-text-muted text-sm max-w-[250px]">
+                    No hay actividad registrada para el equipo aún.
+                  </p>
                 </div>
               ) : (
                 userStats.map((stat) => (
                   <div
                     key={stat.name}
-                    className="bg-surface rounded-[2rem] p-6 shadow-none border border-border relative overflow-hidden"
+                    className="bg-surface rounded-[2rem] p-6 shadow-none border border-border relative overflow-hidden group hover:border-primary-600/30 transition-colors"
                   >
                     <div
                       className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${stat.color}`}
@@ -999,7 +1018,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 rounded-xl bg-primary-600/5 border border-primary-600/10">
+                      <div className="flex justify-between items-center p-3 rounded-xl bg-primary-600/10 border border-primary-600/20">
                         <span className="text-xs font-bold text-primary-600 uppercase">
                           Comisión Total
                         </span>

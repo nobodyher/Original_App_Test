@@ -9,7 +9,6 @@ import {
   ShoppingCart,
   Package,
   Users,
-  Plus,
   Menu,
   PanelLeftClose,
 } from "lucide-react";
@@ -44,13 +43,13 @@ const getInitialView = (): "dashboard" | "history" | "analytics" | "clients" | "
 const getInitialAdminTab = (): ConfigTab => {
   try {
     const saved = localStorage.getItem("owner_adminSubTab");
-    if (saved) {
+    if (saved && ["catalog", "inventory", "personal"].includes(saved)) {
       return saved as ConfigTab;
     }
   } catch (e) {
     console.warn("Failed to read admin tab preference", e);
   }
-  return "services";
+  return "catalog";
 };
 
 const OwnerScreen: React.FC = () => {
@@ -137,11 +136,9 @@ const OwnerScreen: React.FC = () => {
 
 
   const adminSubItems = [
-    { id: "services", label: "Catálogo", icon: ShoppingCart },
+    { id: "catalog", label: "Catálogo", icon: ShoppingCart },
     { id: "inventory", label: "Inventario", icon: Package },
     { id: "personal", label: "Personal", icon: Users },
-    { id: "extras", label: "Extras", icon: Plus },
-    { id: "clients", label: "Clientes", icon: Users },
   ];
 
   return (
@@ -653,8 +650,6 @@ const OwnerScreen: React.FC = () => {
                     users={users}
                     catalogServices={catalogServices}
                     catalogExtras={catalogExtras}
-                    
-                    clients={clients}
                     inventoryItems={inventoryItems}
                     currentUser={currentUser}
                     showNotification={showNotification}
@@ -669,7 +664,6 @@ const OwnerScreen: React.FC = () => {
                     addExtra={addExtra}
                     updateExtra={updateExtra}
                     deleteExtra={deleteExtra}
-                    deleteClient={deleteClient}
                     transactions={services}
                   />
                 )}

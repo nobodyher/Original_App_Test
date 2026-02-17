@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import type { InventoryItem, AppUser, Toast } from "../../../../types";
 import {
   Package,
   Search,
@@ -19,35 +20,16 @@ import { openNewInventoryUnit } from "../../../../services/inventoryService";
 
 const ITEMS_PER_PAGE = 10;
 
-// ============================================================================
-// INTERFACES
-// ============================================================================
 
-export interface InventoryItem {
-  id: string;
-  name: string;
-  stock: number;
-  minStock: number;
-  unit: string;
-  content: number; // Unified quantity/packageSize
-  purchasePrice: number;
-  active: boolean;
-  // Fallbacks for safety during transition
-  stockQty?: number;
-  minStockAlert?: number;
-  quantity?: number;
-  packageSize?: number;
-  unitCost?: number;
-  needsReview?: boolean;
-  currentContent?: number;
-}
 
 interface InventoryManagerProps {
   inventoryItems: InventoryItem[];
+  currentUser: AppUser | null;
   onAdd: (product: Omit<InventoryItem, "id">) => Promise<void>;
   onUpdate: (id: string, updates: Partial<InventoryItem>) => Promise<void>;
-  onEdit: (item: InventoryItem) => void; // Kept for compatibility but we might use internal state
+  onEdit: (item: InventoryItem) => void;
   onDelete: (id: string) => void;
+  showNotification: (message: string, type?: Toast["type"]) => void;
 }
 
 // ============================================================================
@@ -56,9 +38,11 @@ interface InventoryManagerProps {
 
 export const InventoryManager: React.FC<InventoryManagerProps> = ({
   inventoryItems,
+  currentUser,
   onAdd,
   onUpdate,
   onDelete,
+  showNotification,
 }) => {
   // ==========================================================================
   // STATE
@@ -87,6 +71,31 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
 
   // New State for "Reset Content" in Edit Mode
   const [resetContent, setResetContent] = useState(false);
+
+  // Open Unit Modal State
+  const [openUnitConfig, setOpenUnitConfig] = useState<{
+      isOpen: boolean;
+      item: InventoryItem | null;
+  }>({
+      isOpen: false,
+      item: null
+  });
+  const [openUnitForm, setOpenUnitForm] = useState<{
+      reason: string;
+      notes: string;
+  }>({
+      reason: 'Ajuste manual',
+      notes: ''
+  });
+
+  // Incident Modal State
+  const [incidentModal, setIncidentModal] = useState<{
+      isOpen: boolean;
+      item: InventoryItem | null;
+  }>({
+      isOpen: false,
+      item: null
+  });
 
   const closeAlert = () => setAlertConfig((prev) => ({ ...prev, isOpen: false }));
 
@@ -188,7 +197,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     if (item.stock <= 0) {
         setAlertConfig({
             isOpen: true,
-            title: "Error",
+            title: "Stock Insuficiente",
             message: "No hay unidades selladas en stock para abrir.",
             variant: "danger",
             showCancel: false,
@@ -199,26 +208,67 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     setAlertConfig({
         isOpen: true,
         title: "Abrir Nueva Unidad",
-        message: `¿Deseas abrir una nueva unidad de "${item.name}"? Esto restará 1 de tu stock disponible y reseteará el contenido actual al máximo.`,
+        message: `Se descontará 1 unidad del stock de "${item.name}" y se reiniciará su contenido de uso al máximo. ¿Confirmar?`,
         variant: "info",
         showCancel: true,
-        onConfirm: async () => {
-             try {
-                 await openNewInventoryUnit(item);
-                 setAlertConfig(prev => ({ ...prev, isOpen: false }));
-             } catch (error) {
-                 console.error("Error opening unit:", error);
-                 setAlertConfig({
-                    isOpen: true,
-                    title: "Error",
-                    message: "No se pudo abrir la unidad.",
-                    variant: "danger",
-                    showCancel: false,
-                });
-             }
-        }
+        onConfirm: () => handleSimpleOpenUnit(item)
     });
   };
+
+  const handleSimpleOpenUnit = async (item: InventoryItem) => {
+      if (!currentUser) return;
+      
+      // Close alert immediately to show action is happening, or keep it open?
+      // Better to close and show toast.
+      setAlertConfig(prev => ({ ...prev, isOpen: false }));
+
+      try {
+           // Import dinamico o uso directo si ya esta importado. 
+           // Asumimos que openNewInventoryUnit ya esta disponible o lo importamos.
+           // Revisando imports... esta importado como openNewInventoryUnit.
+           await openNewInventoryUnit(
+              item,
+              "Reposición (Uso normal)",
+              "", 
+              {
+                  uid: currentUser.id,
+                  displayName: currentUser.name,
+                  tenantId: currentUser.tenantId || ""
+              }
+          );
+          showNotification("Unidad abierta y contenido reseteado", "success");
+      } catch (error) {
+          console.error("Error opening unit:", error);
+          showNotification("Error al abrir unidad", "error");
+      }
+  };
+
+  const handleReportIncident = async (type: 'minor' | 'medium' | 'total' | 'damaged') => {
+      if (!incidentModal.item || !currentUser) return;
+      
+      setIsSubmitting(true);
+      try {
+          await import('../../../../services/inventoryService').then(mod => 
+            mod.reportInventoryIncident(
+                incidentModal.item!, 
+                type, 
+                {
+                    uid: currentUser.id,
+                    displayName: currentUser.name,
+                    tenantId: currentUser.tenantId || ""
+                }
+            )
+          );
+          showNotification("Incidente registrado y gasto calculado", "success");
+          setIncidentModal({ isOpen: false, item: null });
+      } catch (error) {
+          console.error("Error reporting incident:", error);
+          showNotification("Error al registrar incidente", "error");
+      } finally {
+          setIsSubmitting(false);
+      }
+  };
+
 
   /* ----------------------------------------------------------------------------------
    * HANDLE SAVE (VALIDATION INCLUDED)
@@ -348,8 +398,8 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
 
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-          <Package className="text-indigo-600" />
+        <h3 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+          <Package className="text-primary-600" />
           Inventario Unificado
         </h3>
         
@@ -362,14 +412,14 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
               placeholder="Buscar producto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-background text-text-primary border border-border rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all"
             />
           </div>
 
           {/* Add Button */}
           <button
             onClick={() => handleOpenModal()}
-            className="whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-indigo-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
+            className="whitespace-nowrap bg-primary-600 hover:bg-primary-700 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95"
           >
             <Plus size={18} />
             <span className="hidden sm:inline">Nuevo Producto</span>
@@ -378,10 +428,10 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
       </div>
 
       {/* Table Container */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+            <thead className="bg-surface-highlight border-b border-border">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">En Uso</th>
@@ -390,10 +440,10 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-border">
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-text-muted">
                     <Package className="mx-auto mb-3 opacity-20" size={48} />
                     <p>No se encontraron productos</p>
                   </td>
@@ -425,7 +475,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       className={`group transition-colors ${
                         isLowStock 
                           ? 'bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20' 
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                          : 'hover:bg-surface-highlight'
                       }`}
                     >
                       {/* Product Name & Detail */}
@@ -434,7 +484,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                           <div className={`p-2 rounded-lg mt-1 relative ${
                             isLowStock 
                              ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                             : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+                             : 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
                           }`}>
                             <Package size={20} />
                             {(item.needsReview || isLowStock) && (
@@ -444,7 +494,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            <p className="font-bold text-text-main flex items-center gap-2">
                               {item.name}
                               {item.needsReview && (
                                 <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
@@ -472,13 +522,13 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                                {displayContent.toFixed(1).replace(/\.0$/, '')} 
                                <span className="text-gray-500 font-normal"> / {content} {item.unit}</span>
                              </span>
-                             <span className={`text-xs font-bold ${isLowStock ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                             <span className={`text-xs font-bold ${isLowStock ? 'text-red-600' : 'text-primary-600 dark:text-primary-400'}`}>
                                 {Math.round(displayPercentage)}%
                              </span>
                           </div>
                           <div className="h-2.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
-                              className={`h-full transition-all duration-500 ease-out ${isLowStock ? 'bg-red-500' : 'bg-indigo-500'}`}
+                              className={`h-full transition-all duration-500 ease-out ${isLowStock ? 'bg-red-500' : 'bg-primary-500'}`}
                               style={{ width: `${Math.min(displayPercentage, 100)}%` }}
                             />
                           </div>
@@ -489,8 +539,8 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       {/* Stock (Closed Units) */}
                       <td className="px-6 py-4 align-top">
                         <div className="flex flex-col">
-                            <span className={`text-lg font-bold ${isLowStock ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                              {stock} <span className="text-xs font-normal text-gray-500">unid.</span>
+                            <span className={`text-lg font-bold ${isLowStock ? 'text-red-600 dark:text-red-400' : 'text-text-main'}`}>
+                              {stock} <span className="text-xs font-normal text-text-muted">unid.</span>
                             </span>
                             {minStock > 0 && (
                                 <span className={`text-xs ${isLowStock ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
@@ -503,7 +553,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       {/* Cost */}
                       <td className="px-6 py-4 align-top">
                         <div>
-                          <p className="font-bold text-gray-900 dark:text-gray-100">
+                          <p className="font-bold text-text-main">
                             ${price.toFixed(2)}
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5 font-medium">
@@ -520,7 +570,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleOpenModal(item)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                            className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                             title="Editar"
                           >
                             <Edit2 size={18} />
@@ -532,6 +582,17 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                           >
                             <RefreshCw size={18} />
                           </button>
+
+                          {/* Incident Button - Owner Only */}
+                          {currentUser?.role === 'owner' && (
+                              <button
+                                  onClick={() => setIncidentModal({ isOpen: true, item })}
+                                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  title="Registrar Incidente / Merma"
+                              >
+                                  <AlertTriangle size={18} />
+                              </button>
+                          )}
                           <button
                             onClick={() => onDelete(item.id)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
@@ -551,28 +612,28 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
 
         {/* Pagination Footer */}
         {filteredItems.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:px-6">
+          <div className="flex items-center justify-between px-4 py-3 bg-surface border-t border-border sm:px-6">
             <div className="flex flex-1 justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-text-main bg-surface border border-border hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Anterior
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-text-main bg-surface border border-border hover:bg-surface-highlight disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente
               </button>
             </div>
             <div className="hidden sm:flex flex-1 items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
+                <p className="text-sm text-text-muted">
                   Mostrando página <span className="font-medium">{currentPage}</span> de <span className="font-medium">{totalPages}</span>
-                  <span className="mx-2 text-gray-400">|</span>
+                  <span className="mx-2 text-text-dim">|</span>
                   Total: <span className="font-medium">{filteredItems.length}</span> resultados
                 </p>
               </div>
@@ -581,7 +642,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-text-muted ring-1 ring-inset ring-border hover:bg-surface-highlight focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="sr-only">Anterior</span>
                     <ChevronLeft className="h-5 w-5" aria-hidden="true" />
@@ -589,7 +650,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-text-muted ring-1 ring-inset ring-border hover:bg-surface-highlight focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="sr-only">Siguiente</span>
                     <ChevronRight className="h-5 w-5" aria-hidden="true" />
@@ -794,6 +855,118 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
           </div>
         </div>
       )}
+
+
+
+
+      {/* Incident Report Modal */}
+      {incidentModal.isOpen && incidentModal.item && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+           {/* Backdrop */}
+           <div 
+             className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+             onClick={() => setIncidentModal({ isOpen: false, item: null })}
+           />
+           
+           <div className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transform transition-all animate-in zoom-in-95 duration-200 overflow-hidden">
+              <div className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                      <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                          <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                              Registrar Incidente / Merma
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                              {incidentModal.item.name}
+                          </p>
+                      </div>
+                  </div>
+
+                  <div className="space-y-3">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          Selecciona la gravedad del incidente. El gasto se calculará automáticamente basado en el contenido perdido.
+                      </p>
+
+                      <button
+                          onClick={() => handleReportIncident('minor')}
+                          disabled={isSubmitting}
+                          className="w-full p-4 flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/10 hover:border-orange-200 dark:hover:border-orange-800 transition-all group"
+                      >
+                          <div className="text-left">
+                              <span className="block font-semibold text-gray-900 dark:text-gray-100 group-hover:text-orange-700 dark:group-hover:text-orange-400">
+                                  Derrame Leve (25%)
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                  Se descuenta 25% del contenido actual
+                              </span>
+                          </div>
+                          <AlertTriangle className="w-5 h-5 text-gray-300 group-hover:text-orange-500" />
+                      </button>
+
+                      <button
+                          onClick={() => handleReportIncident('medium')}
+                          disabled={isSubmitting}
+                          className="w-full p-4 flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/10 hover:border-orange-200 dark:hover:border-orange-800 transition-all group"
+                      >
+                          <div className="text-left">
+                              <span className="block font-semibold text-gray-900 dark:text-gray-100 group-hover:text-orange-700 dark:group-hover:text-orange-400">
+                                  Derrame Medio (50%)
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                  Se descuenta 50% del contenido actual
+                              </span>
+                          </div>
+                          <AlertTriangle className="w-5 h-5 text-gray-300 group-hover:text-orange-500" />
+                      </button>
+
+                      <button
+                          onClick={() => handleReportIncident('total')}
+                          disabled={isSubmitting}
+                          className="w-full p-4 flex items-center justify-between bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/30 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 hover:border-red-200 dark:hover:border-red-800 transition-all group"
+                      >
+                          <div className="text-left">
+                              <span className="block font-bold text-red-600 dark:text-red-400">
+                                  Pérdida Total / Abrir Nueva
+                              </span>
+                              <span className="text-xs text-red-400 dark:text-red-500">
+                                  Se pierde todo el contenido y se abre una unidad nueva
+                              </span>
+                          </div>
+                          <AlertCircle className="w-5 h-5 text-red-300 group-hover:text-red-600" />
+                      </button>
+
+                      <button
+                          onClick={() => handleReportIncident('damaged')}
+                          disabled={isSubmitting}
+                          className="w-full p-4 flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group"
+                      >
+                           <div className="text-left">
+                              <span className="block font-bold text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                                  Producto dañado / Defectuoso
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                  Registrar como pérdida total por defecto de calidad
+                              </span>
+                          </div>
+                          <AlertTriangle className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+                      </button>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                      <button
+                          onClick={() => setIncidentModal({ isOpen: false, item: null })}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      >
+                          Cancelar
+                      </button>
+                  </div>
+              </div>
+           </div>
+        </div>
+      )}
+
       <ConfirmationModal
         isOpen={alertConfig.isOpen}
         onClose={closeAlert}

@@ -205,57 +205,57 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
 
       {/* Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Income - Cyan Gradient */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        {/* Income - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
           <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 transform group-hover:scale-120 transition-transform">
             {/* Icon placeholder could go here */}
           </div>
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+          <h4 className="text-sm font-bold text-text-muted uppercase tracking-wider">
             Ingresos Totales
           </h4>
-          <p className="text-4xl font-black mt-2 tracking-tight">
+          <p className="text-4xl font-black mt-2 tracking-tight text-text-main">
             ${totalIncome.toFixed(2)}
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+          <div className="mt-4 inline-flex items-center gap-2 bg-primary-600/10 px-3 py-1 rounded-full text-xs font-semibold text-primary-600 backdrop-blur-sm">
             <span>{totalServices} servicios realizados</span>
           </div>
         </div>
 
-        {/* Ticket - Cyan/Blue Gradient */}
-        <div className="bg-gradient-to-br from-primary-700 to-blue-600 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+        {/* Ticket - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+          <h4 className="text-sm font-bold text-text-muted uppercase tracking-wider">
             Ticket Promedio
           </h4>
-          <p className="text-4xl font-black mt-2 tracking-tight">
+          <p className="text-4xl font-black mt-2 tracking-tight text-text-main">
             ${averageTicket.toFixed(2)}
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+          <div className="mt-4 inline-flex items-center gap-2 bg-blue-500/10 px-3 py-1 rounded-full text-xs font-semibold text-blue-500 backdrop-blur-sm">
             <span>Por cliente</span>
           </div>
         </div>
 
-        {/* Staff - Violet/Indigo Gradient */}
-        <div className="bg-gradient-to-br from-cyan-900 to-blue-900 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+        {/* Staff - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+          <h4 className="text-sm font-bold text-text-muted uppercase tracking-wider">
             Top Staff
           </h4>
-          <p className="text-3xl font-black mt-2 truncate max-w-full">
+          <p className="text-3xl font-black mt-2 truncate max-w-full text-text-main">
             {topStaff?.[0] || "N/A"}
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-black/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+          <div className="mt-4 inline-flex items-center gap-2 bg-purple-500/10 px-3 py-1 rounded-full text-xs font-semibold text-purple-500 backdrop-blur-sm">
             <span>Generó ${topStaff?.[1].revenue.toFixed(2) || "0.00"}</span>
           </div>
         </div>
 
-        {/* Service - Dark Gradient */}
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-[2rem] shadow-none p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-          <h4 className="text-sm font-bold opacity-80 uppercase tracking-wider">
+        {/* Service - Surface with simple border */}
+        <div className="bg-surface border border-white/10 rounded-[2rem] p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform">
+          <h4 className="text-sm font-bold text-text-muted uppercase tracking-wider">
             Servicio Estrella
           </h4>
-          <p className="text-2xl font-black mt-2 truncate max-w-full leading-tight">
+          <p className="text-2xl font-black mt-2 truncate max-w-full leading-tight text-text-main">
             {topService?.[0] || "N/A"}
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+          <div className="mt-4 inline-flex items-center gap-2 bg-emerald-500/10 px-3 py-1 rounded-full text-xs font-semibold text-emerald-500 backdrop-blur-sm">
             <span>{topService?.[1].count || 0} ventas</span>
           </div>
         </div>
