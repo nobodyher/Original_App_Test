@@ -10,7 +10,6 @@ export const COLLECTIONS = {
   CATALOG_SERVICES: "catalog_services",
   CATALOG_EXTRAS: "catalog_extras",
   CONSUMABLES: "consumables",
-  CHEMICAL_PRODUCTS: "chemical_products",
   CLIENTS: "clients",
   SERVICE_RECIPES: "service_recipes",
   MATERIAL_RECIPES: "material_recipes",
@@ -20,11 +19,6 @@ export const COLLECTIONS = {
 export const PAYMENT_METHODS = {
   CASH: "cash",
   TRANSFER: "transfer",
-} as const;
-
-export const CATEGORIES = {
-  MANICURA: "manicura",
-  PEDICURA: "pedicura",
 } as const;
 
 export const ACTIONS = {

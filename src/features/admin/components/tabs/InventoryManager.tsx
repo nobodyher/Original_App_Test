@@ -112,6 +112,19 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     );
   }, [inventoryItems, searchTerm]);
 
+  // Alert Logic
+  const lowStockItems = useMemo(() => {
+    return inventoryItems.filter(item => 
+      item.active && 
+      (getItemsStock(item) <= getItemsMinStock(item))
+    );
+  }, [inventoryItems]);
+
+  // Helper wrappers for use inside memo/render
+  function getItemsStock(item: InventoryItem) { return item.stock ?? item.stockQty ?? 0; }
+  function getItemsMinStock(item: InventoryItem) { return item.minStock ?? item.minStockAlert ?? 0; }
+
+
   // Pagination Logic
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
   const paginatedItems = useMemo(() => {
@@ -249,6 +262,36 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   // ==========================================================================
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      
+      {/* Low Stock Alert Summary */}
+      {lowStockItems.length > 0 && (
+        <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-4 max-w-2xl mx-auto md:mx-0 shadow-sm animate-pulse-light">
+          <div className="flex items-start gap-3">
+             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg shrink-0">
+               <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />
+             </div>
+             <div>
+               <h4 className="text-sm font-bold text-red-900 dark:text-red-100 mb-2">
+                 Atención: {lowStockItems.length} Producto{lowStockItems.length !== 1 && 's'} con stock bajo
+               </h4>
+               <div className="flex flex-wrap gap-2">
+                 {lowStockItems.map(item => (
+                   <div 
+                      key={item.id}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded text-xs font-medium text-red-700 dark:text-red-300"
+                   >
+                     <span>{item.name}</span>
+                     <span className="font-bold bg-red-100 dark:bg-red-800/50 px-1 rounded">
+                       {getItemsStock(item)}
+                     </span>
+                   </div>
+                 ))}
+               </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
@@ -306,6 +349,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   const stock = getStock(item);
                   const minStock = getMinStock(item);
                   const content = getContent(item);
+                  const isLowStock = stock <= minStock;
                   
                   // Progress Bar Calculation
                   // percentage and barColor removed as they were replaced by new logic
@@ -322,14 +366,25 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   const displayPercentage = content > 0 ? (displayContent / content) * 100 : 0;
 
                   return (
-                    <tr key={item.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <tr 
+                      key={item.id} 
+                      className={`group transition-colors ${
+                        isLowStock 
+                          ? 'bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20' 
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                      }`}
+                    >
                       {/* Product Name & Detail */}
                       <td className="px-6 py-4 align-top">
                         <div className="flex items-start gap-3">
-                          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400 mt-1 relative">
+                          <div className={`p-2 rounded-lg mt-1 relative ${
+                            isLowStock 
+                             ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                             : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+                          }`}>
                             <Package size={20} />
-                            {item.needsReview && (
-                              <div className="absolute -top-1 -right-1 text-red-500 bg-white rounded-full p-0.5 shadow-sm" title="Datos incompletos/Revisar">
+                            {(item.needsReview || isLowStock) && (
+                              <div className="absolute -top-1 -right-1 text-red-500 bg-white rounded-full p-0.5 shadow-sm">
                                 <AlertCircle size={12} fill="currentColor" className="text-red-500" />
                               </div>
                             )}
@@ -340,6 +395,11 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                               {item.needsReview && (
                                 <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
                                   Revisar
+                                </span>
+                              )}
+                              {isLowStock && (
+                                <span className="text-[10px] bg-red-100 text-red-600 border border-red-200 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                                  Bajo Stock
                                 </span>
                               )}
                             </p>
@@ -358,13 +418,13 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                                {displayContent.toFixed(1).replace(/\.0$/, '')} 
                                <span className="text-gray-500 font-normal"> / {content} {item.unit}</span>
                              </span>
-                             <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                             <span className={`text-xs font-bold ${isLowStock ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-400'}`}>
                                 {Math.round(displayPercentage)}%
                              </span>
                           </div>
                           <div className="h-2.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-indigo-500 transition-all duration-500 ease-out"
+                              className={`h-full transition-all duration-500 ease-out ${isLowStock ? 'bg-red-500' : 'bg-indigo-500'}`}
                               style={{ width: `${Math.min(displayPercentage, 100)}%` }}
                             />
                           </div>
@@ -375,11 +435,11 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                       {/* Stock (Closed Units) */}
                       <td className="px-6 py-4 align-top">
                         <div className="flex flex-col">
-                            <span className={`text-lg font-bold ${stock <= minStock ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                            <span className={`text-lg font-bold ${isLowStock ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
                               {stock} <span className="text-xs font-normal text-gray-500">unid.</span>
                             </span>
                             {minStock > 0 && (
-                                <span className="text-xs text-gray-400">
+                                <span className={`text-xs ${isLowStock ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
                                    Mín: {minStock}
                                 </span>
                             )}

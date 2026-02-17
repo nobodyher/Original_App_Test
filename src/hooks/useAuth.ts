@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, query, orderBy, onSnapshot, where, doc, getDoc } from "firebase/firestore";
+import { db, auth } from "../firebase";
 import type { AppUser } from "../types";
 import { normalizeUser } from "../utils/helpers";
 import * as userService from "../services/userService";
@@ -12,6 +12,9 @@ export const useAuth = (enabled: boolean) => {
   const [initialized, setInitialized] = useState(false);
   // NUEVO: Flag para saber si Firebase ya nos respondió al menos una vez
   const [dataLoaded, setDataLoaded] = useState(false);
+
+  // State for tenant handling
+  const [currentTenantId, setCurrentTenantId] = useState<string | null>(null);
 
   // 1. Inicializar usuarios (SOLO SI ESTÁ HABILITADO)
   useEffect(() => {
@@ -29,11 +32,45 @@ export const useAuth = (enabled: boolean) => {
     initUsers();
   }, [enabled]);
 
-  // 2. Escuchar cambios (SOLO SI ESTÁ HABILITADO)
+  // 1.5 Fetch Tenant ID (Securely)
   useEffect(() => {
-    if (!enabled || !initialized) return;
+    if (!enabled || !auth.currentUser) return;
+    
+    // We get the tenantId from the ACTUAL authenticated user document
+    // This allows us to satisfy the rule: allow read: if isSameTenant();
+    const fetchTenant = async () => {
+        try {
+             // We can read our OWN user document due to rules
+             // match /users/{userId} { allow read: if request.auth.uid == userId; }
+            const docRef = doc(db, "users", auth.currentUser!.uid);
+            const snapshot = await getDoc(docRef);
+            
+            if (snapshot.exists()) {
+                const userData = snapshot.data();
+                setCurrentTenantId(userData.tenantId || "");
+            } else {
+                console.warn("User document not found");
+                setCurrentTenantId("");
+            }
+        } catch (e) {
+            console.error("Error fetching user tenant:", e);
+            setCurrentTenantId(""); 
+        }
+    };
+    
+    fetchTenant();
+  }, [enabled]); // Run when auth is enabled/ready
 
-    const q = query(collection(db, "users"), orderBy("name", "asc"));
+  // 2. Escuchar cambios (SOLO SI ESTÁ HABILITADO Y TENEMOS TENANT)
+  useEffect(() => {
+    if (!enabled || !initialized || !currentTenantId) return;
+
+    // Use the fetched tenantId
+    const q = query(
+      collection(db, "users"), 
+      where("tenantId", "==", currentTenantId), 
+      orderBy("name", "asc")
+    );
     const unsub = onSnapshot(
       q,
       (snap) => {
@@ -58,7 +95,7 @@ export const useAuth = (enabled: boolean) => {
     );
 
     return () => unsub();
-  }, [initialized, enabled]);
+  }, [initialized, enabled, currentTenantId]);
 
   // 3. Restaurar sesión (LÓGICA CORREGIDA & MEJORADA)
   useEffect(() => {

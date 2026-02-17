@@ -19,10 +19,7 @@ import {
 import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import type {
   CatalogService,
-  MaterialRecipe,
-  ServiceRecipe,
-  Consumable,
-  ChemicalProduct,
+
   Toast,
   AppUser,
   InventoryItem,
@@ -35,17 +32,12 @@ import type {
 export interface ServicesManagerProps {
   // Data
   catalogServices: CatalogService[];
-  materialRecipes: MaterialRecipe[];
-  serviceRecipes: ServiceRecipe[];
-  consumables: Consumable[];
-  chemicalProducts: ChemicalProduct[];
   inventoryItems?: InventoryItem[];
   currentUser: AppUser | null;
 
   // Actions
   addCatalogService: (
     name: string,
-    category: "manicura" | "pedicura",
     price: number,
   ) => Promise<string>;
   updateCatalogService: (
@@ -82,10 +74,6 @@ const EmptyState = ({
 
 export const ServicesManager: React.FC<ServicesManagerProps> = ({
   catalogServices,
-  materialRecipes,
-  serviceRecipes,
-  // consumables, (Removed: Unused in new logic)
-  chemicalProducts,
   inventoryItems = [],
   currentUser,
   addCatalogService,
@@ -105,9 +93,6 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
   >({});
   const [selectedMaterials, setSelectedMaterials] = useState<
     { materialId: string; qty: number }[]
-  >([]);
-  const [selectedConsumables, setSelectedConsumables] = useState<
-    { consumableId: string; qty: number }[]
   >([]);
 
   // Search States for Service Editor
@@ -167,7 +152,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
         return {
         id: item.id,
         name: item.name,
-        type: item.type === "material" ? ("chemical" as const) : ("consumable" as const), // Map 'material' to 'chemical' for compatibility
+        type: "material" as const, // All items are materials now
         unit: item.unit,
         cost: calculatedUnitCost,
         // Helper for filtering
@@ -202,43 +187,25 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
         };
     };
 
-    const selectedChems = selectedMaterials.map((s) => {
+    const selectedMats = selectedMaterials.map((s) => {
       const details = findItemDetails(s.materialId);
       return {
         id: s.materialId,
         qty: s.qty,
         name: details.name,
-        type: "chemical" as const,
+        type: "material" as const, // ✅ Changed from chemical
         unit: details.unit,
         cost: details.cost * s.qty,
         unitCost: details.cost
       };
     });
 
-    const selectedConsums = selectedConsumables.map((s) => {
-      const details = findItemDetails(s.consumableId);
-      return {
-        id: s.consumableId,
-        qty: s.qty,
-        name: details.name,
-        type: "consumable" as const,
-        unit: details.unit,
-        cost: details.cost * s.qty,
-        unitCost: details.cost
-      };
-    });
+    return selectedMats;
+  }, [selectedMaterials, inventoryItems]);
 
-    return [...selectedChems, ...selectedConsums];
-  }, [selectedMaterials, selectedConsumables, inventoryItems]);
-
-  // Dynamic Cost Calculation for Service Editing
   const totalEstimatedMaterialCost = useMemo(() => {
     const total = allSelectedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
-    return {
-      chemicals: 0,
-      consumables: 0,
-      total,
-    };
+    return { total }; // ✅ Simplified - only total matters
   }, [allSelectedItems]);
 
   // ==========================================================================
@@ -271,8 +238,8 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
 
       // Check negativos
       const price = Number(editServiceForm.basePrice) || 0;
-      if (price < 0) {
-        showNotification("El precio base no puede ser negativo", "error");
+      if (price <= 0) {
+        showNotification("El precio base debe ser mayor a 0", "error");
         return;
       }
 
@@ -280,15 +247,13 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
         // CREACIÓN
         const newId = await addCatalogService(
           name,
-          editServiceForm.category || "manicura",
           price,
         );
 
         // Guardar materiales inmediatamente
-        if (selectedMaterials.length > 0 || selectedConsumables.length > 0) {
+        if (selectedMaterials.length > 0) {
           await updateCatalogService(newId, {
             manualMaterials: selectedMaterials,
-            manualConsumables: selectedConsumables,
           });
         }
 
@@ -300,7 +265,6 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
           name, // Asegurar que se guarde el nombre trimmeado
           basePrice: price,
           manualMaterials: selectedMaterials,
-          manualConsumables: selectedConsumables,
         });
         showNotification("Servicio actualizado exitosamente");
       }
@@ -396,24 +360,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
     );
   };
 
-  const handleToggleConsumable = (consumableId: string) => {
-    setSelectedConsumables((prev) => {
-      const exists = prev.some((c) => c.consumableId === consumableId);
-      if (exists) {
-        return prev.filter((c) => c.consumableId !== consumableId);
-      } else {
-        return [...prev, { consumableId, qty: 1 }];
-      }
-    });
-  };
 
-  const handleConsumableQtyChange = (consumableId: string, qty: number) => {
-    setSelectedConsumables((prev) =>
-      prev.map((c) =>
-        c.consumableId === consumableId ? { ...c, qty: Math.max(1, qty) } : c,
-      ),
-    );
-  };
 
   // ==========================================================================
   // RENDER
@@ -432,14 +379,13 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
             setEditingServiceItem({
               id: "new",
               name: "",
-              category: "general" as any,
               basePrice: 0,
               active: true,
+              tenantId: "",
               createdAt: new Date().toISOString(),
             } as unknown as CatalogService);
-            setEditServiceForm({ category: "general" as any });
+            setEditServiceForm({});
             setSelectedMaterials([]);
-            setSelectedConsumables([]);
             setMaterialSearch("");
           }}
           className="bg-primary-600 hover:bg-primary-600/80 text-white font-bold p-2 md:px-4 md:py-2 rounded-xl shadow-lg shadow-primary-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ease-out flex items-center gap-2 active:scale-95 w-auto"
@@ -459,9 +405,6 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                   <th className="w-10 px-4 py-3"></th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-text-main uppercase tracking-wider whitespace-nowrap">
                     Nombre
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider whitespace-nowrap">
-                    Categoría
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider whitespace-nowrap">
                     Precio Base
@@ -512,14 +455,8 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                       0,
                     );
 
-                    const consumablesCost = (cs.manualConsumables || []).reduce(
-                      (sum, c) => {
-                        return sum + getRefCost(c.consumableId) * c.qty;
-                      },
-                      0,
-                    );
 
-                    const totalMaterialCost = materialsCost + consumablesCost;
+                    const totalMaterialCost = materialsCost; // ✅ Only materials now
 
                     return (
                       <tr
@@ -539,11 +476,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                                 className="w-full px-4 py-2 bg-surface-highlight border border-border rounded-xl text-sm font-medium text-text-main transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                               />
                             </td>
-                            <td className="px-6 py-4 min-w-[150px]">
-                              <span className="text-sm text-text-muted capitalize">
-                                {cs.category}
-                              </span>
-                            </td>
+
                             <td className="px-6 py-4 min-w-[120px]">
                               <input
                                 type="number"
@@ -575,7 +508,6 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                                       `edit-service-name-${cs.id}`,
                                     ) as HTMLInputElement
                                   ).value;
-                                    const category = cs.category || "general";
                                   const basePrice = parseFloat(
                                     (
                                       document.getElementById(
@@ -586,7 +518,6 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
 
                                   handleUpdateCatalogService(cs.id, {
                                     name,
-                                    category,
                                     basePrice,
                                   });
                                 }}
@@ -609,8 +540,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                             <td className="px-6 py-4 text-sm font-medium text-text-main min-w-[200px]">
                               <div className="flex items-center gap-2">
                                 {cs.name}
-                                {(cs.manualMaterials?.length ?? 0) > 0 ||
-                                (cs.manualConsumables?.length ?? 0) > 0 ? (
+                                {(cs.manualMaterials?.length ?? 0) > 0 ? (
                                   <div
                                     title="Configurado"
                                     className="text-emerald-500 bg-emerald-500/10 p-1 rounded-full"
@@ -626,9 +556,6 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                                   </div>
                                 )}
                               </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-text-muted capitalize tracking-wide min-w-[120px]">
-                              {cs.category}
                             </td>
                             <td className="px-6 py-4 text-sm font-bold text-text-main font-mono min-w-[100px]">
                               ${cs.basePrice.toFixed(2)}
@@ -699,125 +626,11 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                                         );
                                       }
                                     } else {
-                                      // FALLBACK: Solo si NO existe manualMaterials, buscar en recetas antiguas
-                                      console.log(
-                                        `🔍 Cargando desde recetas antiguas para ${cs.name}`,
-                                      );
-
-                                      const legacyRecipe = materialRecipes.find(
-                                        (r) =>
-                                          r.serviceId === cs.id ||
-                                          r.serviceName.toLowerCase() ===
-                                            cs.name.toLowerCase(),
-                                      );
-
-                                      const legacyMaterialIds: string[] = [];
-
-                                      if (legacyRecipe) {
-                                        for (const chemicalIdOrName of legacyRecipe.chemicalIds) {
-                                          // Primero intentar encontrar por ID exacto
-                                          let matchedProduct =
-                                            chemicalProducts.find(
-                                              (p) => p.id === chemicalIdOrName,
-                                            );
-
-                                          // Si no se encuentra por ID, buscar por nombre normalizado
-                                          if (!matchedProduct) {
-                                            const normalizedSearch =
-                                              chemicalIdOrName
-                                                .toLowerCase()
-                                                .replace(/_/g, " ")
-                                                .trim();
-                                            matchedProduct =
-                                              chemicalProducts.find((p) => {
-                                                const normalizedProductName = p.name
-                                                  .toLowerCase()
-                                                  .replace(/_/g, " ")
-                                                  .trim();
-                                                return (
-                                                  normalizedProductName ===
-                                                    normalizedSearch ||
-                                                  normalizedProductName.includes(
-                                                    normalizedSearch,
-                                                  ) ||
-                                                  normalizedSearch.includes(
-                                                    normalizedProductName,
-                                                  )
-                                                );
-                                              });
-                                          }
-
-                                          // Si encontramos coincidencia, agregar el ID del producto
-                                          if (matchedProduct) {
-                                            legacyMaterialIds.push(
-                                              matchedProduct.id,
-                                            );
-                                          }
-                                        }
-                                      }
-
-                                      setSelectedMaterials(
-                                        legacyMaterialIds.map((id) => ({
-                                          materialId: id,
-                                          qty: 1,
-                                        })),
-                                      );
+                                      // Si no hay manualMaterials, inicializar vacío (Legacy eliminado)
+                                      setSelectedMaterials([]);
                                     }
 
-                                    // CONSUMIBLES - Aplicar misma lógica de prioridad
-                                    if (
-                                      cs.manualConsumables !== undefined &&
-                                      cs.manualConsumables !== null
-                                    ) {
-                                      // PRIORIDAD ALTA: Usar selección manual
-                                      console.log(
-                                        `⚠️ Usando consumibles manuales (Prioridad Alta) para ${cs.name}`,
-                                      );
-                                      setSelectedConsumables(
-                                        cs.manualConsumables,
-                                      );
-                                    } else {
-                                      // FALLBACK: Buscar en serviceRecipes
-                                      console.log(
-                                        `🔍 Cargando consumibles desde recetas para ${cs.name}`,
-                                      );
-                                      console.log(
-                                        `   Buscando por cs.id: "${cs.id}"`,
-                                      );
-                                      console.log(
-                                        `   Buscando por cs.name: "${cs.name}"`,
-                                      );
-                                      console.log(
-                                        `   IDs disponibles en serviceRecipes:`,
-                                        serviceRecipes.map((r) => r.id),
-                                      );
 
-                                      // Buscar por el ID del documento (que es el nombre del servicio o ID del catálogo)
-                                      const serviceRecipe = serviceRecipes.find(
-                                        (r: ServiceRecipe) =>
-                                          r.id === cs.id || r.id === cs.name,
-                                      );
-
-                                      if (serviceRecipe) {
-                                        console.log(
-                                          `✅ Receta encontrada por ID de documento: ${serviceRecipe.id}`,
-                                        );
-                                        console.log(
-                                          `   Items a cargar: ${serviceRecipe.items.length} consumibles`,
-                                        );
-                                        setSelectedConsumables(
-                                          serviceRecipe.items,
-                                        );
-                                      } else {
-                                        console.log(
-                                          `❌ No se encontró receta para "${cs.name}"`,
-                                        );
-                                        console.log(
-                                          `   Ningún ID coincide con "${cs.id}" ni con "${cs.name}"`,
-                                        );
-                                        setSelectedConsumables([]);
-                                      }
-                                    }
                                   }}
                                   className="p-2 rounded-lg text-primary-500 hover:bg-primary-500/10 transition-all duration-200 hover:scale-110 active:scale-90"
                                   title="Editar"
@@ -1100,14 +913,10 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                             <button
                               key={`${material.type}-${material.id}`}
                               onClick={() => {
-                                if (material.type === "chemical") {
-                                  handleToggleMaterial(material.id);
-                                } else {
-                                  handleToggleConsumable(material.id);
-                                }
+                                handleToggleMaterial(material.id);
                                 setMaterialSearch(""); // Clear search after selection
                               }}
-                              className="w-full text-left px-4 py-3 hover:bg-surface-highlight transition-colors flex justify-between items-center group border-b border-border last:border-0"
+                              className="flex items-center justify-between px-4 py-2 text-sm hover:bg-surface-highlight transition-colors group cursor-pointer border-b border-border last:border-0"
                             >
                               <div>
                                 <p className="font-medium text-text-main group-hover:text-primary-600 transition-colors">
@@ -1185,16 +994,12 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                               <div className="flex items-center bg-surface-highlight rounded-lg border border-border">
                                 <input
                                   type="number"
-                                  min={item.type === "chemical" ? "0" : "1"}
-                                  step={item.type === "chemical" ? "0.1" : "1"}
+                                  min="0"
+                                  step="0.1"
                                   value={item.qty}
                                   onChange={(e) => {
                                     const val = parseFloat(e.target.value) || 0;
-                                    if (item.type === "chemical") {
-                                      handleMaterialQtyChange(item.id, val);
-                                    } else {
-                                      handleConsumableQtyChange(item.id, val);
-                                    }
+                                    handleMaterialQtyChange(item.id, val);
                                   }}
                                   className="w-16 px-2 py-1 text-sm bg-transparent text-center focus:outline-none font-medium"
                                 />
@@ -1204,13 +1009,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                               </div>
 
                               <button
-                                onClick={() => {
-                                  if (item.type === "chemical") {
-                                    handleToggleMaterial(item.id);
-                                  } else {
-                                    handleToggleConsumable(item.id);
-                                  }
-                                }}
+                                onClick={() => handleToggleMaterial(item.id)}
                                 className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                                 title="Eliminar"
                               >

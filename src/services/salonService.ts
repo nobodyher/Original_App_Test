@@ -20,22 +20,18 @@ import type {
   ExtraItem,
   PaymentMethod,
   Service,
-  MaterialRecipe,
-  ServiceRecipe,
+  
+  
   CatalogService,
   CreateServicePayload,
   InventoryItem,
 } from "../types";
 import { 
-  deductConsumables, 
   calculateTotalReplenishmentCost, 
   deductInventoryByRecipe, 
   restoreInventoryByRecipe, 
-  restoreConsumables,
   batchDeductInventoryByRecipe,
-  batchDeductConsumables,
   batchRestoreInventoryByRecipe,
-  batchRestoreConsumables,
 } from "./inventoryService";
 
 export interface NewServiceState {
@@ -44,7 +40,6 @@ export interface NewServiceState {
   services: ServiceItem[];
   extras: ExtraItem[];
   paymentMethod: PaymentMethod;
-  category?: "manicura" | "pedicura";
 }
 // ====== Commission Helpers ======
 
@@ -78,8 +73,6 @@ export const calcCommissionAmount = (
 export const addService = async (
   currentUser: AppUser,
   newService: NewServiceState,
-  materialRecipes: MaterialRecipe[],
-  serviceRecipes: ServiceRecipe[],
   inventoryItems: InventoryItem[],
   catalogServices: CatalogService[],
   totalCost: number,
@@ -92,14 +85,16 @@ export const addService = async (
     throw new Error("Costo inválido");
   }
 
-  const commissionPct = clamp(Number(currentUser.commissionPct || 0), 0, 100);
+  if (!currentUser.tenantId) {
+    throw new Error("Error de sesión: No se identificó la organización (tenantId).");
+  }
 
+  const commissionPct = clamp(Number(currentUser.commissionPct || 0), 0, 100);
   // Calcular el costo total de reposición sumando todos los servicios
   const totalReposicion = calculateTotalReplenishmentCost(
     newService.services,
-    materialRecipes,
     catalogServices,
-    inventoryItems // Assuming calculateTotalReplenishmentCost also needs update!
+    inventoryItems
   );
 
   // 1. INICIAR EL LOTE (El Camión) 🚚
@@ -125,6 +120,7 @@ export const addService = async (
           totalServices: 1,
           active: true, // Asumimos activo por defecto
           phone: "",
+          tenantId: currentUser.tenantId,
         });
       } else {
         // Actualizar cliente existente
@@ -138,9 +134,6 @@ export const addService = async (
     }
   } catch (error) {
     console.error("Error preparing client update for batch:", error);
-    // Si falla la lectura del cliente, podríamos decidir continuar sin actualizarlo o fallar todo.
-    // Dado que es batch, si falla aquí antes del commit, no se ha escrito nada.
-    // En este diseño, si falla la lectura, lanzamos el error y abortamos la operación.
     throw error; 
   }
   // ========================================
@@ -159,6 +152,7 @@ export const addService = async (
     reposicion: parseFloat(totalReposicion.toFixed(2)),
     deleted: false,
     timestamp: serverTimestamp(),
+    tenantId: currentUser.tenantId,
   };
 
   // Solo agregar servicios si hay
@@ -169,11 +163,6 @@ export const addService = async (
   // Solo agregar extras si hay
   if (newService.extras.length > 0) {
     serviceData.extras = newService.extras;
-  }
-
-  // Solo agregar categoría si hay
-  if (newService.category) {
-    serviceData.category = newService.category;
   }
 
   // 2. PREPARAR DOCUMENTO DE SERVICIO
@@ -189,17 +178,6 @@ export const addService = async (
       batch, // Pasamos el batch
       serviceItem.serviceId,
       serviceItem.serviceName,
-      materialRecipes,
-      inventoryItems,
-      catalogServices
-    );
-    
-    // B. Consumibles (Sin await)
-    batchDeductConsumables(
-      batch, // Pasamos el batch
-      serviceItem.serviceId,
-      serviceItem.serviceName,
-      serviceRecipes,
       inventoryItems,
       catalogServices
     );
@@ -221,8 +199,6 @@ export const updateService = async (
   inventoryContext?: {
       restore: boolean;
       oldService: Service;
-      materialRecipes: MaterialRecipe[];
-      serviceRecipes: ServiceRecipe[];
       inventoryItems: InventoryItem[];
       catalogServices: CatalogService[];
   }
@@ -241,14 +217,6 @@ export const updateService = async (
           await restoreInventoryByRecipe(
               oldItem.serviceId,
               oldItem.serviceName,
-              inventoryContext.materialRecipes,
-              inventoryContext.inventoryItems,
-              inventoryContext.catalogServices
-          );
-          await restoreConsumables(
-              oldItem.serviceId,
-              oldItem.serviceName,
-              inventoryContext.serviceRecipes,
               inventoryContext.inventoryItems,
               inventoryContext.catalogServices
           );
@@ -262,14 +230,6 @@ export const updateService = async (
           await deductInventoryByRecipe(
               newItem.serviceId,
               newItem.serviceName,
-              inventoryContext.materialRecipes,
-              inventoryContext.inventoryItems,
-              inventoryContext.catalogServices
-          );
-          await deductConsumables(
-              newItem.serviceId,
-              newItem.serviceName,
-              inventoryContext.serviceRecipes,
               inventoryContext.inventoryItems,
               inventoryContext.catalogServices
           );
@@ -298,8 +258,6 @@ export const softDeleteService = async (
   userId?: string,
   inventoryContext?: {
     service: Service;
-    materialRecipes: MaterialRecipe[];
-    serviceRecipes: ServiceRecipe[];
     inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
   }
@@ -314,16 +272,6 @@ export const softDeleteService = async (
         batch,
         serviceItem.serviceId,
         serviceItem.serviceName,
-        inventoryContext.materialRecipes,
-        inventoryContext.inventoryItems,
-        inventoryContext.catalogServices
-      );
-      
-      batchRestoreConsumables(
-        batch,
-        serviceItem.serviceId,
-        serviceItem.serviceName,
-        inventoryContext.serviceRecipes,
         inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
@@ -354,8 +302,6 @@ export const softDeleteServiceAdmin = async (
   userId?: string,
   inventoryContext?: {
     service: Service;
-    materialRecipes: MaterialRecipe[];
-    serviceRecipes: ServiceRecipe[];
     inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
   }
@@ -370,16 +316,6 @@ export const softDeleteServiceAdmin = async (
         batch,
         serviceItem.serviceId,
         serviceItem.serviceName,
-        inventoryContext.materialRecipes,
-        inventoryContext.inventoryItems,
-        inventoryContext.catalogServices
-      );
-      
-      batchRestoreConsumables(
-        batch,
-        serviceItem.serviceId,
-        serviceItem.serviceName,
-        inventoryContext.serviceRecipes,
         inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
@@ -409,8 +345,6 @@ export const permanentlyDeleteService = async (
   serviceId: string,
   inventoryContext?: {
     service: Service;
-    materialRecipes: MaterialRecipe[];
-    serviceRecipes: ServiceRecipe[];
     inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
   }
@@ -425,16 +359,6 @@ export const permanentlyDeleteService = async (
         batch,
         serviceItem.serviceId,
         serviceItem.serviceName,
-        inventoryContext.materialRecipes,
-        inventoryContext.inventoryItems,
-        inventoryContext.catalogServices
-      );
-      
-      batchRestoreConsumables(
-        batch,
-        serviceItem.serviceId,
-        serviceItem.serviceName,
-        inventoryContext.serviceRecipes,
         inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );

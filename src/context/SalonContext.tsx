@@ -5,12 +5,9 @@ import type {
   Expense,
   CatalogService,
   CatalogExtra,
-  MaterialRecipe,
-  ServiceRecipe,
-  Consumable,
-  ChemicalProduct,
   Toast,
   Client,
+  InventoryItem,
 } from "../types";
 
 // Definición completa de las props que manejará el contexto
@@ -23,12 +20,8 @@ export interface SalonContextType {
   expenses: Expense[];
   catalogServices: CatalogService[];
   catalogExtras: CatalogExtra[];
-  materialRecipes: MaterialRecipe[];
-  serviceRecipes: ServiceRecipe[];
-  consumables: Consumable[];
-  chemicalProducts: ChemicalProduct[];
   clients: Client[];
-  inventoryItems: any[]; // Unified inventory items
+  inventoryItems: InventoryItem[]; // Unified inventory items
   
   // History Pagination
   historyServices: Service[];
@@ -61,8 +54,8 @@ export interface SalonContextType {
 
   addCatalogService: (
     name: string,
-    category: "manicura" | "pedicura",
-    price: number
+    basePrice: number,
+    tenantId: string
   ) => Promise<string>;
   updateCatalogService: (
     id: string,
@@ -70,21 +63,10 @@ export interface SalonContextType {
   ) => Promise<void>;
   deleteCatalogService: (id: string) => Promise<void>;
 
-  addExtra: (name: string, price: number) => Promise<void>;
+  addExtra: (name: string, price: number, tenantId: string) => Promise<void>;
   updateExtra: (id: string, data: Partial<CatalogExtra>) => Promise<void>;
   deleteExtra: (id: string) => Promise<void>;
 
-  addConsumable: (data: any) => Promise<void>;
-  updateConsumable: (id: string, data: Partial<Consumable>) => Promise<void>;
-  deleteConsumable: (id: string) => Promise<void>;
-
-  addChemicalProduct: (data: any) => Promise<void>;
-  updateChemicalProduct: (
-    id: string,
-    updates: Partial<ChemicalProduct>,
-    currentProduct?: ChemicalProduct
-  ) => Promise<void>;
-  deleteChemicalProduct: (id: string) => Promise<void>;
   deleteClient: (clientId: string) => Promise<void>;
 }
 

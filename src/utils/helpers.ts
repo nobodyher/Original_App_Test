@@ -3,7 +3,8 @@ import type { AppUser } from "../types";
 export const clamp = (n: number, min: number, max: number) =>
   Math.min(max, Math.max(min, n));
 
-export const getRecipeCost = (_category?: string): number => {
+
+export const getRecipeCost = (): number => {
   return 0; // Legacy cost removed
 };
 
@@ -20,6 +21,7 @@ export const normalizeUser = (u: DocumentData & { id: string }): AppUser => {
   return {
     ...u, // Include everything else from Firestore (phoneNumber, birthDate, etc.)
     id: u.id,
+    tenantId: u.tenantId || "", // No default hardcoded value
     name: u.name ?? "Sin nombre",
     pin: String(u.pin ?? ""),
     role: u.role ?? "staff",

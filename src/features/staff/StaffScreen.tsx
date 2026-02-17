@@ -24,7 +24,7 @@ import type {
   ExtraItem,
   CatalogService,
   CatalogExtra,
-  MaterialRecipe,
+ 
   InventoryItem,
   Client,
   Toast,
@@ -39,7 +39,7 @@ interface StaffScreenProps {
   clients: Client[];
   catalogServices: CatalogService[];
   catalogExtras: CatalogExtra[];
-  materialRecipes: MaterialRecipe[];
+  
   inventoryItems: InventoryItem[];
   notification: Toast | null;
   showNotification: (message: string, type?: Toast["type"]) => void;
@@ -47,7 +47,7 @@ interface StaffScreenProps {
   addService: (
     user: AppUser,
     data: NewServiceState,
-    recipes: MaterialRecipe[],
+    
     inventoryItems: InventoryItem[],
     total: number,
   ) => Promise<void>;
@@ -75,7 +75,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   clients,
   catalogServices,
   catalogExtras,
-  materialRecipes,
+  
   inventoryItems,
   notification,
   showNotification,
@@ -88,7 +88,6 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
     services: [],
     extras: [],
     paymentMethod: "cash",
-    category: undefined,
   });
 
   const [showExtrasSelector, setShowExtrasSelector] = useState(false);
@@ -179,7 +178,6 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
       const updated = {
         ...prev,
         services: [...prev.services, newServiceItem],
-        category: (cs.category as "manicura" | "pedicura") || undefined,
       };
       console.log("Nuevo estado de servicio:", updated);
       return updated;
@@ -236,7 +234,6 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
       await addService(
         currentUser,
         newService,
-        materialRecipes,
         inventoryItems,
         totalCost,
       );
@@ -246,7 +243,6 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
         services: [],
         extras: [],
         paymentMethod: "cash",
-        category: undefined,
       });
       // Delay notification to ensure UI feedback is seen
       setTimeout(() => {

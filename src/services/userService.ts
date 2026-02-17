@@ -27,6 +27,7 @@ export const initializeDefaultUsers = async (): Promise<void> => {
         icon: "crown",
         commissionPct: 0,
         active: true,
+        tenantId: "base_oficial",
         createdAt: serverTimestamp(),
       },
       {
@@ -37,6 +38,7 @@ export const initializeDefaultUsers = async (): Promise<void> => {
         icon: "user",
         commissionPct: 35,
         active: true,
+        tenantId: "base_oficial",
         createdAt: serverTimestamp(),
       },
       {
@@ -47,6 +49,7 @@ export const initializeDefaultUsers = async (): Promise<void> => {
         icon: "user",
         commissionPct: 35,
         active: true,
+        tenantId: "base_oficial",
         createdAt: serverTimestamp(),
       },
     ];
@@ -65,11 +68,15 @@ export const initializeDefaultUsers = async (): Promise<void> => {
 };
 
 export const createNewUser = async (userData: Partial<AppUser>) => {
-  const { name, pin, commissionPct, color, phoneNumber, email, birthDate } =
+  const { name, pin, commissionPct, color, phoneNumber, email, birthDate, tenantId } =
     userData;
 
   if (!name || !pin || commissionPct === undefined) {
     throw new Error("Completa todos los campos obligatorios");
+  }
+
+  if (!tenantId) {
+    throw new Error("El ID de la organización (tenantId) es obligatorio");
   }
 
   const commPct =
@@ -99,6 +106,7 @@ export const createNewUser = async (userData: Partial<AppUser>) => {
     birthDate: birthDate || "",
     active: true,
     createdAt: serverTimestamp(),
+    tenantId: tenantId, 
   });
 };
 

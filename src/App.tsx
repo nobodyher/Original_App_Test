@@ -41,23 +41,29 @@ const App = () => {
   const { currentUser, users, loading, initialized, login, logout } =
     useAuth(authReady);
 
-  // ✅ CAMBIO 2: useSalonData solo corre si auth está lista E inicializado
+  // VERIFICACIÓN: Loguear tenantId para confirmar implementación
+  useEffect(() => {
+    if (currentUser) {
+      // Exponer user globalmente para facilitar depuración manual (solo dev)
+      (window as any).user = currentUser;
+    }
+  }, [currentUser]);
+
+  // ✅ CAMBIO 2: useSalonData solo corre si auth está lista E inicializado; Y pasamos currentUser
   const {
     services,
     expenses,
     catalogServices,
-    consumables,
     catalogExtras,
-    chemicalProducts,
-    materialRecipes,
-    serviceRecipes,
+    
+    
     clients,
     historyServices,
     loadHistory,
     loadingHistory,
     historyFullyLoaded,
     inventoryItems,
-  } = useSalonData(initialized && authReady);
+  } = useSalonData(initialized && authReady, currentUser);
 
   const [notification, setNotification] = useState<Toast | null>(null);
 
@@ -142,12 +148,9 @@ const App = () => {
                   expenses={expenses}
                   catalogServices={catalogServices}
                   catalogExtras={catalogExtras}
-                  materialRecipes={materialRecipes}
-                  serviceRecipes={serviceRecipes}
-                  consumables={consumables}
+                  
+                  
                   inventoryItems={inventoryItems}
-
-                  chemicalProducts={chemicalProducts}
                   clients={clients}
                   historyServices={historyServices}
                   loadHistory={loadHistory}
@@ -162,23 +165,26 @@ const App = () => {
                     salonService.permanentlyDeleteService
                   }
                   restoreDeletedService={salonService.restoreDeletedService}
-                  createNewUser={userService.createNewUser}
+                  createNewUser={(data) =>
+                    userService.createNewUser({
+                      ...data,
+                      tenantId: currentUser?.tenantId || "",
+                    })
+                  }
                   updateUser={userService.updateUser}
                   updateUserCommission={userService.updateUserCommission}
                   deactivateUser={userService.deactivateUser}
                   deleteUserPermanently={userService.deleteUserPermanently}
-                  addCatalogService={inventoryService.addCatalogService}
+                  addCatalogService={(name, price, tenantId) => 
+                    inventoryService.addCatalogService(name, price, tenantId)
+                  }
                   updateCatalogService={inventoryService.updateCatalogService}
                   deleteCatalogService={inventoryService.deleteCatalogService}
-                  addExtra={inventoryService.addExtra}
+                  addExtra={(name, price, tenantId) => 
+                    inventoryService.addExtra(name, price, tenantId)
+                  }
                   updateExtra={inventoryService.updateExtra}
                   deleteExtra={inventoryService.deleteExtra}
-                  addConsumable={inventoryService.addConsumable}
-                  updateConsumable={inventoryService.updateConsumable}
-                  deleteConsumable={inventoryService.deleteConsumable}
-                  addChemicalProduct={inventoryService.addChemicalProduct}
-                  updateChemicalProduct={inventoryService.updateChemicalProduct}
-                  deleteChemicalProduct={inventoryService.deleteChemicalProduct}
                   deleteClient={salonService.deleteClient}
                   onLogout={() => {
                     logout();
@@ -201,17 +207,17 @@ const App = () => {
                   clients={clients}
                   catalogServices={catalogServices}
                   catalogExtras={catalogExtras}
-                  materialRecipes={materialRecipes}
+                  
                   inventoryItems={inventoryItems}
                   notification={notification}
                   showNotification={showNotification}
                   onLogout={logout}
-                  addService={(user, data, recipes, items, total) =>
+                  addService={(user, data, items, total) =>
                     salonService.addService(
                       user,
                       data,
-                      recipes,
-                      serviceRecipes,
+                      
+                      
                       items,
                       catalogServices,
                       total,

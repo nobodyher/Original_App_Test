@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Crown, User, Lock, ArrowLeft, Delete } from "lucide-react";
+import { Lock, ArrowLeft, Delete } from "lucide-react";
 import NotificationToast from "../../components/ui/NotificationToast";
 import { Card } from "../../components/ui/Card";
 import type { AppUser, Toast } from "../../types";
@@ -22,12 +22,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   onLogin,
   showNotification,
   notification,
-  loading = false,
 }) => {
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
   const [pin, setPin] = useState("");
 
-  const activeUsers = users.filter((u) => u.active);
+  const activeUsers = users
+    .filter((u) => u.active)
+    .sort((a, b) => {
+      if (a.role === "owner" && b.role !== "owner") return -1;
+      if (a.role !== "owner" && b.role === "owner") return 1;
+      return 0; // Mantener orden original para el resto
+    });
 
   const handleUserClick = (user: AppUser) => {
     setSelectedUser(user);

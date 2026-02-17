@@ -10,6 +10,7 @@ import {
   startAfter,
   getDocs,
   QueryDocumentSnapshot,
+  where,
 } from "firebase/firestore";
 import type { DocumentData } from "firebase/firestore";
 import { db } from "../firebase";
@@ -17,29 +18,21 @@ import type {
   Service,
   Expense,
   CatalogService,
-  Consumable,
-  ServiceRecipe,
   CatalogExtra,
-  ChemicalProduct,
-  MaterialRecipe,
   Client,
+  AppUser,
+  InventoryItem,
 } from "../types";
 import { EXTRAS_CATALOG } from "../constants/catalog";
 import { COLLECTIONS } from "../constants/app";
 
-export const useSalonData = (initialized: boolean) => {
+export const useSalonData = (initialized: boolean, currentUser: AppUser | null) => {
   const [services, setServices] = useState<Service[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [catalogServices, setCatalogServices] = useState<CatalogService[]>([]);
-  const [consumables, setConsumables] = useState<Consumable[]>([]);
-  const [serviceRecipes, setServiceRecipes] = useState<ServiceRecipe[]>([]);
   const [catalogExtras, setCatalogExtras] = useState<CatalogExtra[]>([]);
-  const [chemicalProducts, setChemicalProducts] = useState<ChemicalProduct[]>(
-    [],
-  );
-  const [materialRecipes, setMaterialRecipes] = useState<MaterialRecipe[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
   // Pagination / History State
   const [historyServices, setHistoryServices] = useState<Service[]>([]);
@@ -57,10 +50,18 @@ export const useSalonData = (initialized: boolean) => {
 
   // Cargar servicios
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || !currentUser) return; // Wait for currentUser
 
+    const currentTenantId = currentUser.tenantId || "";
+    if (!currentTenantId) return; // Don't fetch if no tenant
+
+    
+    // We use a simple query first to avoid complex index requirements if possible, 
+    // but user requested .where(). If index is missing, it will log an error.
+    // Ideally: composite index on [tenantId, timestamp]
     const q = query(
       collection(db, COLLECTIONS.SERVICES),
+      where("tenantId", "==", currentTenantId),
       orderBy("timestamp", "desc"),
       limit(50)
     );
@@ -83,21 +84,26 @@ export const useSalonData = (initialized: boolean) => {
     );
 
     return () => unsub();
-  }, [initialized]);
+  }, [initialized, currentUser]);
 
   // Cargar historial bajo demanda
   const loadHistory = async () => {
-    if (loadingHistory || historyFullyLoaded) return;
+    if (loadingHistory || historyFullyLoaded || !currentUser) return;
 
     // Define pivot
     const pivot = lastVisible;
     if (!pivot) return;
+    
+    const currentTenantId = currentUser.tenantId || "";
+    if (!currentTenantId) return;
+
 
     setLoadingHistory(true);
     try {
       // Query para obtener el siguiente lote de historial
       const q = query(
         collection(db, COLLECTIONS.SERVICES),
+        where("tenantId", "==", currentTenantId),
         orderBy("timestamp", "desc"),
         startAfter(pivot),
         limit(50)
@@ -131,10 +137,15 @@ export const useSalonData = (initialized: boolean) => {
 
   // Cargar gastos
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || !currentUser) return;
+    
+    const currentTenantId = currentUser.tenantId || "";
+    if (!currentTenantId) return;
+
 
     const q = query(
       collection(db, COLLECTIONS.EXPENSES),
+      where("tenantId", "==", currentTenantId),
       orderBy("timestamp", "desc"),
     );
     const unsub = onSnapshot(
@@ -151,13 +162,18 @@ export const useSalonData = (initialized: boolean) => {
     );
 
     return () => unsub();
-  }, [initialized]);
+  }, [initialized, currentUser]);
 
   // Cargar catálogo de servicios
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || !currentUser) return;
+    const currentTenantId = currentUser.tenantId || "";
+    if (!currentTenantId) return;
+
+
     const q = query(
       collection(db, COLLECTIONS.CATALOG_SERVICES),
+      where("tenantId", "==", currentTenantId), // Strict filter
       orderBy("name", "asc"),
     );
     const unsub = onSnapshot(q, (snap) => {
@@ -167,60 +183,48 @@ export const useSalonData = (initialized: boolean) => {
       setCatalogServices(data);
     });
     return () => unsub();
-  }, [initialized]);
+  }, [initialized, currentUser]);
 
   // Cargar inventario unificado (Consumibles + Químicos)
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || !currentUser) return;
     
+    // STRICT MULTI-TENANT QUERY
+    // This assumes migration has been run for legacy items or they won't show up.
+    // User explicitly requested strict filtering to match rules.
+    const currentTenantId = currentUser.tenantId || "";
+    if (!currentTenantId) return;
+
+
     const q = query(
       collection(db, COLLECTIONS.INVENTORY),
+      where("tenantId", "==", currentTenantId),
       orderBy("name", "asc")
     );
     
     const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() })
+      const filteredData = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as InventoryItem
       );
-      setInventoryItems(data);
 
-      // Compatibilidad con la UI existente:
-      // Filtramos y asignamos a los estados antiguos
-      const legacyConsumables = data.filter(item => 
-        (item as any).type === "consumable" || (item as any).unit === "unidad"
-      ) as Consumable[];
-      
-      const legacyChemicals = data.filter(item => 
-        (item as any).type === "material" || ((item as any).unit !== "unidad" && (item as any).type !== "consumable")
-      ) as ChemicalProduct[];
-
-      setConsumables(legacyConsumables);
-      setChemicalProducts(legacyChemicals);
+      // No need for client-side filtering anymore since we rely on Firestore query
+      // but we keep the logic clean.
+      setInventoryItems(filteredData);
     });
     
     return () => unsub();
-  }, [initialized]);
+  }, [initialized, currentUser]);
 
-  // Cargar recetas
-  useEffect(() => {
-    if (!initialized) return;
-    const unsub = onSnapshot(
-      collection(db, COLLECTIONS.SERVICE_RECIPES),
-      (snap) => {
-        const data = snap.docs.map(
-          (d) => ({ id: d.id, ...d.data() }) as ServiceRecipe,
-        );
-        setServiceRecipes(data);
-      },
-    );
-    return () => unsub();
-  }, [initialized]);
 
   // Cargar extras
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || !currentUser) return;
+    const currentTenantId = currentUser.tenantId || "";
+    if (!currentTenantId) return;
+
     const q = query(
       collection(db, COLLECTIONS.CATALOG_EXTRAS),
+      where("tenantId", "==", currentTenantId),
       orderBy("name", "asc"),
     );
     const unsub = onSnapshot(q, async (snap) => {
@@ -250,28 +254,20 @@ export const useSalonData = (initialized: boolean) => {
       }
     });
     return () => unsub();
-  }, [initialized]);
+  }, [initialized, currentUser]);
 
-  // Legacy Chemical Products Effect Removed - Handled by Inventory Effect
-
-  // Cargar recetas de materiales
-  useEffect(() => {
-    if (!initialized) return;
-    const q = query(collection(db, COLLECTIONS.MATERIAL_RECIPES));
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as MaterialRecipe,
-      );
-      setMaterialRecipes(data);
-    });
-    return () => unsub();
-  }, [initialized]);
 
   // Cargar clientes
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || !currentUser) return;
+    
+    const currentTenantId = currentUser.tenantId || "";
+    if (!currentTenantId) return;
+
+    
     const q = query(
       collection(db, COLLECTIONS.CLIENTS),
+      where("tenantId", "==", currentTenantId), // Strict filter
       orderBy("name", "asc"),
     );
     const unsub = onSnapshot(q, (snap) => {
@@ -279,7 +275,7 @@ export const useSalonData = (initialized: boolean) => {
       setClients(data);
     });
     return () => unsub();
-  }, [initialized]);
+  }, [initialized, currentUser]);
 
   return {
     services,
@@ -288,16 +284,8 @@ export const useSalonData = (initialized: boolean) => {
     setExpenses,
     catalogServices,
     setCatalogServices,
-    consumables,
-    setConsumables,
-    serviceRecipes,
-    setServiceRecipes,
     catalogExtras,
     setCatalogExtras,
-    chemicalProducts,
-    setChemicalProducts,
-    materialRecipes,
-    setMaterialRecipes,
     clients,
     setClients,
     // History props

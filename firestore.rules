@@ -2,71 +2,66 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // 1. Función para saber si está logueado
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // 2. Función para saber si es el Dueño (Owner)
-    // Opción A: Si usas Custom Claims (más avanzado)
-    // function isOwner() {
-    //   return request.auth.token.role == 'owner';
-    // }
-    
-    // Opción B: Verificando el documento del usuario (Más fácil de implementar ahora)
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    // Funciones base para obtener los datos del usuario actual
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-    
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    function getUserTenantId() {
+      return getUserData().tenantId;
+    }
+
     function isOwner() {
       return isAuthenticated() && getUserRole() == 'owner';
     }
 
-    function isStaff() {
-      return isAuthenticated() && getUserRole() == 'staff';
+    // Validaciones Multi-Tenant
+    function isSameTenant() {
+      return resource.data.tenantId == getUserTenantId();
+    }
+
+    function isCreatingSameTenant() {
+      return request.resource.data.tenantId == getUserTenantId();
     }
 
     // --- REGLAS POR COLECCIÓN ---
 
-    // USERS: Solo el dueño puede crear/borrar usuarios.
-    // El staff puede leer su propio perfil.
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      // Un usuario puede leer su propio perfil o perfiles de su mismo tenant
+      allow read: if isAuthenticated() && (userId == request.auth.uid || isSameTenant());
       allow write: if isOwner(); 
-      // Opcional: Permitir al staff editar SU propio perfil (foto, etc)
-      // allow update: if request.auth.uid == userId;
     }
 
-    // SERVICES (Ventas):
-    // Staff puede LEER y CREAR ventas.
-    // Solo Owner puede BORRAR o EDITAR ventas pasadas (para evitar fraudes).
     match /services/{serviceId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated(); // Staff necesita crear ventas
-      allow update, delete: if isOwner();
+      allow read: if isAuthenticated() && isSameTenant();
+      allow create: if isAuthenticated() && isCreatingSameTenant();
+      allow update, delete: if isOwner() && isSameTenant();
     }
 
-    // INVENTARIO (Consumibles, Químicos, Catálogo):
-    // Staff solo puede LEER (para ver precios y stock).
-    // Solo Owner puede modificar el inventario (precios, stock manual).
-    // EXCEPCIÓN: Si tu app descuenta stock automáticamente desde el cliente,
-    // el staff necesita permiso de 'update' en consumibles/químicos.
-    match /consumables/{id} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated(); // Dejar abierto a staff si ellos descuentan stock al vender
+    
+    // Unified inventory collection (replaces consumables and chemical_products)
+    match /inventory/{id} {
+      allow read: if isAuthenticated() && isSameTenant();
+      allow create: if isAuthenticated() && isCreatingSameTenant();
+      allow update: if isAuthenticated() && isSameTenant() && isCreatingSameTenant();
+      allow delete: if isOwner() && isSameTenant();
     }
     
-    match /chemical_products/{id} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
     
     match /catalog_services/{id} {
-      allow read: if isAuthenticated();
-      allow write: if isOwner(); // Solo dueño cambia precios del menú
+      allow read: if isAuthenticated() && isSameTenant();
+      allow write: if isOwner();
     }
 
-    // Regla por defecto (Bloqueo de seguridad para lo demás)
+    // Regla por defecto de seguridad
     match /{document=**} {
       allow read, write: if isOwner();
     }

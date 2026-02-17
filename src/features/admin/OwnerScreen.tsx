@@ -61,10 +61,7 @@ const OwnerScreen: React.FC = () => {
     expenses,
     catalogServices,
     catalogExtras,
-    materialRecipes,
-    serviceRecipes,
-    consumables,
-    chemicalProducts,
+    
     clients,
     inventoryItems, // Unified items
     showNotification,
@@ -619,10 +616,8 @@ const OwnerScreen: React.FC = () => {
                     expenses={expenses}
                     users={users}
                     currentUser={currentUser}
-                    materialRecipes={materialRecipes}
                     catalogServices={catalogServices}
                     inventoryItems={inventoryItems}
-                    serviceRecipes={serviceRecipes}
                     showNotification={showNotification}
                     onNavigateToInventory={handleNavigateToInventory}
                     addExpense={addExpense}
@@ -658,10 +653,7 @@ const OwnerScreen: React.FC = () => {
                     users={users}
                     catalogServices={catalogServices}
                     catalogExtras={catalogExtras}
-                    materialRecipes={materialRecipes}
-                    serviceRecipes={serviceRecipes}
-                    consumables={consumables}
-                    chemicalProducts={chemicalProducts}
+                    
                     clients={clients}
                     inventoryItems={inventoryItems}
                     currentUser={currentUser}

@@ -1,5 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
-import { ROLES, PAYMENT_METHODS, CATEGORIES } from "../constants/app";
+import { ROLES, PAYMENT_METHODS } from "../constants/app";
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 
@@ -16,6 +16,7 @@ export type AppUser = {
   photoURL?: string;
 
   // Nuevos campos para el CRM de Staff:
+  tenantId: string; // Identificador del inquilino (ej: "base_oficial")
   phoneNumber?: string; // Para contacto
   email?: string; // Para contacto y notificaciones
   birthDate?: string; // Para recordatorios de cumpleaños (Formato ISO: YYYY-MM-DD)
@@ -53,9 +54,9 @@ export type Service = {
   userName: string;
   paymentMethod: PaymentMethod;
   commissionPct: number;
-  category?: (typeof CATEGORIES)[keyof typeof CATEGORIES];
   reposicion?: number;
   deleted?: boolean;
+  tenantId?: string; // Multi-tenant ID
 };
 
 export type CreateServicePayload = Omit<Service, "id" | "timestamp"> & {
@@ -92,31 +93,11 @@ export type Filters = {
 export type CatalogService = {
   id: string;
   name: string;
-  category: (typeof CATEGORIES)[keyof typeof CATEGORIES];
   basePrice: number;
   active: boolean;
+  tenantId: string;
   manualMaterials?: { materialId: string; qty: number }[]; // IDs de productos químicos y cantidad de uso
   manualConsumables?: RecipeItem[]; // IDs y cantidades de consumibles seleccionados manualmente
-};
-
-export type Consumable = {
-  id: string;
-  name: string;
-  unit: string;
-
-  // Inventory tracking
-  stockQty: number; // Cantidad actual en stock
-  minStockAlert: number; // Alerta de stock mínimo
-
-  // Purchase information
-  purchasePrice: number; // Precio de compra del paquete completo
-  packageSize: number; // Cantidad en el paquete (ej: 50 pares, 100 unidades)
-
-  // Legacy field (keep for backward compatibility)
-  unitCost?: number; // Deprecated: use purchasePrice/packageSize instead
-
-  active: boolean;
-  category?: string;
 };
 
 export type RecipeItem = {
@@ -124,45 +105,34 @@ export type RecipeItem = {
   qty: number;
 };
 
-export type ServiceRecipe = {
-  id: string;
-  serviceId: string;
-  items: RecipeItem[];
-};
-
 export type CatalogExtra = {
   id: string;
   name: string;
-  priceSuggested: number;
-  appliesToCategories: string[];
-  active: boolean;
   price?: number;
-};
-
-export type ChemicalProduct = {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: "ml" | "kg" | "L" | "g" | "unid";
-  purchasePrice: number;
-  yield: number;
-  costPerService: number;
-  stock: number;
-  minStock: number;
-  yieldPerUnit?: number; // Rendimiento por botella/unidad
-  currentYieldRemaining?: number; // Usos restantes de la botella actual
+  priceSuggested: number;
   active: boolean;
+  tenantId?: string;
+  createdAt?: any;
 };
 
+// @deprecated Legacy type - No longer used. Kept for backward compatibility with existing data.
+export type ServiceRecipe = {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  items: RecipeItem[];
+  createdAt?: any;
+};
+
+// @deprecated Legacy type - No longer used. Kept for backward compatibility with existing data.
 export type MaterialRecipe = {
   id: string;
   serviceId: string;
   serviceName: string;
-  chemicalIds: string[];
-  chemicalsCost: number;
+  materialIds: string[]; 
+  materialsCost: number; 
   disposablesCost: number;
   totalCost: number;
-  category: (typeof CATEGORIES)[keyof typeof CATEGORIES];
   active: boolean;
 };
 

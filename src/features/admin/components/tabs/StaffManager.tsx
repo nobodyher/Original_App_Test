@@ -84,10 +84,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     birthDate: "",
   });
 
-  // Edit Staff Slide-over State (if needed separately from StaffDetailView)
-  const [editingStaffItem, setEditingStaffItem] = useState<AppUser | null>(
-    null,
-  );
+
 
   // Loading States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,6 +122,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
         active: true,
         icon: "user",
         ow: "",
+        tenantId: currentUser?.tenantId || "",
       });
 
       setNewUser({
@@ -147,20 +145,7 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     }
   };
 
-  const handleUpdateUser = async (
-    userId: string,
-    updates: Partial<AppUser>,
-  ) => {
-    try {
-      await updateUser(userId, updates);
-      showNotification("Perfil de usuario actualizado");
-    } catch (error) {
-      console.error("Error actualizando usuario:", error);
-      const message =
-        error instanceof Error ? error.message : "Error al actualizar";
-      showNotification(message, "error");
-    }
-  };
+
 
   const handleUpdateStaff = async (updatedData: Partial<AppUser>) => {
     if (!selectedStaff) return;

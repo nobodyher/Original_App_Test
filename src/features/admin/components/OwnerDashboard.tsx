@@ -22,12 +22,12 @@ import type {
   AppUser,
   Service,
   Expense,
-  MaterialRecipe,
+  
   CatalogService,
   OwnerFilters,
   PaymentMethod,
   Toast,
-  ServiceRecipe,
+  
   InventoryItem,
 } from "../../../types";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
@@ -41,18 +41,18 @@ interface OwnerDashboardProps {
   expenses: Expense[];
   users: AppUser[];
   currentUser: AppUser | null;
-  materialRecipes: MaterialRecipe[];
+  
   catalogServices: CatalogService[];
   inventoryItems: InventoryItem[];
-  serviceRecipes: ServiceRecipe[];
+  
   showNotification: (message: string, type?: Toast["type"]) => void;
   onNavigateToInventory?: (tab: "inventory") => void;
   // Actions
   addExpense: (data: Omit<Expense, "id">) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   updateServiceCost: (id: string, cost: number) => Promise<void>;
-  softDeleteService: (id: string, userId?: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
-  permanentlyDeleteService: (id: string, inventoryContext?: { service: Service; materialRecipes: MaterialRecipe[]; serviceRecipes: ServiceRecipe[]; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
+  softDeleteService: (id: string, userId?: string, inventoryContext?: { service: Service; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
+  permanentlyDeleteService: (id: string, inventoryContext?: { service: Service; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
   restoreDeletedService: (id: string) => Promise<void>;
 }
 
@@ -69,10 +69,10 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   expenses,
   users,
   currentUser,
-  materialRecipes,
+  
   catalogServices,
   inventoryItems,
-  serviceRecipes,
+  
   showNotification,
   onNavigateToInventory,
   addExpense,
@@ -166,8 +166,6 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             // Pasar contexto de inventario para restaurar stock
             await softDeleteService(actionToConfirm.id, currentUser?.id, {
               service: serviceToDelete,
-              materialRecipes,
-              serviceRecipes,
               inventoryItems,
               catalogServices,
             });
@@ -187,8 +185,6 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             // Pasar contexto de inventario para restaurar stock
             await permanentlyDeleteService(actionToConfirm.id, {
               service: serviceToDelete,
-              materialRecipes,
-              serviceRecipes,
               inventoryItems,
               catalogServices,
             });
@@ -396,7 +392,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         (s.reposicion ||
           inventoryService.calculateTotalReplenishmentCost(
             s.services || [],
-            materialRecipes,
+            
             catalogServices,
             inventoryItems,
           ))
@@ -410,7 +406,6 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   }, [
     filteredServices,
     filteredExpenses,
-    materialRecipes,
     catalogServices,
     inventoryItems,
   ]);

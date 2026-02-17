@@ -22,10 +22,8 @@ import type {
   AppUser,
   CatalogService,
   CatalogExtra,
-  MaterialRecipe,
-  ServiceRecipe,
-  Consumable,
-  ChemicalProduct,
+  
+  
   Toast,
   Client,
   Service,
@@ -50,10 +48,8 @@ interface OwnerConfigTabProps {
   users: AppUser[];
   catalogServices: CatalogService[];
   catalogExtras: CatalogExtra[];
-  materialRecipes: MaterialRecipe[];
-  serviceRecipes: ServiceRecipe[];
-  consumables: Consumable[];
-  chemicalProducts: ChemicalProduct[];
+  
+  
   clients: Client[];
   currentUser: AppUser | null;
   transactions?: Service[];
@@ -74,11 +70,12 @@ interface OwnerConfigTabProps {
   deactivateUser: (userId: string) => Promise<void>;
   deleteUserPermanently: (userId: string) => Promise<void>;
 
+
   // Inventory/Catalog Actions
   addCatalogService: (
     name: string,
-    category: "manicura" | "pedicura",
     price: number,
+    tenantId: string
   ) => Promise<string>;
   updateCatalogService: (
     id: string,
@@ -86,7 +83,7 @@ interface OwnerConfigTabProps {
   ) => Promise<void>;
   deleteCatalogService: (id: string) => Promise<void>;
 
-  addExtra: (name: string, price: number) => Promise<void>;
+  addExtra: (name: string, price: number, tenantId: string) => Promise<void>;
   updateExtra: (id: string, data: Partial<CatalogExtra>) => Promise<void>;
   deleteExtra: (id: string) => Promise<void>;
   
@@ -97,10 +94,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   users,
   catalogServices,
   catalogExtras,
-  materialRecipes,
-  serviceRecipes,
-  consumables,
-  chemicalProducts,
+  
+  
   clients,
   currentUser,
   transactions = [],
@@ -125,10 +120,15 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   // ==========================================================================
   
   const handleAddInventory = async (product: any) => {
+    if (!currentUser?.tenantId) {
+      showNotification("Error: No se identificó la organización", "error");
+      return;
+    }
     try {
       await addDoc(collection(db, "inventory"), {
         ...product,
         active: true,
+        tenantId: currentUser.tenantId, 
         createdAt: serverTimestamp(),
       });
       showNotification("Producto agregado al inventario");
@@ -197,7 +197,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
 
   // Sync internal state with external prop changes (Sidebar navigation)
   useEffect(() => {
-    if (initialTab) {
+    if (initialTab && initialTab !== activeTab) {
       setActiveTab(initialTab);
     }
   }, [initialTab]);
@@ -344,13 +344,16 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
             {activeTab === "services" && (
               <ServicesManager
                 catalogServices={catalogServices}
-                materialRecipes={materialRecipes || []}
-                serviceRecipes={serviceRecipes || []}
-                consumables={consumables}
-                chemicalProducts={chemicalProducts}
+                
+                
                 inventoryItems={inventoryItems}
                 currentUser={currentUser}
-                addCatalogService={addCatalogService}
+                addCatalogService={async (name, price) => {
+                  if (!currentUser?.tenantId) {
+                    throw new Error("No se puede crear un servicio sin tenantId válido");
+                  }
+                  return addCatalogService(name, price, currentUser.tenantId);
+                }}
                 updateCatalogService={updateCatalogService}
                 deleteCatalogService={deleteCatalogService}
                 showNotification={showNotification}
@@ -386,7 +389,12 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
               <ExtrasManager
                 catalogExtras={catalogExtras}
                 currentUser={currentUser}
-                addExtra={addExtra}
+                addExtra={async (name, price) => {
+                  if (!currentUser?.tenantId) {
+                    throw new Error("No se puede crear un extra sin tenantId válido");
+                  }
+                  return addExtra(name, price, currentUser.tenantId);
+                }}
                 updateExtra={updateExtra}
                 deleteExtra={deleteExtra}
                 showNotification={showNotification}
@@ -414,6 +422,8 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         message={confirmConfig.message}
         isLoading={confirmConfig.isLoading}
       />
+      
+      
     </div>
   );
 };

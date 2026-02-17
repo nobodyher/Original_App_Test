@@ -13,7 +13,7 @@ interface LowStockItem {
   name: string;
   currentStock: number;
   minStock: number;
-  type: "consumable" | "chemical";
+  type: "consumable" | "material";
   tab: "inventory";
 }
 
@@ -31,7 +31,7 @@ const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
       name: item.name,
       currentStock: Math.floor(item.stock),
       minStock: item.minStock || 0,
-      type: item.type === "consumable" ? ("consumable" as const) : ("chemical" as const),
+      type: item.type === "consumable" ? ("consumable" as const) : ("material" as const),
       tab: "inventory" as const,
     }));
 
@@ -44,12 +44,12 @@ const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
 
     let text = `🛒 *LISTA DE COMPRAS - ${today}*\n\n`;
 
-    const lowStockChemicals = allLowStockItems.filter(i => i.type === "chemical");
+    const lowStockMaterials = allLowStockItems.filter(i => i.type === "material");
     const lowStockConsumables = allLowStockItems.filter(i => i.type === "consumable");
 
-    if (lowStockChemicals.length > 0) {
-      text += `🧪 *Químicos/Materiales:*\n`;
-      lowStockChemicals.forEach((item) => {
+    if (lowStockMaterials.length > 0) {
+      text += `🧪 *Materiales:*\n`;
+      lowStockMaterials.forEach((item) => {
         text += `- [ ] ${item.name}: ${item.currentStock}\n`;
       });
       text += `\n`;
