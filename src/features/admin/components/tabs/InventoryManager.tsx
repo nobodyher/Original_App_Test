@@ -12,8 +12,10 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
+import { openNewInventoryUnit } from "../../../../services/inventoryService";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -73,12 +75,18 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     title: string;
     message: string;
     variant: "info" | "danger";
+    onConfirm?: () => void;
+    showCancel?: boolean;
   }>({
     isOpen: false,
     title: "",
     message: "",
     variant: "danger",
+    showCancel: false,
   });
+
+  // New State for "Reset Content" in Edit Mode
+  const [resetContent, setResetContent] = useState(false);
 
   const closeAlert = () => setAlertConfig((prev) => ({ ...prev, isOpen: false }));
 
@@ -167,12 +175,49 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
       setFormData(initialFormState);
     }
     setIsModalOpen(true);
+    setResetContent(false); // Reset checkbox state on open
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingItem(null);
     setFormData(initialFormState);
+  };
+
+  const handleOpenUnit = (item: InventoryItem) => {
+    if (item.stock <= 0) {
+        setAlertConfig({
+            isOpen: true,
+            title: "Error",
+            message: "No hay unidades selladas en stock para abrir.",
+            variant: "danger",
+            showCancel: false,
+        });
+        return;
+    }
+
+    setAlertConfig({
+        isOpen: true,
+        title: "Abrir Nueva Unidad",
+        message: `¿Deseas abrir una nueva unidad de "${item.name}"? Esto restará 1 de tu stock disponible y reseteará el contenido actual al máximo.`,
+        variant: "info",
+        showCancel: true,
+        onConfirm: async () => {
+             try {
+                 await openNewInventoryUnit(item);
+                 setAlertConfig(prev => ({ ...prev, isOpen: false }));
+             } catch (error) {
+                 console.error("Error opening unit:", error);
+                 setAlertConfig({
+                    isOpen: true,
+                    title: "Error",
+                    message: "No se pudo abrir la unidad.",
+                    variant: "danger",
+                    showCancel: false,
+                });
+             }
+        }
+    });
   };
 
   /* ----------------------------------------------------------------------------------
@@ -232,6 +277,15 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         minStockAlert: minStock,
         active: true,
       };
+
+      // Handle Content Reset Logic
+      if (editingItem && !resetContent) {
+           // If NOT resetting, preserve existing currentContent
+           payload.currentContent = editingItem.currentContent && editingItem.currentContent > 0 
+                ? editingItem.currentContent 
+                : content; 
+      }
+      // If resetContent is TRUE (or new item), payload.currentContent is already set to 'content' from above initialization
 
       // 3. EXECUTE ACTION
       if (editingItem) {
@@ -472,6 +526,13 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                             <Edit2 size={18} />
                           </button>
                           <button
+                            onClick={() => handleOpenUnit(item)}
+                            className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors border border-transparent hover:border-orange-200"
+                            title="Abrir Nueva Unidad"
+                          >
+                            <RefreshCw size={18} />
+                          </button>
+                          <button
                             onClick={() => onDelete(item.id)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             title="Eliminar"
@@ -693,6 +754,24 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                 </div>
               </div>
 
+              {editingItem && (
+                  <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-800 mt-4">
+                    <input
+                      type="checkbox"
+                      id="resetContentDetails"
+                      checked={resetContent}
+                      onChange={(e) => setResetContent(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <label htmlFor="resetContentDetails" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                       ¿Resetear contenido al máximo?
+                       <span className="block text-xs text-gray-500 font-normal mt-0.5">
+                         Marca esto si el producto está nuevo/lleno (útil para correcciones).
+                       </span>
+                    </label>
+                  </div>
+              )}
+
             </div>
 
             {/* Footer */}
@@ -718,10 +797,10 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
       <ConfirmationModal
         isOpen={alertConfig.isOpen}
         onClose={closeAlert}
-        onConfirm={closeAlert}
+        onConfirm={alertConfig.onConfirm || closeAlert}
         title={alertConfig.title}
         message={alertConfig.message}
-        showCancel={false}
+        showCancel={alertConfig.showCancel}
         confirmText="OK"
         variant={alertConfig.variant}
       />

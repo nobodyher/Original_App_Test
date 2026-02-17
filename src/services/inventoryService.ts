@@ -161,20 +161,7 @@ export const deleteExtra = async (id: string): Promise<void> => {
 
 // ====== Helpers for Service Logic (Shared) ======
 
-// 1. DEDUCT CONSUMABLES (Unified)
-export const deductConsumables = async (
-  serviceId: string,
-  serviceName: string,
-  inventoryItems: InventoryItem[],
-  catalogServices: CatalogService[] = []
-): Promise<void> => {
-  try {
-    // catalogService removed - unused
-    // No consumables logic needed - removed
-  } catch (error) {
-    console.error('❌ Error descargando consumibles:', error);
-  }
-};
+
 
 export const calculateTotalReplenishmentCost = (
   services: ServiceItem[],
@@ -203,8 +190,8 @@ export const calculateTotalReplenishmentCost = (
         if (typeof item === 'string') {
             materialId = item;
         } else if (typeof item === 'object' && item !== null) {
-             materialId = (item as any).id || (item as any).materialId;
-             qty = (item as any).quantity || (item as any).qty || (item as any).amount || 1;
+             materialId = item.id || item.materialId || "";
+             qty = item.quantity || item.qty || item.amount || 1;
         }
 
         const product = inventoryItems.find(p => p.id === materialId || p.originalId === materialId);
@@ -361,19 +348,7 @@ export const restoreInventoryByRecipe = async (
 };
 
 
-export const restoreConsumables = async (
-  serviceId: string,
-  serviceName: string,
-  inventoryItems: InventoryItem[],
-  catalogServices: CatalogService[] = []
-): Promise<void> => {
-  try {
-     // catalogService removed - unused
-    // No consumables logic needed - removed
-  } catch (error) {
-      console.error("❌ Error restaurando consumibles:", error);
-  }
-};
+
 
 
 // ====== Consumables Helper Functions ======
@@ -464,18 +439,7 @@ export const batchDeductInventoryByRecipe = (
 };
 
 
-export const batchDeductConsumables = (
-  batch: WriteBatch,
-  serviceId: string,
-  serviceName: string,
-  inventoryItems: InventoryItem[],
-  catalogServices: CatalogService[] = []
-) => {
-  // 1. Buscar servicio en catÃ¡logo
-  // catalogService removed - unused
-  
-  // No consumables logic needed - removed
-};
+
 
 export const isConsumableLowStock = (item: InventoryItem): boolean => {
   return item.stock <= (item.minStock || 0);
@@ -556,17 +520,7 @@ export const batchRestoreInventoryByRecipe = (
 };
 
 
-export const batchRestoreConsumables = (
-  batch: WriteBatch,
-  serviceId: string,
-  serviceName: string,
-  inventoryItems: InventoryItem[],
-  catalogServices: CatalogService[] = []
-) => {
-  // 1. Buscar servicio en catÃ¡logo
-  // catalogService removed - unused
-  
-};
+
 
 
 // ====== Unified Inventory Management (New) ======
@@ -594,4 +548,21 @@ export const updateInventoryItem = async (
 
 export const deleteInventoryItem = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, INVENTORY_COLLECTION, id));
+};
+
+export const openNewInventoryUnit = async (item: InventoryItem): Promise<void> => {
+  if (item.stock <= 0) {
+    throw new Error("No hay unidades selladas en stock para abrir.");
+  }
+
+  const stock = item.stock - 1;
+  const content = item.content || item.quantity || item.packageSize || 0;
+
+  const updates: Partial<InventoryItem> = {
+    stock,
+    currentContent: content,
+    lastOpened: serverTimestamp(),
+  };
+
+  await updateDoc(doc(db, INVENTORY_COLLECTION, item.id), updates);
 };

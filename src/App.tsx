@@ -45,6 +45,7 @@ const App = () => {
   useEffect(() => {
     if (currentUser) {
       // Exponer user globalmente para facilitar depuración manual (solo dev)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).user = currentUser;
     }
   }, [currentUser]);

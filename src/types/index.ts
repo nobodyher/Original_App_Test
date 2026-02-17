@@ -181,4 +181,5 @@ export type InventoryItem = {
   needsReview?: boolean;
   originalId?: string;
   currentContent?: number; // Content remaining in the open package
+  lastOpened?: any; // Timestamp of when the current unit was opened
 };

@@ -66,7 +66,7 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
     new Set(),
   );
 
-  const ITEMS_PER_PAGE = 7;
+  const ITEMS_PER_PAGE = 25;
 
   // Helper for relative time
   const getTimeAgo = (dateStr?: string) => {
@@ -194,11 +194,11 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
 
 
       {/* Clients Table */}
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden h-[700px] flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto flex-1">
           <table className="w-full">
             {/* Table Header */}
-            <thead className="bg-surface-highlight">
+            <thead className="bg-surface-highlight sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-text-muted uppercase tracking-wider w-1/4">
                   Cliente
@@ -225,20 +225,22 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
             <tbody className="divide-y divide-border">
               {paginatedClients.length === 0 ? (
                 <tr>
-                  <td colSpan={4}>
-                    {clientsSearch ? (
-                      <EmptyState
-                        icon={Search}
-                        title="No se encontraron clientes"
-                        message={`No hay resultados para "${clientsSearch}"`}
-                      />
-                    ) : (
-                      <EmptyState
-                        icon={Users}
-                        title="No hay clientes registrados"
-                        message="Los clientes aparecerán aquí cuando se creen nuevos servicios."
-                      />
-                    )}
+                  <td colSpan={6} className="h-full">
+                    <div className="flex flex-col items-center justify-center text-center w-full py-20 h-full">
+                        {clientsSearch ? (
+                          <EmptyState
+                            icon={Search}
+                            title="No se encontraron clientes"
+                            message={`No hay resultados para "${clientsSearch}"`}
+                          />
+                        ) : (
+                          <EmptyState
+                            icon={Users}
+                            title="No hay clientes registrados"
+                            message="Los clientes aparecerán aquí cuando se creen nuevos servicios."
+                          />
+                        )}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -248,7 +250,7 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
                     className="group transition-colors duration-200 hover:bg-surface-highlight"
                   >
                     {/* Name */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-sm shadow-md">
@@ -268,7 +270,7 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
                     </td>
 
                     {/* Total Services (Visits) */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm border border-emerald-500/20">
                           🏅 {client.totalServices || 0} visitas
@@ -277,21 +279,21 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
                     </td>
 
                     {/* Total Spent */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                        <span className="font-black text-text-main text-base">
                          ${(client.totalSpent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                        </span>
                     </td>
 
                     {/* First Visit */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                       <span className="text-sm text-text-muted font-medium">
                         {client.firstVisit || "N/A"}
                       </span>
                     </td>
 
                      {/* Last Visit */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3">
                       <div className={`flex items-center gap-2 text-sm font-bold ${
                          getTimeAgo(client.lastVisit) === "Hoy" || getTimeAgo(client.lastVisit) === "Ayer" 
                          ? "text-primary-500" 
@@ -303,7 +305,7 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-3 text-right">
                       {currentUser?.role === "owner" && (
                         <button
                           onClick={() => handleDeleteClient(client.id)}

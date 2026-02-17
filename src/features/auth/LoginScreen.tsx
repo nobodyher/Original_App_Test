@@ -168,11 +168,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 <span className="text-lg font-bold text-text-muted group-hover:text-primary-500 transition-colors">
                   {user.name}
                 </span>
-                {user.role === "owner" && (
-                  <span className="mt-2 text-[10px] uppercase font-bold tracking-wider text-primary-500/70 border border-primary-500/20 px-2 py-0.5 rounded-full">
-                    Admin
-                  </span>
-                )}
+                <span className={`mt-2 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border transition-colors duration-300 group-hover:bg-surface-highlight/50
+                  ${
+                    user.role === "owner"
+                      ? "text-primary-500/70 border-primary-500/20"
+                      : "text-text-muted/70 border-border"
+                  }`}
+                >
+                  {user.role === "owner" ? "Admin" : "Staff"}
+                </span>
               </button>
             ))}
           </div>
