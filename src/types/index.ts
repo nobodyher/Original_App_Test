@@ -9,7 +9,8 @@ export type AppUser = {
   pin: string;
   role: Role;
   color: string;
-  ow: string;
+  /** @deprecated — not used in any component, kept for Firestore backward compatibility */
+  ow?: string;
   icon: "crown" | "user";
   commissionPct: number;
   active: boolean;
@@ -71,8 +72,9 @@ export type Expense = {
   description: string;
   category: string;
   amount: number;
-  staffId?: string; // ID del empleado que recibe el pago
-  registeredBy?: string; // ID del usuario que registró el gasto (Owner)
+  tenantId?: string;
+  staffId?: string;
+  registeredBy?: string;
   deleted?: boolean;
 };
 
@@ -117,7 +119,6 @@ export type CatalogExtra = {
   tenantId?: string;
   createdAt?: Timestamp | null;
 };
-
 
 
 export type MaterialInput =

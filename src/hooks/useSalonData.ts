@@ -50,15 +50,11 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
 
   // Cargar servicios
   useEffect(() => {
-    if (!initialized || !currentUser) return; // Wait for currentUser
+    if (!initialized || !currentUser) return;
 
     const currentTenantId = currentUser.tenantId || "";
-    if (!currentTenantId) return; // Don't fetch if no tenant
+    if (!currentTenantId) return;
 
-    
-    // We use a simple query first to avoid complex index requirements if possible, 
-    // but user requested .where(). If index is missing, it will log an error.
-    // Ideally: composite index on [tenantId, timestamp]
     const q = query(
       collection(db, COLLECTIONS.SERVICES),
       where("tenantId", "==", currentTenantId),
@@ -138,7 +134,7 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
   // Cargar gastos
   useEffect(() => {
     if (!initialized || !currentUser) return;
-    
+
     const currentTenantId = currentUser.tenantId || "";
     if (!currentTenantId) return;
 
@@ -167,13 +163,13 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
   // Cargar catálogo de servicios
   useEffect(() => {
     if (!initialized || !currentUser) return;
+
     const currentTenantId = currentUser.tenantId || "";
     if (!currentTenantId) return;
 
-
     const q = query(
       collection(db, COLLECTIONS.CATALOG_SERVICES),
-      where("tenantId", "==", currentTenantId), // Strict filter
+      where("tenantId", "==", currentTenantId),
       orderBy("name", "asc"),
     );
     const unsub = onSnapshot(q, (snap) => {
@@ -185,33 +181,23 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
     return () => unsub();
   }, [initialized, currentUser]);
 
-  // Cargar inventario unificado (Consumibles + Químicos)
+  // Cargar inventario
   useEffect(() => {
     if (!initialized || !currentUser) return;
-    
-    // STRICT MULTI-TENANT QUERY
-    // This assumes migration has been run for legacy items or they won't show up.
-    // User explicitly requested strict filtering to match rules.
+
     const currentTenantId = currentUser.tenantId || "";
     if (!currentTenantId) return;
-
 
     const q = query(
       collection(db, COLLECTIONS.INVENTORY),
       where("tenantId", "==", currentTenantId),
       orderBy("name", "asc")
     );
-    
-    const unsub = onSnapshot(q, (snap) => {
-      const filteredData = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as InventoryItem
-      );
 
-      // No need for client-side filtering anymore since we rely on Firestore query
-      // but we keep the logic clean.
-      setInventoryItems(filteredData);
+    const unsub = onSnapshot(q, (snap) => {
+      setInventoryItems(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as InventoryItem));
     });
-    
+
     return () => unsub();
   }, [initialized, currentUser]);
 
@@ -233,7 +219,7 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
       );
       setCatalogExtras(data);
 
-      // Sincronizar precios automáticamente desde EXTRAS_CATALOG
+      // Auto-sync prices from EXTRAS_CATALOG for items with no price set
       for (const extra of data) {
         const catalogExtra = EXTRAS_CATALOG.find((e) => e.id === extra.id);
         const currentPrice = extra.price || extra.priceSuggested || 0;
@@ -244,11 +230,8 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
               price: catalogExtra.priceSuggested,
               priceSuggested: catalogExtra.priceSuggested,
             });
-            console.log(
-              `✅ Sincronizado: ${extra.name} - $${catalogExtra.priceSuggested}`,
-            );
           } catch (error) {
-            console.error(`❌ Error sincronizando ${extra.name}:`, error);
+            console.error(`Error sincronizando precio de ${extra.name}:`, error);
           }
         }
       }
@@ -260,14 +243,13 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
   // Cargar clientes
   useEffect(() => {
     if (!initialized || !currentUser) return;
-    
+
     const currentTenantId = currentUser.tenantId || "";
     if (!currentTenantId) return;
 
-    
     const q = query(
       collection(db, COLLECTIONS.CLIENTS),
-      where("tenantId", "==", currentTenantId), // Strict filter
+      where("tenantId", "==", currentTenantId),
       orderBy("name", "asc"),
     );
     const unsub = onSnapshot(q, (snap) => {

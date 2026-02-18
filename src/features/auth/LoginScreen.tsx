@@ -179,7 +179,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               />
             </div>
             <h1 className="text-5xl text-text-main tracking-tight drop-shadow-lg font-bold">
-              <span className="text-primary-500">Voidly</span>
+              <span className="text-primary-500">Bienvenida</span>
             </h1>
             <p className="text-text-muted text-sm uppercase tracking-wider font-semibold">
               Selecciona tu usuario

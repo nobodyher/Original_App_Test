@@ -9,6 +9,7 @@ import {
 import { db } from "../firebase";
 import type { AppUser } from "../types";
 import { hashPin } from "../utils/security";
+import { COLLECTIONS } from "../constants/app";
 
 export const createNewUser = async (userData: Partial<AppUser>) => {
   const { name, pin, commissionPct, color, phoneNumber, email, birthDate, tenantId } =
@@ -37,7 +38,7 @@ export const createNewUser = async (userData: Partial<AppUser>) => {
 
   const hashedPin = await hashPin(pin.trim());
 
-  await addDoc(collection(db, "users"), {
+  await addDoc(collection(db, COLLECTIONS.USERS), {
     name: name.trim(),
     pin: hashedPin,
     role: "staff",
@@ -49,64 +50,33 @@ export const createNewUser = async (userData: Partial<AppUser>) => {
     birthDate: birthDate || "",
     active: true,
     createdAt: serverTimestamp(),
-    tenantId: tenantId, 
-  });
-};
-
-export const updateUserCommission = async (
-  userId: string,
-  newCommission: number,
-) => {
-  if (
-    !Number.isFinite(newCommission) ||
-    newCommission < 0 ||
-    newCommission > 100
-  ) {
-    throw new Error("Porcentaje inválido (0-100)");
-  }
-
-  await updateDoc(doc(db, "users", userId), {
-    commissionPct: newCommission,
-  });
-};
-
-export const deactivateUser = async (userId: string) => {
-  await updateDoc(doc(db, "users", userId), {
-    active: false,
+    tenantId,
   });
 };
 
 export const deleteUserPermanently = async (userId: string) => {
-  await deleteDoc(doc(db, "users", userId));
+  await deleteDoc(doc(db, COLLECTIONS.USERS, userId));
 };
 
 export const updateUser = async (userId: string, updates: Partial<AppUser>) => {
   try {
-    // 1. Clonar para evitar mutar el objeto original y permitir manipulación
-    const dataToUpdate: any = { ...updates };
+    const dataToUpdate: Record<string, unknown> = { ...updates };
 
-    // 2. Limpieza estricta de undefined para evitar errores en Firestore
+    // Remove undefined values — Firestore rejects them
     Object.keys(dataToUpdate).forEach((key) => {
-      if (dataToUpdate[key] === undefined) {
-        delete dataToUpdate[key];
-      }
+      if (dataToUpdate[key] === undefined) delete dataToUpdate[key];
     });
 
-    // Si no hay datos válidos para actualizar, retornar temprano
-    if (Object.keys(dataToUpdate).length === 0) {
-      return;
-    }
+    if (Object.keys(dataToUpdate).length === 0) return;
 
-    // 3. Validar Porcentaje de Comisión (si se está actualizando)
     if (dataToUpdate.commissionPct !== undefined) {
       const comm = Number(dataToUpdate.commissionPct);
       if (!Number.isFinite(comm) || comm < 0 || comm > 100) {
         throw new Error("El porcentaje de comisión debe estar entre 0 y 100.");
       }
-      dataToUpdate.commissionPct = comm; // Asegurar tipo numérico
+      dataToUpdate.commissionPct = comm;
     }
 
-    // 4. Validar PIN (si se está actualizando)
     if (dataToUpdate.pin !== undefined) {
       const pinStr = String(dataToUpdate.pin).trim();
       if (pinStr.length < 4) {
@@ -115,21 +85,15 @@ export const updateUser = async (userId: string, updates: Partial<AppUser>) => {
       dataToUpdate.pin = await hashPin(pinStr);
     }
 
-    // 5. Validar Nombre (si se está actualizando)
     if (dataToUpdate.name !== undefined) {
       const nameStr = String(dataToUpdate.name).trim();
-      if (!nameStr) {
-        throw new Error("El nombre no puede estar vacío.");
-      }
+      if (!nameStr) throw new Error("El nombre no puede estar vacío.");
       dataToUpdate.name = nameStr;
     }
 
-    // 6. Ejecutar actualización en Firestore
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, dataToUpdate);
+    await updateDoc(doc(db, COLLECTIONS.USERS, userId), dataToUpdate);
   } catch (error) {
-    // Loguear el error para depuración (puedes conectarlo a un servicio de logs externo si lo tienes)
-    console.error(`Error blindado en updateUser (User ID: ${userId}):`, error);
-    throw error; // Re-lanzar para que la UI pueda mostrar el mensaje
+    console.error(`Error en updateUser (${userId}):`, error);
+    throw error;
   }
 };

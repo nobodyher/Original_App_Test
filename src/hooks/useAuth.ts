@@ -8,42 +8,33 @@ export const useAuth = (enabled: boolean) => {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
-  // NUEVO: Flag para saber si Firebase ya nos respondió al menos una vez
   const [dataLoaded, setDataLoaded] = useState(false);
-
-  // State for tenant handling
   const [currentTenantId, setCurrentTenantId] = useState<string | null>(null);
 
-  // 1.5 Fetch Tenant ID (Securely)
+  // 1. Fetch tenantId from the authenticated user's Firestore document
   useEffect(() => {
     if (!enabled || !auth.currentUser) return;
-    
-    // We get the tenantId from the ACTUAL authenticated user document
-    // This allows us to satisfy the rule: allow read: if isSameTenant();
-    const fetchTenant = async () => {
-        try {
-             // We can read our OWN user document due to rules
-             // match /users/{userId} { allow read: if request.auth.uid == userId; }
-            const docRef = doc(db, "users", auth.currentUser!.uid);
-            const snapshot = await getDoc(docRef);
-            
-            if (snapshot.exists()) {
-                const userData = snapshot.data();
-                setCurrentTenantId(userData.tenantId || "");
-            } else {
-                console.warn("User document not found");
-                setCurrentTenantId("");
-            }
-        } catch (e) {
-            console.error("Error fetching user tenant:", e);
-            setCurrentTenantId(""); 
-        }
-    };
-    
-    fetchTenant();
-  }, [enabled]); // Run when auth is enabled/ready
 
-  // 2. Escuchar cambios (SOLO SI ESTÁ HABILITADO Y TENEMOS TENANT)
+    const fetchTenant = async () => {
+      try {
+        const docRef = doc(db, "users", auth.currentUser!.uid);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+          setCurrentTenantId(snapshot.data().tenantId || "");
+        } else {
+          console.warn("User document not found in Firestore");
+          setCurrentTenantId("");
+        }
+      } catch (e) {
+        console.error("Error fetching user tenant:", e);
+        setCurrentTenantId("");
+      }
+    };
+
+    fetchTenant();
+  }, [enabled]);
+
+  // 2. Listen for user changes filtered by tenant
   useEffect(() => {
     if (!enabled || !currentTenantId) return;
 
@@ -67,7 +58,6 @@ export const useAuth = (enabled: boolean) => {
         });
 
         setUsers(sortedData);
-        // ✅ CLAVE: Marcamos que ya recibimos datos reales
         setDataLoaded(true);
       },
       (error) => {
@@ -79,7 +69,7 @@ export const useAuth = (enabled: boolean) => {
     return () => unsub();
   }, [enabled, currentTenantId]);
 
-  // 3. Restaurar sesión con validación de expiración
+  // 3. Restore session and enforce 12-hour expiry
   useEffect(() => {
     if (dataLoaded) {
       const savedUserId = sessionStorage.getItem("salon_user_id");

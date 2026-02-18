@@ -105,7 +105,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
   // INVENTORY HANDLERS (Unified)
   // ==========================================================================
   
-  const handleAddInventory = async (product: any) => {
+  const handleAddInventory = async (product: Partial<InventoryItem>) => {
     if (!currentUser?.tenantId) {
       showNotification("Error: No se identificó la organización", "error");
       return;
@@ -114,7 +114,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
       await addDoc(collection(db, "inventory"), {
         ...product,
         active: true,
-        tenantId: currentUser.tenantId, 
+        tenantId: currentUser.tenantId,
         createdAt: serverTimestamp(),
       });
       showNotification("Producto agregado al inventario");
@@ -124,10 +124,9 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     }
   };
 
-  const handleUpdateInventory = async (id: string, updates: any) => {
+  const handleUpdateInventory = async (id: string, updates: Partial<InventoryItem>) => {
     try {
-      const docRef = doc(db, "inventory", id);
-      await updateDoc(docRef, updates);
+      await updateDoc(doc(db, "inventory", id), updates);
       showNotification("Producto actualizado");
     } catch (error) {
       console.error("Error updating inventory:", error);
@@ -310,11 +309,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
         <div className="h-full overflow-y-auto p-4 lg:p-8 scrollbar-hide">
           <div className="w-full max-w-full space-y-6">
             
-            {/* Admin Profile Section - Visible on all tabs for quick access */}
-
-            {/* Admin Profile Section - Visible on all tabs for quick access */}
-
-            {/* Catalog Tab (Unified Services & Extras) */}
+            {/* Catalog Tab */}
             {activeTab === "catalog" && (
               <CatalogManager
                 // Services props
