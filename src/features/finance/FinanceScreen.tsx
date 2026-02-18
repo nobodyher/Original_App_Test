@@ -163,7 +163,7 @@ const FinanceScreen: React.FC = () => {
     // 3. Subtract Paid Amounts
     filteredExpensesList.forEach((e) => {
       // Check for staffId priority, fallback to userId for legacy records
-      const targetStaffId = e.staffId || e.userId;
+      const targetStaffId = e.staffId;
       
       if ((e.category === "Comisiones" || e.category === "Sueldos") && targetStaffId) {
         if (stats[targetStaffId]) {
@@ -207,7 +207,7 @@ const FinanceScreen: React.FC = () => {
         const matchDateTo = !dateFilter.to || e.date <= dateFilter.to;
         
         // Filter by SubTab (General vs Payroll)
-        const isPayroll = !!(e.staffId || e.userId); // Check for staffId or legacy userId
+        const isPayroll = !!e.staffId;
         const matchSubTab = expenseSubTab === "payroll" ? isPayroll : !isPayroll;
 
         return matchDateFrom && matchDateTo && matchSubTab;
@@ -269,8 +269,7 @@ const FinanceScreen: React.FC = () => {
         description: newExpense.description,
         category: newExpense.category,
         amount: !newExpense.amount ? 0 : Number(newExpense.amount),
-        userId: newExpense.staffId, // Keep for legacy
-        staffId: newExpense.staffId, // New field
+        staffId: newExpense.staffId,
         registeredBy: currentUser?.id,
       });
 
@@ -312,9 +311,8 @@ const FinanceScreen: React.FC = () => {
         description,
         category,
         amount,
-        userId: selectedEmployeeId, // Keep for legacy/search
-        staffId: selectedEmployeeId, // New field
-        registeredBy: currentUser?.id, // Traceability
+        staffId: selectedEmployeeId,
+        registeredBy: currentUser?.id,
       });
       showNotification("Pago registrado con éxito");
     } catch (error) {
@@ -812,7 +810,7 @@ const FinanceScreen: React.FC = () => {
                                 <span className="font-bold text-text-main text-base">
                                   {expenseSubTab === 'payroll' ? (
                                       // Show Staff Name if available, else description
-                                      users.find(u => u.id === (expense.staffId || expense.userId))?.name || expense.description
+                                      users.find(u => u.id === expense.staffId)?.name || expense.description
                                   ) : (
                                       expense.description
                                   )}

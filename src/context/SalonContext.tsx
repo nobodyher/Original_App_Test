@@ -45,11 +45,6 @@ export interface SalonContextType {
 
   createNewUser: (data: Omit<AppUser, "id">) => Promise<void>;
   updateUser: (userId: string, data: Partial<AppUser>) => Promise<void>;
-  updateUserCommission: (
-    userId: string,
-    newCommission: number
-  ) => Promise<void>;
-  deactivateUser: (userId: string) => Promise<void>;
   deleteUserPermanently: (userId: string) => Promise<void>;
 
   addCatalogService: (

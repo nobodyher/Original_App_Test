@@ -90,8 +90,6 @@ const App = () => {
     createNewUser: (data: Parameters<typeof userService.createNewUser>[0]) =>
       userService.createNewUser({ ...data, tenantId: currentUser?.tenantId || "" }),
     updateUser: userService.updateUser,
-    updateUserCommission: userService.updateUserCommission,
-    deactivateUser: userService.deactivateUser,
     deleteUserPermanently: userService.deleteUserPermanently,
     addCatalogService: (name: string, price: number, tenantId: string) =>
       inventoryService.addCatalogService(name, price, tenantId),
