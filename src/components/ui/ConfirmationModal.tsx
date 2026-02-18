@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { X, AlertTriangle } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -41,9 +42,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   if (!isOpen && !isVisible) return null;
 
-  return (
+  return ReactDOM.createPortal(
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300 ${
         isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
       aria-labelledby="modal-title"
@@ -52,13 +53,13 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     >
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
         onClick={!isLoading ? onClose : undefined}
       />
 
       {/* Modal Panel */}
       <div
-        className={`relative w-full max-w-md bg-white rounded-xl shadow-xl transform transition-all duration-300 ${
+        className={`relative w-full max-w-md bg-surface border border-border rounded-xl shadow-xl transform transition-all duration-300 ${
           isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
         }`}
       >
@@ -66,7 +67,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         {!isLoading && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute top-4 right-4 text-text-muted hover:text-text-main transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -74,18 +75,22 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-red-100 rounded-full">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className={`p-3 rounded-full ${
+              variant === 'danger' ? 'bg-red-500/10' : 'bg-primary-500/10'
+            }`}>
+              <AlertTriangle className={`w-6 h-6 ${
+                variant === 'danger' ? 'text-red-500' : 'text-primary-500'
+              }`} />
             </div>
             <h3 
               id="modal-title" 
-              className="text-lg font-bold text-gray-900"
+              className="text-lg font-bold text-text-main"
             >
               {title}
             </h3>
           </div>
 
-          <p className="mb-8 text-gray-600 leading-relaxed">
+          <p className="mb-8 text-text-muted leading-relaxed">
             {message}
           </p>
 
@@ -94,7 +99,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               <button
                 onClick={onClose}
                 disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-sm font-medium text-text-main bg-surface-highlight border border-border rounded-lg hover:bg-surface-highlight/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancelar
               </button>
@@ -104,8 +109,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               disabled={isLoading}
               className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors min-w-[100px] justify-center ${
                 variant === 'danger' 
-                  ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500' 
-                  : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+                  ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' 
+                  : 'bg-primary-600 hover:bg-primary-700 focus:ring-primary-500'
               }`}
             >
               {isLoading ? (
@@ -123,7 +128,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

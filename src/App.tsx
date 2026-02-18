@@ -16,6 +16,7 @@ import * as expenseService from "./services/expenseService";
 import { SalonProvider } from "./context/SalonContext";
 
 import StaffScreen from "./features/staff/StaffScreen";
+import FinanceScreen from "./features/finance/FinanceScreen";
 import OwnerScreen from "./features/admin/OwnerScreen";
 import LoginScreen from "./features/auth/LoginScreen";
 
@@ -227,6 +228,66 @@ const App = () => {
                     )
                   }
                 />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/finance"
+            element={
+              <ProtectedRoute currentUser={currentUser} allowedRole="owner">
+                <SalonProvider
+                  users={users}
+                  currentUser={currentUser!}
+                  services={services}
+                  expenses={expenses}
+                  catalogServices={catalogServices}
+                  catalogExtras={catalogExtras}
+                  inventoryItems={inventoryItems}
+                  clients={clients}
+                  historyServices={historyServices}
+                  loadHistory={loadHistory}
+                  loadingHistory={loadingHistory}
+                  historyFullyLoaded={historyFullyLoaded}
+                  showNotification={showNotification}
+                  addExpense={(data) =>
+                    expenseService.addExpense(data, currentUser?.tenantId || "")
+                  }
+                  deleteExpense={expenseService.deleteExpense}
+                  updateServiceCost={salonService.updateServiceCost}
+                  softDeleteService={salonService.softDeleteServiceAdmin}
+                  permanentlyDeleteService={
+                    salonService.permanentlyDeleteService
+                  }
+                  restoreDeletedService={salonService.restoreDeletedService}
+                  createNewUser={(data) =>
+                    userService.createNewUser({
+                      ...data,
+                      tenantId: currentUser?.tenantId || "",
+                    })
+                  }
+                  updateUser={userService.updateUser}
+                  updateUserCommission={userService.updateUserCommission}
+                  deactivateUser={userService.deactivateUser}
+                  deleteUserPermanently={userService.deleteUserPermanently}
+                  addCatalogService={(name, price, tenantId) =>
+                    inventoryService.addCatalogService(name, price, tenantId)
+                  }
+                  updateCatalogService={inventoryService.updateCatalogService}
+                  deleteCatalogService={inventoryService.deleteCatalogService}
+                  addExtra={(name, price, tenantId) =>
+                    inventoryService.addExtra(name, price, tenantId)
+                  }
+                  updateExtra={inventoryService.updateExtra}
+                  deleteExtra={inventoryService.deleteExtra}
+                  deleteClient={salonService.deleteClient}
+                  onLogout={() => {
+                    logout();
+                    showNotification("Sesión cerrada correctamente", "info");
+                  }}
+                >
+                  <FinanceScreen />
+                </SalonProvider>
               </ProtectedRoute>
             }
           />

@@ -66,7 +66,7 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
     new Set(),
   );
 
-  const ITEMS_PER_PAGE = 25;
+  const ITEMS_PER_PAGE = 10;
 
   // Helper for relative time
   const getTimeAgo = (dateStr?: string) => {
@@ -325,7 +325,10 @@ export const ClientsManager: React.FC<ClientsManagerProps> = ({
 
         {/* Pagination (Simplified) */}
         {totalPages > 1 && (
-          <div className="flex justify-end items-center px-4 py-3 border-t border-border bg-surface-highlight/30">
+          <div className="flex justify-between items-center px-4 py-3 border-t border-border bg-surface-highlight/30">
+            <span className="text-xs text-text-muted font-medium">
+              Mostrando {Math.min((clientsPage - 1) * ITEMS_PER_PAGE + 1, filteredClients.length)} - {Math.min(clientsPage * ITEMS_PER_PAGE, filteredClients.length)} de {filteredClients.length}
+            </span>
             {/* Buttons only, no text */}
             <div className="flex gap-2">
               <button

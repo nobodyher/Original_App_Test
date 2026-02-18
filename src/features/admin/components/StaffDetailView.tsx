@@ -48,6 +48,8 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     birthDate: staff.birthDate || "",
     email: staff.email || "",
     commissionPct: staff.commissionPct || 0,
+    baseSalary: staff.baseSalary || 0,
+    paymentType: staff.paymentType || "commission",
     isActive: staff.active ?? true,
     photoURL: staff.photoURL || null,
     // Note: 'active' property in AppUser, 'isActive' in form.
@@ -63,6 +65,8 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         birthDate: staff.birthDate ? staff.birthDate.split("T")[0] : "", // Keep the split logic as it's better
         email: staff.email || "",
         commissionPct: staff.commissionPct || 0,
+        baseSalary: staff.baseSalary || 0,
+        paymentType: staff.paymentType || "commission",
         isActive: staff.active !== undefined ? staff.active : true,
         photoURL: staff.photoURL || null,
       });
@@ -96,7 +100,9 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         phoneNumber: formData.phoneNumber,
         email: formData.email,
         birthDate: formData.birthDate,
-        commissionPct: Number(formData.commissionPct),
+        commissionPct: formData.paymentType !== 'fixed' ? Number(formData.commissionPct) : 0,
+        baseSalary: formData.paymentType !== 'commission' ? Number(formData.baseSalary) : 0,
+        paymentType: formData.paymentType as 'commission' | 'fixed' | 'hybrid',
         active: formData.isActive,
         photoURL: finalPhotoURL || undefined,
       };
@@ -370,27 +376,81 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
               <div className="h-px bg-border my-4" />
 
-              {/* Commission */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-text-muted uppercase tracking-wider ml-1">
-                  % Comisión
-                </label>
-                <div className="relative">
-                  <Percent
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-                  />
-                  <input
-                    type="number"
-                    value={formData.commissionPct}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        commissionPct: Number(e.target.value),
-                      })
-                    }
-                    className="w-full pl-10 pr-4 py-2.5 bg-surface-highlight border border-border rounded-xl text-sm font-bold text-text-main focus:ring-2 focus:ring-primary-500/50 outline-none"
-                  />
+              {/* Payment Model Section */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold text-text-main">Modelo de Pago</h4>
+                
+                {/* Payment Type */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-text-muted uppercase tracking-wider ml-1 flex items-center gap-1">
+                    <DollarSign size={14} />
+                    Tipo de Pago
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['commission', 'fixed', 'hybrid'] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setFormData(prev => ({ ...prev, paymentType: type }))}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold uppercase transition-all ${
+                          formData.paymentType === type
+                            ? "bg-primary-600 text-white shadow-md"
+                            : "bg-surface-highlight text-text-muted hover:bg-surface-highlight/80"
+                        }`}
+                      >
+                        {type === 'commission' ? 'Comisión' : type === 'fixed' ? 'Fijo' : 'Híbrido'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Base Salary */}
+                  {(formData.paymentType === 'fixed' || formData.paymentType === 'hybrid') && (
+                    <div className="space-y-1 animate-in fade-in zoom-in-95">
+                      <label className="text-xs font-medium text-text-muted uppercase tracking-wider ml-1">
+                        Sueldo Base ($)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0.00"
+                        value={formData.baseSalary}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            baseSalary: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500/50 outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {/* Commission */}
+                  {(formData.paymentType === 'commission' || formData.paymentType === 'hybrid') && (
+                    <div className="space-y-1 animate-in fade-in zoom-in-95">
+                      <label className="text-xs font-medium text-text-muted uppercase tracking-wider ml-1">
+                        % Comisión
+                      </label>
+                      <div className="relative">
+                        <Percent
+                          size={16}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
+                        />
+                        <input
+                          type="number"
+                          value={formData.commissionPct}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              commissionPct: Number(e.target.value),
+                            })
+                          }
+                          className="w-full pl-10 pr-4 py-2 bg-surface-highlight border border-border rounded-lg text-sm font-bold text-text-main focus:ring-2 focus:ring-primary-500/50 outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

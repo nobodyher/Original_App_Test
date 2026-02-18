@@ -11,6 +11,7 @@ import {
   Lock,
   User,
   AlertTriangle,
+  DollarSign,
 } from "lucide-react";
 import { UserAvatar } from "../../../../components/ui/UserAvatar";
 import type { AppUser, Toast, Service } from "../../../../types";
@@ -79,12 +80,12 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
     name: "",
     pin: "",
     commissionPct: "",
+    baseSalary: "",
+    paymentType: "commission" as 'commission' | 'fixed' | 'hybrid',
     phone: "",
     email: "",
     birthDate: "",
   });
-
-
 
   // Loading States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,7 +114,9 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       await createNewUser({
         name: newUser.name,
         pin: newUser.pin,
-        commissionPct: parseFloat(newUser.commissionPct as string) || 0,
+        commissionPct: newUser.paymentType !== 'fixed' ? (parseFloat(newUser.commissionPct as string) || 0) : 0,
+        baseSalary: newUser.paymentType !== 'commission' ? (parseFloat(newUser.baseSalary as string) || 0) : 0,
+        paymentType: newUser.paymentType,
         phoneNumber: newUser.phone,
         email: newUser.email,
         birthDate: newUser.birthDate,
@@ -129,6 +132,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
         name: "",
         pin: "",
         commissionPct: "",
+        baseSalary: "",
+        paymentType: "commission",
         phone: "",
         email: "",
         birthDate: "",
@@ -144,8 +149,6 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
       setIsSubmitting(false);
     }
   };
-
-
 
   const handleUpdateStaff = async (updatedData: Partial<AppUser>) => {
     if (!selectedStaff) return;
@@ -380,85 +383,141 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                 )}
               </div>
 
-              {/* Commission */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-text-muted flex items-center gap-2">
-                  <Percent size={16} />
-                  Porcentaje de Comisión
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    placeholder="ej. 15"
-                    value={newUser.commissionPct}
-                    onChange={(e) =>
-                      setNewUser((prev) => ({
-                        ...prev,
-                        commissionPct: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-2 pr-8 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                  />
-                  <span className="absolute right-3 top-2.5 text-text-muted font-bold">
-                    %
-                  </span>
+              {/* Payment Model Section */}
+              <div className="space-y-4 pt-2 border-t border-border">
+                <h4 className="text-sm font-bold text-text-main">Modelo de Pago</h4>
+                
+                {/* Payment Type */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-muted flex items-center gap-2">
+                    <DollarSign size={16} />
+                    Tipo de Pago
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['commission', 'fixed', 'hybrid'] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setNewUser(prev => ({ ...prev, paymentType: type }))}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          newUser.paymentType === type
+                            ? "bg-primary-600 text-white shadow-md"
+                            : "bg-surface-highlight text-text-muted hover:bg-surface-highlight/80"
+                        }`}
+                      >
+                        {type === 'commission' ? 'Comisión' : type === 'fixed' ? 'Fijo' : 'Híbrido'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Base Salary */}
+                  {(newUser.paymentType === 'fixed' || newUser.paymentType === 'hybrid') && (
+                    <div className="space-y-2 animate-in fade-in zoom-in-95">
+                      <label className="text-sm font-medium text-text-muted">
+                        Sueldo Base ($)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0.00"
+                        value={newUser.baseSalary}
+                        onChange={(e) =>
+                          setNewUser((prev) => ({
+                            ...prev,
+                            baseSalary: e.target.value,
+                          }))
+                        }
+                        className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg focus:ring-4 focus:ring-primary-500/20 outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {/* Commission */}
+                  {(newUser.paymentType === 'commission' || newUser.paymentType === 'hybrid') && (
+                    <div className="space-y-2 animate-in fade-in zoom-in-95">
+                      <label className="text-sm font-medium text-text-muted flex items-center gap-2">
+                        <Percent size={16} />
+                        % Comisión
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          placeholder="ej. 15"
+                          value={newUser.commissionPct}
+                          onChange={(e) =>
+                            setNewUser((prev) => ({
+                              ...prev,
+                              commissionPct: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2 pr-8 bg-surface text-text-main border border-border rounded-lg focus:ring-4 focus:ring-primary-500/20 outline-none"
+                        />
+                        <span className="absolute right-3 top-2.5 text-text-muted font-bold">
+                          %
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Phone */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-text-muted flex items-center gap-2">
-                  <Phone size={16} />
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  placeholder="ej. +1 234 567 8900"
-                  value={newUser.phone}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({ ...prev, phone: e.target.value }))
-                  }
-                  className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                />
-              </div>
+              <div className="space-y-4">
+                {/* Phone */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-muted flex items-center gap-2">
+                    <Phone size={16} />
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="ej. +1 234 567 8900"
+                    value={newUser.phone}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, phone: e.target.value }))
+                    }
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                  />
+                </div>
 
-              {/* Email */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-text-muted flex items-center gap-2">
-                  <Mail size={16} />
-                  Email
-                </label>
-                <input
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  value={newUser.email}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                  className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                />
-              </div>
+                {/* Email */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-muted flex items-center gap-2">
+                    <Mail size={16} />
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="correo@ejemplo.com"
+                    value={newUser.email}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, email: e.target.value }))
+                    }
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                  />
+                </div>
 
-              {/* Birth Date */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-text-muted flex items-center gap-2">
-                  <Calendar size={16} />
-                  Fecha de Nacimiento
-                </label>
-                <input
-                  type="date"
-                  value={newUser.birthDate}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({
-                      ...prev,
-                      birthDate: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                />
+                {/* Birth Date */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-muted flex items-center gap-2">
+                    <Calendar size={16} />
+                    Fecha de Nacimiento
+                  </label>
+                  <input
+                    type="date"
+                    value={newUser.birthDate}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({
+                        ...prev,
+                        birthDate: e.target.value,
+                      }))
+                    }
+                    className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                  />
+                </div>
               </div>
             </div>
 
@@ -476,7 +535,8 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                   isSubmitting ||
                   !newUser.name ||
                   newUser.pin.length !== 4 ||
-                  !newUser.commissionPct
+                  (newUser.paymentType !== 'fixed' && !newUser.commissionPct) ||
+                  (newUser.paymentType !== 'commission' && !newUser.baseSalary)
                 }
                 className="flex-1 px-4 py-3 rounded-xl bg-primary-600 text-white font-bold shadow-lg shadow-primary-600/20 hover:bg-primary-700 hover:shadow-xl hover:brightness-110 transition-all duration-200 active:scale-95 active:shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
               >

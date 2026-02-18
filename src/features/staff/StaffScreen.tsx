@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { format } from "date-fns";
 import {
   Plus,
   Trash2,
@@ -83,7 +84,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   addService,
 }) => {
   const [newService, setNewService] = useState<NewServiceState>({
-    date: new Date().toISOString().split("T")[0],
+    date: format(new Date(), "yyyy-MM-dd"),
     client: "",
     services: [],
     extras: [],
@@ -126,7 +127,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
   };
 
   // Filter services for current staff user
-  const today = new Date().toISOString().split("T")[0];
+  const today = format(new Date(), "yyyy-MM-dd");
   const userServices = useMemo(() => {
     return services.filter((s) => {
       if (s.userId !== currentUser?.id || s.deleted) return false;
@@ -238,7 +239,7 @@ const StaffScreen: React.FC<StaffScreenProps> = ({
         totalCost,
       );
       setNewService({
-        date: new Date().toISOString().split("T")[0],
+        date: format(new Date(), "yyyy-MM-dd"),
         client: "",
         services: [],
         extras: [],

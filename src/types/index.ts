@@ -22,6 +22,10 @@ export type AppUser = {
   birthDate?: string; // Para recordatorios de cumpleaños (Formato ISO: YYYY-MM-DD)
   // commissionRate eliminado a favor de commissionPct
   isActive?: boolean; // Para "Soft Delete" (true = activo, false = inactivo/papelera)
+  
+  // Payment Info
+  paymentType?: 'commission' | 'fixed' | 'hybrid';
+  baseSalary?: number;
 };
 
 export type PaymentMethod =
@@ -69,7 +73,9 @@ export type Expense = {
   description: string;
   category: string;
   amount: number;
-  userId?: string;
+  userId?: string; // @deprecated Use staffId for payroll
+  staffId?: string; // ID del empleado que recibe el pago
+  registeredBy?: string; // ID del usuario que registró el gasto (Owner)
   deleted?: boolean;
 };
 
@@ -115,26 +121,7 @@ export type CatalogExtra = {
   createdAt?: any;
 };
 
-// @deprecated Legacy type - No longer used. Kept for backward compatibility with existing data.
-export type ServiceRecipe = {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  items: RecipeItem[];
-  createdAt?: any;
-};
 
-// @deprecated Legacy type - No longer used. Kept for backward compatibility with existing data.
-export type MaterialRecipe = {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  materialIds: string[]; 
-  materialsCost: number; 
-  disposablesCost: number;
-  totalCost: number;
-  active: boolean;
-};
 
 export type MaterialInput =
   | string
