@@ -74,8 +74,6 @@ const OwnerScreen: React.FC = () => {
     restoreDeletedService,
     createNewUser,
     updateUser,
-    updateUserCommission,
-    deactivateUser,
     deleteUserPermanently,
     addCatalogService,
     updateCatalogService,
@@ -453,8 +451,6 @@ const OwnerScreen: React.FC = () => {
                     showNotification={showNotification}
                     createNewUser={createNewUser}
                     updateUser={updateUser}
-                    updateUserCommission={updateUserCommission}
-                    deactivateUser={deactivateUser}
                     deleteUserPermanently={deleteUserPermanently}
                     addCatalogService={addCatalogService}
                     updateCatalogService={updateCatalogService}
