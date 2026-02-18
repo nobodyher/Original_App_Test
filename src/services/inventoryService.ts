@@ -362,7 +362,7 @@ export const batchDeductInventoryByRecipe = (
   inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ) => {
-  // 1. Buscar servicio en catÃ¡logo
+  // 1. Buscar servicio en catálogo
   const catalogService = catalogServices.find(
     (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
   );
@@ -396,7 +396,7 @@ export const batchDeductInventoryByRecipe = (
       let product = inventoryItems.find((p) => p.id === materialId || p.originalId === materialId);
       
       if (!product) {
-         // Fallback bÃºsqueda por nombre
+         // Fallback búsqueda por nombre
          const normalizedSearchName = materialId.toLowerCase().replace(/_/g, ' ').trim();
          product = inventoryItems.find(p => {
             const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
@@ -428,7 +428,7 @@ export const batchDeductInventoryByRecipe = (
       // 4. ACTUALIZAR BATCH
       // Usar INVENTORY_COLLECTION (que debe estar definido en el archivo)
       // Hardcoding string "inventory" just in case constant is far away or duplicated
-      const productRef = doc(db, "inventory", product.id);
+      const productRef = doc(db, INVENTORY_COLLECTION, product.id);
       
       batch.update(productRef, {
           stock: stock,
@@ -454,7 +454,7 @@ export const batchRestoreInventoryByRecipe = (
   inventoryItems: InventoryItem[],
   catalogServices: CatalogService[] = []
 ) => {
-  // 1. Buscar servicio en catÃ¡logo
+  // 1. Buscar servicio en catálogo
   const catalogService = catalogServices.find(
     (s) => s.id === serviceId || s.name.toLowerCase() === serviceName.toLowerCase()
   );
@@ -510,7 +510,7 @@ export const batchRestoreInventoryByRecipe = (
       }
 
       // 4. ACTUALIZAR BATCH
-      const productRef = doc(db, "inventory", product.id);
+      const productRef = doc(db, INVENTORY_COLLECTION, product.id);
       
       batch.update(productRef, {
           stock: stock,
@@ -564,7 +564,7 @@ export const openNewInventoryUnit = async (
   const stock = item.stock - 1;
   const content = item.content || item.quantity || item.packageSize || 0;
 
-  const updates: Partial<InventoryItem> = {
+  const updates = {
     stock,
     currentContent: content,
     lastOpened: serverTimestamp(),

@@ -367,12 +367,15 @@ export const StaffManager: React.FC<StaffManagerProps> = ({
                 </label>
                 <input
                   type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="••••"
                   maxLength={4}
                   value={newUser.pin}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({ ...prev, pin: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const onlyDigits = e.target.value.replace(/\D/g, "");
+                    setNewUser((prev) => ({ ...prev, pin: onlyDigits }));
+                  }}
                   className="w-full px-4 py-2 bg-surface text-text-main border border-border rounded-lg transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-mono text-2xl tracking-widest text-center"
                 />
                 {newUser.pin && newUser.pin.length !== 4 && (

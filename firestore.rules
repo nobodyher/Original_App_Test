@@ -37,7 +37,7 @@ service cloud.firestore {
     match /users/{userId} {
       // Un usuario puede leer su propio perfil o perfiles de su mismo tenant
       allow read: if isAuthenticated() && (userId == request.auth.uid || isSameTenant());
-      allow write: if isOwner(); 
+      allow write: if isOwner() && (userId == request.auth.uid || isSameTenant()); 
     }
 
     match /services/{serviceId} {
@@ -46,24 +46,54 @@ service cloud.firestore {
       allow update, delete: if isOwner() && isSameTenant();
     }
 
-    
+    match /expenses/{expenseId} {
+      allow read: if isAuthenticated() && isSameTenant();
+      allow create: if isAuthenticated() && isCreatingSameTenant();
+      allow update, delete: if isOwner() && isSameTenant();
+    }
+
+    match /clients/{clientId} {
+      allow read: if isAuthenticated() && isSameTenant();
+      allow create: if isAuthenticated() && isCreatingSameTenant();
+      allow update: if isAuthenticated() && isSameTenant();
+      allow delete: if isOwner() && isSameTenant();
+    }
+
     // Unified inventory collection (replaces consumables and chemical_products)
     match /inventory/{id} {
       allow read: if isAuthenticated() && isSameTenant();
       allow create: if isAuthenticated() && isCreatingSameTenant();
       allow update: if isAuthenticated() && isSameTenant() && isCreatingSameTenant();
       allow delete: if isOwner() && isSameTenant();
+
+      // Inventory history subcollection
+      match /history/{historyId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
     }
-    
-    
+
     match /catalog_services/{id} {
       allow read: if isAuthenticated() && isSameTenant();
+      // Write requires owner AND same tenant — prevents cross-tenant catalog writes
+      allow create: if isOwner() && isCreatingSameTenant();
+      allow update, delete: if isOwner() && isSameTenant();
+    }
+
+    match /catalog_extras/{id} {
+      allow read: if isAuthenticated() && isSameTenant();
+      allow create: if isOwner() && isCreatingSameTenant();
+      allow update, delete: if isOwner() && isSameTenant();
+    }
+
+    match /meta/{docId} {
+      allow read: if isAuthenticated();
       allow write: if isOwner();
     }
 
-    // Regla por defecto de seguridad
+    // Regla de denegación total por defecto — ninguna colección no listada es accesible
     match /{document=**} {
-      allow read, write: if isOwner();
+      allow read, write: if false;
     }
   }
 }

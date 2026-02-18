@@ -279,20 +279,15 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
 
   return {
     services,
-    setServices,
     expenses,
-    setExpenses,
     catalogServices,
-    setCatalogServices,
     catalogExtras,
-    setCatalogExtras,
     clients,
-    setClients,
     // History props
     historyServices,
     loadHistory,
     loadingHistory,
     historyFullyLoaded,
-    inventoryItems, // Nuevo estado expuesto
+    inventoryItems,
   };
 };

@@ -1,4 +1,4 @@
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp, FieldValue } from "firebase/firestore";
 import { ROLES, PAYMENT_METHODS } from "../constants/app";
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
@@ -15,14 +15,12 @@ export type AppUser = {
   active: boolean;
   photoURL?: string;
 
-  // Nuevos campos para el CRM de Staff:
-  tenantId: string; // Identificador del inquilino (ej: "base_oficial")
-  phoneNumber?: string; // Para contacto
-  email?: string; // Para contacto y notificaciones
-  birthDate?: string; // Para recordatorios de cumpleaños (Formato ISO: YYYY-MM-DD)
-  // commissionRate eliminado a favor de commissionPct
-  isActive?: boolean; // Para "Soft Delete" (true = activo, false = inactivo/papelera)
-  
+  // CRM de Staff:
+  tenantId: string;
+  phoneNumber?: string;
+  email?: string;
+  birthDate?: string; // Formato ISO: YYYY-MM-DD
+
   // Payment Info
   paymentType?: 'commission' | 'fixed' | 'hybrid';
   baseSalary?: number;
@@ -64,7 +62,7 @@ export type Service = {
 };
 
 export type CreateServicePayload = Omit<Service, "id" | "timestamp"> & {
-  timestamp?: any;
+  timestamp?: Timestamp | FieldValue | null;
 };
 
 export type Expense = {
@@ -73,7 +71,6 @@ export type Expense = {
   description: string;
   category: string;
   amount: number;
-  userId?: string; // @deprecated Use staffId for payroll
   staffId?: string; // ID del empleado que recibe el pago
   registeredBy?: string; // ID del usuario que registró el gasto (Owner)
   deleted?: boolean;
@@ -118,7 +115,7 @@ export type CatalogExtra = {
   priceSuggested: number;
   active: boolean;
   tenantId?: string;
-  createdAt?: any;
+  createdAt?: Timestamp | null;
 };
 
 
@@ -137,9 +134,9 @@ export type Client = {
   id: string;
   name: string;
   phone?: string;
-  email?: string; // Contacto
-  phoneNumber?: string; // Contacto
-  createdAt?: any; // Timestamp creation
+  email?: string;
+  phoneNumber?: string;
+  createdAt?: Timestamp | null;
   firstVisit: string;
   lastVisit: string;
   totalSpent: number;
@@ -151,22 +148,21 @@ export type Client = {
 export type InventoryItem = {
   id: string;
   name: string;
-  stock: number; // Unified stock
+  stock: number;
   minStock: number;
   unit: string;
-  content: number; // Unified quantity/packageSize
+  content: number;
   purchasePrice: number;
   active: boolean;
-  // Fallbacks for safety during transition
+  // Legacy fallbacks — kept for backward compatibility with older Firestore documents
   stockQty?: number;
   minStockAlert?: number;
   quantity?: number;
   packageSize?: number;
-  // Legacy differentiation
   type?: 'consumable' | 'material';
   unitCost?: number;
   needsReview?: boolean;
   originalId?: string;
-  currentContent?: number; // Content remaining in the open package
-  lastOpened?: any; // Timestamp of when the current unit was opened
+  currentContent?: number;
+  lastOpened?: Timestamp | null;
 };

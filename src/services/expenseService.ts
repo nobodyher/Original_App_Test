@@ -12,7 +12,7 @@ export const addExpense = async (
   expenseData: Omit<Expense, "id" | "deleted">,
   tenantId: string
 ): Promise<void> => {
-  const { date, description, category, amount, userId, staffId, registeredBy } = expenseData;
+  const { date, description, category, amount, staffId, registeredBy } = expenseData;
 
   if (!date || !description || !category || !amount) {
     throw new Error("Completa todos los campos");
@@ -32,9 +32,8 @@ export const addExpense = async (
     description: description.trim(),
     category,
     amount: numAmount,
-    userId: userId || null, // Keep for backward compatibility if needed, or null
-    staffId: staffId || null, // New field for staff identification
-    registeredBy: registeredBy || null, // Traceability
+    staffId: staffId || null,
+    registeredBy: registeredBy || null,
     tenantId,
     timestamp: serverTimestamp(),
   });

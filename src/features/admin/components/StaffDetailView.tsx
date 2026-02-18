@@ -57,8 +57,6 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
   // Sincronizar el formulario cada vez que cambie el usuario seleccionado
   useEffect(() => {
-    console.log("Datos recibidos en detalle:", staff); // Debug para ver si llegan los datos
-
     if (staff) {
       setFormData({
         phoneNumber: staff.phoneNumber || "",
@@ -360,8 +358,14 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                   </div>
                   <input
                     type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
                     value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
+                    onChange={(e) => {
+                      const onlyDigits = e.target.value.replace(/\D/g, "");
+                      setNewPin(onlyDigits);
+                    }}
                     placeholder="Escribe para cambiar el PIN..."
                     className="w-full pl-10 pr-10 py-2.5 bg-surface-highlight border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary-500/50 outline-none placeholder:text-text-muted/50"
                   />

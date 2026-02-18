@@ -183,13 +183,11 @@ export const addService = async (
     );
   });
 
-  // 4. EJECUTAR TODO DE UNA VEZ (El viaje) 🚀
   try {
     await batch.commit();
-    console.log("✅ Transacción completada en lote con éxito");
   } catch (error) {
-    console.error("❌ Error al procesar el lote:", error);
-    throw error; // Re-lanzar para que el UI muestre la notificación de error
+    console.error("Error al procesar el lote:", error);
+    throw error;
   }
 };
 
@@ -212,7 +210,6 @@ export const updateService = async (
   // CASO B: Actualización con cambios de servicios (Inventario)
   // 1. Restaurar stock de servicios antiguos
   if (inventoryContext.oldService && inventoryContext.oldService.services) {
-      console.log("🔄 Restaurando inventario de servicios antiguos:", inventoryContext.oldService.services);
       for (const oldItem of inventoryContext.oldService.services) {
           await restoreInventoryByRecipe(
               oldItem.serviceId,
@@ -225,7 +222,6 @@ export const updateService = async (
 
   // 2. Aplicar nuevos descuentos (si hay nuevos servicios)
   if (updated.services) {
-      console.log("📉 Descontando inventario de nuevos servicios:", updated.services);
       for (const newItem of updated.services) {
           await deductInventoryByRecipe(
               newItem.serviceId,
@@ -286,7 +282,6 @@ export const softDeleteService = async (
     
     // Ejecutar batch atómicamente
     await batch.commit();
-    console.log("✅ Servicio eliminado e inventario restaurado");
   } else {
     // Si no hay inventario, solo marcar como eliminado  
     await updateDoc(doc(db, "services", id), {
@@ -330,7 +325,6 @@ export const softDeleteServiceAdmin = async (
     
     // Ejecutar batch atómicamente
     await batch.commit();
-    console.log("✅ Servicio eliminado (Admin) e inventario restaurado");
   } else {
     // Si no hay inventario, solo marcar como eliminado  
     await updateDoc(doc(db, "services", id), {
@@ -369,7 +363,6 @@ export const permanentlyDeleteService = async (
     
     // Ejecutar batch atómicamente
     await batch.commit();
-    console.log("✅ Servicio eliminado permanentemente e inventario restaurado");
   } else {
     // Si no hay inventario, solo borrar documento
     await deleteDoc(doc(db, "services", serviceId));

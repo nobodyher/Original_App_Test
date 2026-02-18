@@ -1,7 +1,6 @@
 import {
   collection,
   doc,
-  runTransaction,
   serverTimestamp,
   addDoc,
   updateDoc,
@@ -10,62 +9,6 @@ import {
 import { db } from "../firebase";
 import type { AppUser } from "../types";
 import { hashPin } from "../utils/security";
-
-export const initializeDefaultUsers = async (): Promise<void> => {
-  await runTransaction(db, async (tx) => {
-    const metaRef = doc(db, "meta", "app");
-    const metaSnap = await tx.get(metaRef);
-
-    if (metaSnap.exists() && metaSnap.data()?.seeded) return;
-
-    const defaultUsers = [
-      {
-        name: "Principal",
-        pin: "2773",
-        role: "owner",
-        color: "from-purple-500 to-indigo-600",
-        icon: "crown",
-        commissionPct: 0,
-        active: true,
-        tenantId: "base_oficial",
-        createdAt: serverTimestamp(),
-      },
-      {
-        name: "Emily",
-        pin: "6578",
-        role: "staff",
-        color: "from-pink-500 to-rose-600",
-        icon: "user",
-        commissionPct: 35,
-        active: true,
-        tenantId: "base_oficial",
-        createdAt: serverTimestamp(),
-      },
-      {
-        name: "Damaris",
-        pin: "2831",
-        role: "staff",
-        color: "from-blue-500 to-cyan-600",
-        icon: "user",
-        commissionPct: 35,
-        active: true,
-        tenantId: "base_oficial",
-        createdAt: serverTimestamp(),
-      },
-    ];
-
-    defaultUsers.forEach((u) => {
-      const newRef = doc(collection(db, "users"));
-      tx.set(newRef, u);
-    });
-
-    tx.set(
-      metaRef,
-      { seeded: true, seededAt: serverTimestamp() },
-      { merge: true },
-    );
-  });
-};
 
 export const createNewUser = async (userData: Partial<AppUser>) => {
   const { name, pin, commissionPct, color, phoneNumber, email, birthDate, tenantId } =

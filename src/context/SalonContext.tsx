@@ -36,14 +36,14 @@ export interface SalonContextType {
   onLogout: () => void;
 
   // Acciones (Actions)
-  addExpense: (data: any) => Promise<void>;
+  addExpense: (data: Omit<Expense, "id">) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   updateServiceCost: (id: string, cost: number) => Promise<void>;
   softDeleteService: (id: string, userId?: string) => Promise<void>;
   permanentlyDeleteService: (id: string) => Promise<void>;
   restoreDeletedService: (id: string) => Promise<void>;
 
-  createNewUser: (data: any) => Promise<void>;
+  createNewUser: (data: Omit<AppUser, "id">) => Promise<void>;
   updateUser: (userId: string, data: Partial<AppUser>) => Promise<void>;
   updateUserCommission: (
     userId: string,

@@ -37,35 +37,22 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-  // ✅ CAMBIO 1: Pasamos la autorización al hook
   const authReady = !!isDeviceAuthorized;
-  const { currentUser, users, loading, initialized, login, logout } =
+  const { currentUser, users, loading, login, logout } =
     useAuth(authReady);
 
-  // VERIFICACIÓN: Loguear tenantId para confirmar implementación
-  useEffect(() => {
-    if (currentUser) {
-      // Exponer user globalmente para facilitar depuración manual (solo dev)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).user = currentUser;
-    }
-  }, [currentUser]);
-
-  // ✅ CAMBIO 2: useSalonData solo corre si auth está lista E inicializado; Y pasamos currentUser
   const {
     services,
     expenses,
     catalogServices,
     catalogExtras,
-    
-    
     clients,
     historyServices,
     loadHistory,
     loadingHistory,
     historyFullyLoaded,
     inventoryItems,
-  } = useSalonData(initialized && authReady, currentUser);
+  } = useSalonData(authReady, currentUser);
 
   const [notification, setNotification] = useState<Toast | null>(null);
 
@@ -78,7 +65,50 @@ const App = () => {
     setTimeout(() => setNotification(null), 2800);
   };
 
-  // ✅ CAMBIO 3: Solo inicializar catálogo si estamos autorizados (BLOQUE ÚNICO)
+  // Props compartidas para SalonProvider (admin y finance usan el mismo contexto)
+  const sharedProviderProps = {
+    users,
+    currentUser: currentUser!,
+    services,
+    expenses,
+    catalogServices,
+    catalogExtras,
+    inventoryItems,
+    clients,
+    historyServices,
+    loadHistory,
+    loadingHistory,
+    historyFullyLoaded,
+    showNotification,
+    addExpense: (data: Parameters<typeof expenseService.addExpense>[0]) =>
+      expenseService.addExpense(data, currentUser?.tenantId || ""),
+    deleteExpense: expenseService.deleteExpense,
+    updateServiceCost: salonService.updateServiceCost,
+    softDeleteService: salonService.softDeleteServiceAdmin,
+    permanentlyDeleteService: salonService.permanentlyDeleteService,
+    restoreDeletedService: salonService.restoreDeletedService,
+    createNewUser: (data: Parameters<typeof userService.createNewUser>[0]) =>
+      userService.createNewUser({ ...data, tenantId: currentUser?.tenantId || "" }),
+    updateUser: userService.updateUser,
+    updateUserCommission: userService.updateUserCommission,
+    deactivateUser: userService.deactivateUser,
+    deleteUserPermanently: userService.deleteUserPermanently,
+    addCatalogService: (name: string, price: number, tenantId: string) =>
+      inventoryService.addCatalogService(name, price, tenantId),
+    updateCatalogService: inventoryService.updateCatalogService,
+    deleteCatalogService: inventoryService.deleteCatalogService,
+    addExtra: (name: string, price: number, tenantId: string) =>
+      inventoryService.addExtra(name, price, tenantId),
+    updateExtra: inventoryService.updateExtra,
+    deleteExtra: inventoryService.deleteExtra,
+    deleteClient: salonService.deleteClient,
+    onLogout: () => {
+      logout();
+      showNotification("Sesión cerrada correctamente", "info");
+    },
+  };
+
+  // Solo inicializar catálogo si estamos autorizados (BLOQUE ÚNICO)
   useEffect(() => {
     if (authReady) {
       inventoryService
@@ -143,58 +173,7 @@ const App = () => {
             path="/admin"
             element={
               <ProtectedRoute currentUser={currentUser} allowedRole="owner">
-                <SalonProvider
-                  users={users}
-                  currentUser={currentUser!}
-                  services={services}
-                  expenses={expenses}
-                  catalogServices={catalogServices}
-                  catalogExtras={catalogExtras}
-                  
-                  
-                  inventoryItems={inventoryItems}
-                  clients={clients}
-                  historyServices={historyServices}
-                  loadHistory={loadHistory}
-                  loadingHistory={loadingHistory}
-                  historyFullyLoaded={historyFullyLoaded}
-                  showNotification={showNotification}
-                  addExpense={(data) => 
-                    expenseService.addExpense(data, currentUser?.tenantId || "")
-                  }
-                  deleteExpense={expenseService.deleteExpense}
-                  updateServiceCost={salonService.updateServiceCost}
-                  softDeleteService={salonService.softDeleteServiceAdmin}
-                  permanentlyDeleteService={
-                    salonService.permanentlyDeleteService
-                  }
-                  restoreDeletedService={salonService.restoreDeletedService}
-                  createNewUser={(data) =>
-                    userService.createNewUser({
-                      ...data,
-                      tenantId: currentUser?.tenantId || "",
-                    })
-                  }
-                  updateUser={userService.updateUser}
-                  updateUserCommission={userService.updateUserCommission}
-                  deactivateUser={userService.deactivateUser}
-                  deleteUserPermanently={userService.deleteUserPermanently}
-                  addCatalogService={(name, price, tenantId) => 
-                    inventoryService.addCatalogService(name, price, tenantId)
-                  }
-                  updateCatalogService={inventoryService.updateCatalogService}
-                  deleteCatalogService={inventoryService.deleteCatalogService}
-                  addExtra={(name, price, tenantId) => 
-                    inventoryService.addExtra(name, price, tenantId)
-                  }
-                  updateExtra={inventoryService.updateExtra}
-                  deleteExtra={inventoryService.deleteExtra}
-                  deleteClient={salonService.deleteClient}
-                  onLogout={() => {
-                    logout();
-                    showNotification("Sesión cerrada correctamente", "info");
-                  }}
-                >
+                <SalonProvider {...sharedProviderProps}>
                   <OwnerScreen />
                 </SalonProvider>
               </ProtectedRoute>
@@ -236,56 +215,7 @@ const App = () => {
             path="/finance"
             element={
               <ProtectedRoute currentUser={currentUser} allowedRole="owner">
-                <SalonProvider
-                  users={users}
-                  currentUser={currentUser!}
-                  services={services}
-                  expenses={expenses}
-                  catalogServices={catalogServices}
-                  catalogExtras={catalogExtras}
-                  inventoryItems={inventoryItems}
-                  clients={clients}
-                  historyServices={historyServices}
-                  loadHistory={loadHistory}
-                  loadingHistory={loadingHistory}
-                  historyFullyLoaded={historyFullyLoaded}
-                  showNotification={showNotification}
-                  addExpense={(data) =>
-                    expenseService.addExpense(data, currentUser?.tenantId || "")
-                  }
-                  deleteExpense={expenseService.deleteExpense}
-                  updateServiceCost={salonService.updateServiceCost}
-                  softDeleteService={salonService.softDeleteServiceAdmin}
-                  permanentlyDeleteService={
-                    salonService.permanentlyDeleteService
-                  }
-                  restoreDeletedService={salonService.restoreDeletedService}
-                  createNewUser={(data) =>
-                    userService.createNewUser({
-                      ...data,
-                      tenantId: currentUser?.tenantId || "",
-                    })
-                  }
-                  updateUser={userService.updateUser}
-                  updateUserCommission={userService.updateUserCommission}
-                  deactivateUser={userService.deactivateUser}
-                  deleteUserPermanently={userService.deleteUserPermanently}
-                  addCatalogService={(name, price, tenantId) =>
-                    inventoryService.addCatalogService(name, price, tenantId)
-                  }
-                  updateCatalogService={inventoryService.updateCatalogService}
-                  deleteCatalogService={inventoryService.deleteCatalogService}
-                  addExtra={(name, price, tenantId) =>
-                    inventoryService.addExtra(name, price, tenantId)
-                  }
-                  updateExtra={inventoryService.updateExtra}
-                  deleteExtra={inventoryService.deleteExtra}
-                  deleteClient={salonService.deleteClient}
-                  onLogout={() => {
-                    logout();
-                    showNotification("Sesión cerrada correctamente", "info");
-                  }}
-                >
+                <SalonProvider {...sharedProviderProps}>
                   <FinanceScreen />
                 </SalonProvider>
               </ProtectedRoute>

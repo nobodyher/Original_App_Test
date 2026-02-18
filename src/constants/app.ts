@@ -9,10 +9,7 @@ export const COLLECTIONS = {
   EXPENSES: "expenses",
   CATALOG_SERVICES: "catalog_services",
   CATALOG_EXTRAS: "catalog_extras",
-  CONSUMABLES: "consumables",
   CLIENTS: "clients",
-  SERVICE_RECIPES: "service_recipes",
-  MATERIAL_RECIPES: "material_recipes",
   INVENTORY: "inventory",
 } as const;
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Lock, ArrowLeft, Delete } from "lucide-react";
 import NotificationToast from "../../components/ui/NotificationToast";
 import { Card } from "../../components/ui/Card";
@@ -8,6 +8,13 @@ import ThemeToggle from "../../components/ui/ThemeToggle";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 import neonLogo from "../../assets/neon_logo.png";
 import { verifyPin } from "../../utils/security";
+import {
+  isLockedOut,
+  getLockoutSecondsRemaining,
+  recordFailedAttempt,
+  getRemainingAttempts,
+  clearAttempts,
+} from "../../utils/pinAttempts";
 
 interface LoginScreenProps {
   users: AppUser[];
@@ -25,18 +32,31 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 }) => {
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
   const [pin, setPin] = useState("");
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
 
   const activeUsers = users
     .filter((u) => u.active)
     .sort((a, b) => {
       if (a.role === "owner" && b.role !== "owner") return -1;
       if (a.role !== "owner" && b.role === "owner") return 1;
-      return 0; // Mantener orden original para el resto
+      return 0;
     });
+
+  // Lockout countdown timer
+  useEffect(() => {
+    if (!selectedUser) return;
+    const interval = setInterval(() => {
+      const remaining = getLockoutSecondsRemaining(selectedUser.id);
+      setLockoutSeconds(remaining);
+      if (remaining === 0) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [selectedUser]);
 
   const handleUserClick = (user: AppUser) => {
     setSelectedUser(user);
     setPin("");
+    setLockoutSeconds(getLockoutSecondsRemaining(user.id));
   };
 
   const handleBack = () => {
@@ -54,17 +74,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     setPin((prev) => prev.slice(0, -1));
   };
 
-  const handleLogin = React.useCallback(async () => {
+  const handleLogin = useCallback(async () => {
     if (!selectedUser) return;
+
+    // Check lockout before attempting
+    if (isLockedOut(selectedUser.id)) {
+      const secs = getLockoutSecondsRemaining(selectedUser.id);
+      showNotification(`Demasiados intentos. Espera ${secs}s`, "error");
+      setPin("");
+      return;
+    }
 
     let isValid = false;
     try {
-      // Retro-compatibilidad: Si el PIN empieza con $2, es un hash bcrypt
+      // All PINs must be bcrypt hashes (starting with $2)
       if (selectedUser.pin.startsWith("$2")) {
         isValid = await verifyPin(pin, selectedUser.pin);
       } else {
-        // Validación legada (texto plano)
-        isValid = pin === selectedUser.pin;
+        // PIN not hashed yet — reject and prompt admin to update
+        console.warn(`User ${selectedUser.name} has an unhashed PIN. Please update via admin panel.`);
+        isValid = false;
       }
     } catch (error) {
       console.error("Error verifying PIN:", error);
@@ -72,24 +101,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     }
 
     if (isValid) {
-      // ✅ Reset view to Dashboard on explicit login
+      clearAttempts(selectedUser.id);
+      // Reset view to Dashboard on explicit login
       localStorage.setItem("owner_currentView", "dashboard");
-      
       onLogin(selectedUser);
       showNotification(`¡Bienvenida ${selectedUser.name}!`);
       setPin("");
       setSelectedUser(null);
     } else {
-      showNotification("PIN incorrecto", "error");
+      recordFailedAttempt(selectedUser.id);
+      const remaining = getRemainingAttempts(selectedUser.id);
+      const locked = isLockedOut(selectedUser.id);
+
+      if (locked) {
+        setLockoutSeconds(getLockoutSecondsRemaining(selectedUser.id));
+        showNotification("Cuenta bloqueada por 30 segundos", "error");
+      } else if (remaining > 0) {
+        showNotification(`PIN incorrecto. Intentos restantes: ${remaining}`, "error");
+      } else {
+        showNotification("PIN incorrecto", "error");
+      }
       setPin("");
     }
   }, [selectedUser, pin, onLogin, showNotification]);
 
   // Keyboard support for PIN entry
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedUser) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isLockedOut(selectedUser.id)) return; // Block keyboard input during lockout
       // Numbers 0-9
       if (/^\d$/.test(e.key)) {
         setPin((prev) => (prev.length < 4 ? prev + e.key : prev));
@@ -229,13 +270,23 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 ))}
               </div>
 
-              {/* Keypad - Fixed readability */}
+              {/* Lockout Warning */}
+              {lockoutSeconds > 0 && (
+                <div className="mb-4 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
+                  <p className="text-red-400 text-sm font-medium">
+                    ⚠️ Bloqueado por {lockoutSeconds}s
+                  </p>
+                </div>
+              )}
+
+              {/* Keypad */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <button
                     key={num}
                     onClick={() => handleDigit(num.toString())}
-                    className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-2xl font-bold text-text-main hover:bg-surface-highlight hover:text-primary-600 hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
+                    disabled={lockoutSeconds > 0}
+                    className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-2xl font-bold text-text-main hover:bg-surface-highlight hover:text-primary-600 hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
                     {num}
                   </button>
@@ -243,13 +294,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 <div /> {/* Spacer */}
                 <button
                   onClick={() => handleDigit("0")}
-                  className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-2xl font-bold text-text-main hover:bg-surface-highlight hover:text-primary-600 hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md"
+                  disabled={lockoutSeconds > 0}
+                  className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-2xl font-bold text-text-main hover:bg-surface-highlight hover:text-primary-600 hover:border-primary-400 hover:scale-110 active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   0
                 </button>
                 <button
                   onClick={handleBackspace}
-                  className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-red-400 flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 hover:scale-105 active:scale-95 transition-all duration-200 shadow-sm"
+                  disabled={lockoutSeconds > 0}
+                  className="h-16 w-16 mx-auto rounded-full bg-surface border border-border text-red-400 flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 hover:scale-105 active:scale-95 transition-all duration-200 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   <Delete size={24} />
                 </button>
@@ -257,11 +310,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
               <button
                 onClick={handleLogin}
-                disabled={pin.length < 4}
+                disabled={pin.length < 4 || lockoutSeconds > 0}
                 className="w-full py-4 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-500 hover:shadow-lg hover:shadow-primary-500/20 disabled:opacity-50 disabled:shadow-none transition-all duration-300 flex items-center justify-center gap-2 transform active:scale-95"
               >
                 <Lock size={20} />
-                Acceder
+                {lockoutSeconds > 0 ? `Bloqueado (${lockoutSeconds}s)` : "Acceder"}
               </button>
             </Card>
           </div>

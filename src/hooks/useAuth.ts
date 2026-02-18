@@ -3,34 +3,16 @@ import { collection, query, orderBy, onSnapshot, where, doc, getDoc } from "fire
 import { db, auth } from "../firebase";
 import type { AppUser } from "../types";
 import { normalizeUser } from "../utils/helpers";
-import * as userService from "../services/userService";
 
 export const useAuth = (enabled: boolean) => {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
   // NUEVO: Flag para saber si Firebase ya nos respondió al menos una vez
   const [dataLoaded, setDataLoaded] = useState(false);
 
   // State for tenant handling
   const [currentTenantId, setCurrentTenantId] = useState<string | null>(null);
-
-  // 1. Inicializar usuarios (SOLO SI ESTÁ HABILITADO)
-  useEffect(() => {
-    if (!enabled) return;
-
-    const initUsers = async () => {
-      try {
-        await userService.initializeDefaultUsers();
-        setInitialized(true);
-      } catch (error) {
-        console.error("Error inicializando usuarios:", error);
-        setInitialized(true);
-      }
-    };
-    initUsers();
-  }, [enabled]);
 
   // 1.5 Fetch Tenant ID (Securely)
   useEffect(() => {
@@ -63,7 +45,7 @@ export const useAuth = (enabled: boolean) => {
 
   // 2. Escuchar cambios (SOLO SI ESTÁ HABILITADO Y TENEMOS TENANT)
   useEffect(() => {
-    if (!enabled || !initialized || !currentTenantId) return;
+    if (!enabled || !currentTenantId) return;
 
     // Use the fetched tenantId
     const q = query(
@@ -95,48 +77,57 @@ export const useAuth = (enabled: boolean) => {
     );
 
     return () => unsub();
-  }, [initialized, enabled, currentTenantId]);
+  }, [enabled, currentTenantId]);
 
-  // 3. Restaurar sesión (LÓGICA CORREGIDA & MEJORADA)
+  // 3. Restaurar sesión con validación de expiración
   useEffect(() => {
-    // Solo procedemos si YA recibimos datos de Firebase (dataLoaded)
     if (dataLoaded) {
       const savedUserId = sessionStorage.getItem("salon_user_id");
+      const savedLoginTime = sessionStorage.getItem("salon_login_time");
 
-      if (savedUserId && users.length > 0) {
+      // Expire sessions older than 12 hours
+      const SESSION_MAX_MS = 12 * 60 * 60 * 1000;
+      const sessionExpired =
+        !savedLoginTime ||
+        Date.now() - parseInt(savedLoginTime, 10) > SESSION_MAX_MS;
+
+      if (savedUserId && users.length > 0 && !sessionExpired) {
         const foundUser = users.find((u) => u.id === savedUserId);
-        
+
         if (foundUser) {
-          // ACTUALIZACIÓN EN TIEMPO REAL:
-          // Solo actualizamos si el usuario NO está logueado o si los datos han cambiado
-          // Para evitar loops infinitos, comparamos la versión stringificada
           const currentUserStr = JSON.stringify(currentUser);
           const foundUserStr = JSON.stringify(foundUser);
-          
           if (currentUserStr !== foundUserStr) {
-             setCurrentUser(foundUser);
+            setCurrentUser(foundUser);
           }
         } else {
-             // Si el usuario guardado ya no existe en la lista (fue borrado), logout
-            if (currentUser) {
-                setCurrentUser(null);
-                sessionStorage.removeItem("salon_user_id");
-            }
+          // User was deleted — force logout
+          if (currentUser) {
+            setCurrentUser(null);
+            sessionStorage.removeItem("salon_user_id");
+            sessionStorage.removeItem("salon_login_time");
+          }
         }
+      } else if (savedUserId && sessionExpired) {
+        // Session expired — clear storage silently
+        sessionStorage.removeItem("salon_user_id");
+        sessionStorage.removeItem("salon_login_time");
       }
-      
+
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users, dataLoaded]); // Removemos currentUser de dependencias para evitar el loop advertido, la lógica interna maneja la comparación
+  }, [users, dataLoaded]);
 
   const login = (user: AppUser) => {
     sessionStorage.setItem("salon_user_id", user.id);
+    sessionStorage.setItem("salon_login_time", Date.now().toString());
     setCurrentUser(user);
   };
 
   const logout = () => {
     sessionStorage.removeItem("salon_user_id");
+    sessionStorage.removeItem("salon_login_time");
     setCurrentUser(null);
   };
 
@@ -144,7 +135,6 @@ export const useAuth = (enabled: boolean) => {
     currentUser,
     users,
     loading,
-    initialized,
     login,
     logout,
   };
