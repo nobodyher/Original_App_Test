@@ -28,6 +28,7 @@ export const useAuth = (enabled: boolean) => {
           console.warn("User document not found in Firestore");
           setCurrentTenantId("");
           setUserDocMissing(true);
+          setLoading(false); // Important: stop loading so we can show DeletedAccountScreen
         }
       } catch (e) {
         console.error("Error fetching user tenant:", e);

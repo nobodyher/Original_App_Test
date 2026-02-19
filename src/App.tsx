@@ -150,12 +150,13 @@ const App = () => {
   // --- Cuenta Eliminada ---
   // Si está autenticado en Firebase (isDeviceAuthorized) pero Firestore dice explícitamente que no existe doc
   if (!loading && isDeviceAuthorized && userDocMissing) {
-    return <DeletedAccountScreen onLogout={logout} />;
+    return <DeletedAccountScreen />;
   }
 
   // --- Bloqueo por Suspensión ---
   // Si el tenant está suspendido y el usuario NO es el master admin, mostrar pantalla de bloqueo
-  if (isSuspended && currentUser && currentUser.id !== MASTER_ADMIN_UID) {
+  // IMPORTANTE: Bloqueamos incluso en la pantalla de Login (cuando currentUser es null)
+  if (isSuspended && auth.currentUser?.uid !== MASTER_ADMIN_UID) {
     return (
       <SuspendedAccountScreen
         onLogout={() => {
