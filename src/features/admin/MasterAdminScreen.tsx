@@ -6,7 +6,7 @@ import { db, firebaseConfig } from "../../firebase";
 import { hashPin } from "../../utils/security";
 import { 
   ShieldCheck, RefreshCw, CheckCircle2, XCircle, Loader2, Plus, Trash2, 
-  AlertTriangle 
+  AlertTriangle, Download 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/layout/Sidebar";
@@ -91,6 +91,61 @@ const MasterAdminScreen: React.FC<MasterAdminScreenProps> = ({ showNotification,
       showNotification("Error al actualizar el estado", "error");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const exportTenantData = async (tenantId: string, salonName: string) => {
+    try {
+      showNotification(`Iniciando exportación de ${salonName}...`, "info");
+      
+      const collectionsToExport = [
+        "services",
+        "inventory",
+        "expenses",
+        "clients",
+        "catalog_services",
+        "catalog_extras"
+      ];
+
+      const exportData: any = {
+        tenantId,
+        salonName,
+        exportedAt: new Date().toISOString(),
+        data: {}
+      };
+
+      // Ejecutar consultas en paralelo
+      const promises = collectionsToExport.map(async (colName) => {
+        const q = query(collection(db, colName), where("tenantId", "==", tenantId));
+        const snapshot = await getDocs(q);
+        return {
+          collection: colName,
+          data: snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+        };
+      });
+
+      const results = await Promise.all(promises);
+
+      results.forEach(result => {
+        exportData.data[result.collection] = result.data;
+      });
+
+      // Crear y descargar archivo
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `BACKUP_${salonName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      showNotification("Exportación completada exitosamente", "success");
+
+    } catch (error) {
+      console.error("Error exporting tenant data:", error);
+      showNotification("Error al exportar los datos", "error");
     }
   };
 
@@ -415,7 +470,16 @@ const MasterAdminScreen: React.FC<MasterAdminScreenProps> = ({ showNotification,
                                 {isActive ? "Activo" : "Suspendido"}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="px-6 py-4 text-right flex justify-end gap-2">
+                              {/* EXPORT BUTTON */}
+                              <button
+                                onClick={() => exportTenantData(tenant.id, tenant.name)}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border border-cyan-500/20 text-cyan-500 hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-all duration-200 disabled:opacity-50"
+                                title="Exportar datos (JSON)"
+                              >
+                                <Download size={14} />
+                              </button>
+
                               <button
                                 onClick={() => toggleStatus(tenant)}
                                 disabled={isUpdating}
@@ -425,13 +489,13 @@ const MasterAdminScreen: React.FC<MasterAdminScreenProps> = ({ showNotification,
                                     : "border-green-500/20 text-green-500 hover:bg-green-500/10"
                                 } disabled:opacity-50`}
                               >
-                                {isUpdating ? "Actualizando..." : isActive ? "Suspender" : "Activar"}
+                                {isUpdating ? "..." : isActive ? "Suspender" : "Activar"}
                               </button>
 
                               <button
                                 onClick={() => handleDeleteTenant(tenant)}
                                 disabled={isUpdating}
-                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border border-red-500/20 text-red-500 hover:bg-red-500/10 hover:border-red-500/40 transition-all duration-200 ml-2 disabled:opacity-50"
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border border-red-500/20 text-red-500 hover:bg-red-500/10 hover:border-red-500/40 transition-all duration-200 disabled:opacity-50"
                                 title="Eliminar permanentemente"
                               >
                                 <Trash2 size={13} />

@@ -11,6 +11,7 @@ import {
   getDocs,
   QueryDocumentSnapshot,
   where,
+  QueryConstraint,
 } from "firebase/firestore";
 import type { DocumentData } from "firebase/firestore";
 import { db } from "../firebase";
@@ -55,12 +56,19 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
     const currentTenantId = currentUser.tenantId || "";
     if (!currentTenantId) return;
 
-    const q = query(
-      collection(db, COLLECTIONS.SERVICES),
+    // Base constraints
+    const constraints: QueryConstraint[] = [
       where("tenantId", "==", currentTenantId),
       orderBy("timestamp", "desc"),
-      limit(50)
-    );
+      limit(50),
+    ];
+
+    // If staff, only show their own services
+    if (currentUser.role === "staff") {
+      constraints.push(where("userId", "==", currentUser.id));
+    }
+
+    const q = query(collection(db, COLLECTIONS.SERVICES), ...constraints);
     const unsub = onSnapshot(
       q,
       (snap) => {
@@ -97,13 +105,20 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
     setLoadingHistory(true);
     try {
       // Query para obtener el siguiente lote de historial
-      const q = query(
-        collection(db, COLLECTIONS.SERVICES),
+      // Base constraints for history
+      const constraints: QueryConstraint[] = [
         where("tenantId", "==", currentTenantId),
         orderBy("timestamp", "desc"),
         startAfter(pivot),
-        limit(50)
-      );
+        limit(50),
+      ];
+
+      // If staff, only load their own history
+      if (currentUser.role === "staff") {
+        constraints.push(where("userId", "==", currentUser.id));
+      }
+
+      const q = query(collection(db, COLLECTIONS.SERVICES), ...constraints);
 
       const snapshot = await getDocs(q);
       
@@ -143,6 +158,7 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
       collection(db, COLLECTIONS.EXPENSES),
       where("tenantId", "==", currentTenantId),
       orderBy("timestamp", "desc"),
+      limit(50)
     );
     const unsub = onSnapshot(
       q,
@@ -251,6 +267,7 @@ export const useSalonData = (initialized: boolean, currentUser: AppUser | null) 
       collection(db, COLLECTIONS.CLIENTS),
       where("tenantId", "==", currentTenantId),
       orderBy("name", "asc"),
+      limit(50)
     );
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Client);

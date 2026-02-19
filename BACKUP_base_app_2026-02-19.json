@@ -1,0 +1,1293 @@
+{
+  "tenantId": "base_oficial",
+  "salonName": "base_app",
+  "exportedAt": "2026-02-19T11:05:47.750Z",
+  "data": {
+    "services": [],
+    "inventory": [
+      {
+        "id": "04iRDMI8ELp2fYrsvR6D",
+        "name": "Moldes esculpir",
+        "currentContent": 2250,
+        "active": true,
+        "tenantId": "base_oficial",
+        "category": "General",
+        "cost": 8.5,
+        "originalId": "B8BW879ma0oDovuliYa5",
+        "minStock": 10,
+        "needsReview": false,
+        "unitCost": 0.003777777777777778,
+        "purchasePrice": 8.5,
+        "unit": "unidad",
+        "content": 2250,
+        "stock": 100,
+        "packageSize": 2250,
+        "minStockAlert": 10,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        },
+        "type": "consumable",
+        "stockQty": 100,
+        "quantity": 2250
+      },
+      {
+        "id": "2JHNXR64HuAdYa6Ym9Y6",
+        "needsReview": false,
+        "active": true,
+        "tenantId": "base_oficial",
+        "quantity": 30,
+        "cost": 11.65,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "packageSize": 30,
+        "minStock": 5,
+        "name": "Gel Builder",
+        "content": 30,
+        "type": "material",
+        "originalId": "IILLtyPVQ8QHLDnHETa5",
+        "unit": "g",
+        "unitCost": 0.38833333333333336,
+        "stockQty": 12,
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771413586,
+          "nanoseconds": 680000000
+        },
+        "purchasePrice": 11.65,
+        "stock": 11,
+        "minStockAlert": 5,
+        "currentContent": 30
+      },
+      {
+        "id": "4FWpdssI9QAFhvTf2Eyr",
+        "purchasePrice": 6.5,
+        "minStock": 10,
+        "tenantId": "base_oficial",
+        "cost": 6.5,
+        "name": "Guantes (par)",
+        "quantity": 100,
+        "minStockAlert": 10,
+        "category": "General",
+        "unitCost": 0.065,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        },
+        "active": true,
+        "unit": "unidad",
+        "needsReview": false,
+        "type": "consumable",
+        "stock": 100,
+        "originalId": "ImwaTILUAJOtYURAOUJd",
+        "packageSize": 100,
+        "content": 100,
+        "currentContent": 100,
+        "stockQty": 100
+      },
+      {
+        "id": "9zsWgirTKIAHsF6V82MV",
+        "type": "consumable",
+        "currentContent": 0,
+        "active": true,
+        "unit": "unidad",
+        "tenantId": "base_oficial",
+        "packageSize": 300,
+        "stockQty": 200,
+        "cost": 1,
+        "stock": 200,
+        "category": "General",
+        "name": "Palillo naranja",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 158000000
+        },
+        "unitCost": 0.006666666666666667,
+        "minStock": 20,
+        "minStockAlert": 20,
+        "content": 300,
+        "originalId": "oK8kK55DrFVXEGHkSj1h",
+        "purchasePrice": 2,
+        "needsReview": false,
+        "quantity": 300
+      },
+      {
+        "id": "DfCHKjiGKBltxYmabil1",
+        "type": "material",
+        "currentContent": 4999,
+        "originalId": "gdJBChnLFS338xYjp9tE",
+        "content": 5000,
+        "name": "Exfoliante",
+        "unit": "g",
+        "unitCost": 0.006,
+        "active": true,
+        "stock": 12,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "packageSize": 5000,
+        "minStock": 1,
+        "minStockAlert": 1,
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771352558,
+          "nanoseconds": 591000000
+        },
+        "tenantId": "base_oficial",
+        "cost": 30,
+        "quantity": 5000,
+        "needsReview": false,
+        "stockQty": 12,
+        "purchasePrice": 30
+      },
+      {
+        "id": "FavOycOG8dsW9ubmKQnd",
+        "content": 300,
+        "purchasePrice": 1,
+        "packageSize": 300,
+        "active": true,
+        "tenantId": "base_oficial",
+        "name": "Bastoncillos",
+        "currentContent": 300,
+        "stockQty": 10,
+        "stock": 10,
+        "cost": 1,
+        "quantity": 300,
+        "originalId": "1clLrpqdlj5zzVRLe5HP",
+        "type": "consumable",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        },
+        "minStock": 1,
+        "minStockAlert": 1,
+        "needsReview": false,
+        "unit": "unidad",
+        "category": "General",
+        "unitCost": 0.0033333333333333335
+      },
+      {
+        "id": "JgIJSuk9BaWirnlvK04S",
+        "currentContent": 100,
+        "stockQty": 13,
+        "category": "General",
+        "minStock": 10,
+        "packageSize": 100,
+        "active": true,
+        "name": "Algodón",
+        "stock": 12,
+        "needsReview": false,
+        "originalId": "RRx9Ywl0UrjIQD90wsmW",
+        "minStockAlert": 10,
+        "purchasePrice": 8.5,
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771355024,
+          "nanoseconds": 600000000
+        },
+        "type": "consumable",
+        "content": 100,
+        "cost": 8.5,
+        "unit": "g",
+        "tenantId": "base_oficial",
+        "unitCost": 0.085,
+        "quantity": 100,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        }
+      },
+      {
+        "id": "OYVLxNSN1EA2A6rErXGq",
+        "category": "General",
+        "quantity": 300,
+        "currentContent": 0,
+        "stock": 1000,
+        "active": true,
+        "purchasePrice": 1.25,
+        "minStock": 10,
+        "content": 300,
+        "unit": "unidad",
+        "packageSize": 300,
+        "name": "Toalla desechable",
+        "stockQty": 1000,
+        "minStockAlert": 10,
+        "tenantId": "base_oficial",
+        "unitCost": 0.004166666666666667,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        },
+        "cost": 1.25,
+        "type": "consumable",
+        "needsReview": false,
+        "originalId": "4N4c2dL5fFBy1brXjyCa"
+      },
+      {
+        "id": "PeNWlrKODywTuFi6Y6vh",
+        "purchasePrice": 6,
+        "minStock": 1,
+        "content": 500,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 375000000
+        },
+        "unitCost": 0.012,
+        "stock": 2.002,
+        "cost": 6,
+        "name": "Tips para Uñas",
+        "unit": "unidad",
+        "currentContent": 499,
+        "needsReview": false,
+        "type": "material",
+        "tenantId": "base_oficial",
+        "active": true,
+        "originalId": "6iImf5vtT2p8ac3NUkdU"
+      },
+      {
+        "id": "PgGUsXt6bEQure1agbf5",
+        "needsReview": false,
+        "unit": "ml",
+        "originalId": "QoV4rzm8ppEotkYuARa3",
+        "active": true,
+        "tenantId": "base_oficial",
+        "type": "material",
+        "name": "Gel Blanco (Francés)",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "stock": 8,
+        "content": 12,
+        "currentContent": 12,
+        "minStock": 2,
+        "purchasePrice": 2,
+        "cost": 2,
+        "unitCost": 0.16666666666666666
+      },
+      {
+        "id": "QBe2zAQ2s0eDrkvEQtYw",
+        "cost": 2.25,
+        "minStockAlert": 3,
+        "name": "Top Coat",
+        "purchasePrice": 2.25,
+        "active": true,
+        "stock": 11,
+        "quantity": 15,
+        "stockQty": 12,
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771413590,
+          "nanoseconds": 118000000
+        },
+        "unitCost": 0.15,
+        "needsReview": false,
+        "packageSize": 15,
+        "currentContent": 15,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "type": "material",
+        "unit": "ml",
+        "minStock": 3,
+        "originalId": "I4mqQsEBeXbjSsYzTb0s",
+        "tenantId": "base_oficial",
+        "content": 15
+      },
+      {
+        "id": "Qk2Mv8Ce5DiYPcd41f9U",
+        "tenantId": "base_oficial",
+        "cost": 10.25,
+        "minStock": 1,
+        "name": "Crema Humectante",
+        "originalId": "a5uNlvzZdGQNdZnfbHf1",
+        "type": "material",
+        "unitCost": 0.01025,
+        "active": true,
+        "needsReview": false,
+        "unit": "g",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "content": 1000,
+        "purchasePrice": 10.25,
+        "stock": 3
+      },
+      {
+        "id": "XYcn6YjMAKcQs3xRQcJI",
+        "name": "Base Rubber",
+        "unitCost": 0.22916666666666666,
+        "tenantId": "base_oficial",
+        "type": "material",
+        "unit": "ml",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "stock": 100,
+        "originalId": "X2rKITOLuEoKWuhKOaV5",
+        "cost": 2.75,
+        "active": true,
+        "purchasePrice": 2.75,
+        "content": 12,
+        "needsReview": false,
+        "minStock": 2
+      },
+      {
+        "id": "Z4MJAYHpu95EECPX8exT",
+        "unit": "ml",
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771413580,
+          "nanoseconds": 895000000
+        },
+        "cost": 2.5,
+        "type": "material",
+        "active": true,
+        "content": 12,
+        "name": "Color Gel (Tono base)",
+        "tenantId": "base_oficial",
+        "stockQty": 10,
+        "quantity": 12,
+        "currentContent": 12,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "purchasePrice": 2.5,
+        "needsReview": false,
+        "minStockAlert": 5,
+        "unitCost": 0.20833333333333334,
+        "stock": 9,
+        "originalId": "Ji26It111HQhPYLuG9pd",
+        "packageSize": 12,
+        "minStock": 5
+      },
+      {
+        "id": "Zh82Cw63Qcysu0KexjT9",
+        "purchasePrice": 3.75,
+        "name": "Alcohol",
+        "packageSize": 1000,
+        "currentContent": 1000,
+        "tenantId": "base_oficial",
+        "minStockAlert": 4,
+        "type": "material",
+        "minStock": 4,
+        "needsReview": false,
+        "active": true,
+        "originalId": "TC24NycqF9eWd6hjr33s",
+        "unitCost": 0.00375,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "content": 1000,
+        "unit": "ml",
+        "stock": 97,
+        "cost": 3.75,
+        "stockQty": 100,
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771413574,
+          "nanoseconds": 359000000
+        },
+        "quantity": 1000
+      },
+      {
+        "id": "ZuIW8ooIOPoZWzo5pbB0",
+        "stock": 100,
+        "active": true,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771265355,
+          "nanoseconds": 341000000
+        },
+        "content": 100,
+        "currentContent": 100,
+        "unit": "unid",
+        "name": "Gorro",
+        "purchasePrice": 3,
+        "minStock": 10,
+        "tenantId": "base_oficial",
+        "packageSize": 100,
+        "stockQty": 100,
+        "quantity": 100,
+        "minStockAlert": 10,
+        "unitCost": 0.03
+      },
+      {
+        "id": "bVplD1bQcQzXzoAsUM89",
+        "name": "Wipes",
+        "unit": "unidad",
+        "unitCost": 0.0175,
+        "minStock": 50,
+        "purchasePrice": 3.5,
+        "currentContent": 200,
+        "packageSize": 200,
+        "content": 200,
+        "needsReview": false,
+        "cost": 3.5,
+        "originalId": "4clbiTpv0MbKH8j37o6K",
+        "active": true,
+        "quantity": 200,
+        "category": "General",
+        "type": "consumable",
+        "minStockAlert": 50,
+        "stockQty": 1000,
+        "tenantId": "base_oficial",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        },
+        "stock": 1000
+      },
+      {
+        "id": "dr1JeUB3tdIzN0cJ9r09",
+        "unit": "unidad",
+        "tenantId": "base_oficial",
+        "quantity": 250,
+        "type": "consumable",
+        "content": 250,
+        "active": true,
+        "unitCost": 0.024,
+        "name": "Tips",
+        "packageSize": 250,
+        "purchasePrice": 6,
+        "minStock": 50,
+        "stockQty": 250,
+        "originalId": "IpcUwdhxGPiZKXDJ8AQR",
+        "cost": 6,
+        "minStockAlert": 50,
+        "category": "General",
+        "stock": 250,
+        "currentContent": 250,
+        "needsReview": false,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        }
+      },
+      {
+        "id": "iMrEDtq2kknaWKNh6Q1n",
+        "content": 12,
+        "stock": 88,
+        "stockQty": 90,
+        "originalId": "2h1i8uZqZAGFFJSOy7ic",
+        "packageSize": 12,
+        "type": "material",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 375000000
+        },
+        "purchasePrice": 2.5,
+        "active": true,
+        "cost": 2.5,
+        "quantity": 12,
+        "name": "Base Coat",
+        "minStockAlert": 3,
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771413576,
+          "nanoseconds": 749000000
+        },
+        "minStock": 3,
+        "unit": "ml",
+        "tenantId": "base_oficial",
+        "unitCost": 0.20833333333333334,
+        "currentContent": 12,
+        "needsReview": false
+      },
+      {
+        "id": "l3TDYeBL1TEeOxjoqynT",
+        "purchasePrice": 12,
+        "stockQty": 111,
+        "active": true,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771278117,
+          "nanoseconds": 633000000
+        },
+        "name": "segs",
+        "unit": "unid",
+        "content": 1111,
+        "packageSize": 1111,
+        "currentContent": 1111,
+        "quantity": 1111,
+        "minStock": 1,
+        "minStockAlert": 1,
+        "stock": 111,
+        "unitCost": 0.010801080108010801,
+        "tenantId": "base_oficial"
+      },
+      {
+        "id": "nZQMTgocMCOWLgD40alp",
+        "stock": 100,
+        "quantity": 100,
+        "tenantId": "base_oficial",
+        "content": 100,
+        "category": "General",
+        "originalId": "Uhifbgvwv7IvlnyCF84L",
+        "currentContent": 100,
+        "purchasePrice": 2,
+        "minStock": 20,
+        "type": "consumable",
+        "cost": 2,
+        "active": true,
+        "needsReview": false,
+        "unit": "unidad",
+        "name": "Mascarillas",
+        "minStockAlert": 20,
+        "packageSize": 100,
+        "stockQty": 100,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 158000000
+        },
+        "unitCost": 0.02
+      },
+      {
+        "id": "rDsqbJXj3ck6u9VyYljd",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 157000000
+        },
+        "packageSize": 100,
+        "type": "consumable",
+        "minStockAlert": 10,
+        "name": "Campo quirúrgico",
+        "needsReview": false,
+        "stockQty": 14,
+        "unitCost": 0.06,
+        "cost": 6,
+        "active": true,
+        "currentContent": 100,
+        "originalId": "Qp09d7wSiBnr1njgpSTN",
+        "category": "General",
+        "stock": 14,
+        "minStock": 10,
+        "content": 100,
+        "quantity": 100,
+        "tenantId": "base_oficial",
+        "purchasePrice": 6,
+        "unit": "unidad"
+      },
+      {
+        "id": "vK8qEq5nRm6iLJ6zR6qE",
+        "cost": 11.5,
+        "minStock": 2,
+        "purchasePrice": 11.5,
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "stock": 9,
+        "minStockAlert": 2,
+        "type": "material",
+        "stockQty": 10,
+        "currentContent": 30,
+        "packageSize": 30,
+        "content": 30,
+        "active": true,
+        "tenantId": "base_oficial",
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771413584,
+          "nanoseconds": 454000000
+        },
+        "unitCost": 0.38333333333333336,
+        "name": "Primer Extra Bond",
+        "quantity": 30,
+        "originalId": "pqOj1ddR3CfU2ovFtrqF",
+        "unit": "ml",
+        "needsReview": false
+      },
+      {
+        "id": "vXQWy4nRZnTay3isSVQJ",
+        "purchasePrice": 10.9,
+        "tenantId": "base_oficial",
+        "migratedAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771214936,
+          "nanoseconds": 376000000
+        },
+        "stockQty": 100,
+        "unit": "unidad",
+        "stock": 100,
+        "needsReview": false,
+        "minStock": 1,
+        "quantity": 300,
+        "type": "material",
+        "name": "Moldes para Uñas",
+        "packageSize": 300,
+        "cost": 10.9,
+        "active": true,
+        "currentContent": 300,
+        "originalId": "TuHLKtkugZHtQNk0EmAj",
+        "minStockAlert": 1,
+        "unitCost": 0.036333333333333336,
+        "content": 300,
+        "lastOpened": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771352567,
+          "nanoseconds": 135000000
+        }
+      }
+    ],
+    "expenses": [],
+    "clients": [
+      {
+        "id": "41SA351d8DZ05cASFuaB",
+        "lastVisit": "2026-02-17",
+        "active": true,
+        "totalServices": 1,
+        "phone": "",
+        "name": "xcvxv",
+        "tenantId": "base_oficial",
+        "totalSpent": 35,
+        "firstVisit": "2026-02-17"
+      },
+      {
+        "id": "7tWrtKHXuD3xNw8sAn2c",
+        "active": true,
+        "phone": "",
+        "totalServices": 1,
+        "name": "asdasdadadas",
+        "tenantId": "base_oficial",
+        "lastVisit": "2026-02-17",
+        "totalSpent": 35,
+        "firstVisit": "2026-02-17"
+      },
+      {
+        "id": "8galnMuyHzM9t4xuX5bn",
+        "tenantId": "base_oficial",
+        "totalSpent": 35,
+        "lastVisit": "2026-02-17",
+        "firstVisit": "2026-02-17",
+        "totalServices": 1,
+        "name": "fgfgh",
+        "active": true,
+        "phone": ""
+      },
+      {
+        "id": "Ak5Skf5b3iq4owSqEqgp",
+        "totalServices": 1,
+        "tenantId": "base_oficial",
+        "active": true,
+        "lastVisit": "2026-02-17",
+        "totalSpent": 35,
+        "firstVisit": "2026-02-17",
+        "phone": "",
+        "name": "dhfgh"
+      },
+      {
+        "id": "CbVw0mTl67l5EPgfyUHj",
+        "totalServices": 1,
+        "name": "asdsadada",
+        "lastVisit": "2026-02-17",
+        "firstVisit": "2026-02-17",
+        "active": true,
+        "totalSpent": 35,
+        "tenantId": "base_oficial",
+        "phone": ""
+      },
+      {
+        "id": "D5fWnO3mOmBa1K49n0NO",
+        "lastVisit": "2026-02-17",
+        "totalSpent": 35,
+        "firstVisit": "2026-02-17",
+        "tenantId": "base_oficial",
+        "active": true,
+        "totalServices": 1,
+        "phone": "",
+        "name": "sdasdadbdb"
+      },
+      {
+        "id": "Fn5r7nQ7QDOtTSSuUMUQ",
+        "active": true,
+        "phone": "",
+        "totalServices": 2,
+        "name": "asdad",
+        "lastVisit": "2026-02-17",
+        "tenantId": "base_oficial",
+        "totalSpent": 70,
+        "firstVisit": "2026-02-17"
+      },
+      {
+        "id": "J3aGRj6nHReswxHtS0jf",
+        "phone": "",
+        "firstVisit": "2026-02-17",
+        "totalServices": 1,
+        "tenantId": "base_oficial",
+        "name": "hjkh",
+        "active": true,
+        "totalSpent": 35,
+        "lastVisit": "2026-02-17"
+      },
+      {
+        "id": "LCEQpGc4KVDFN3TE9osW",
+        "firstVisit": "2026-02-17",
+        "totalSpent": 35,
+        "totalServices": 1,
+        "name": "hkjkk",
+        "tenantId": "base_oficial",
+        "active": true,
+        "phone": "",
+        "lastVisit": "2026-02-17"
+      },
+      {
+        "id": "cEPQYEsGZw5wa4gShsWB",
+        "active": true,
+        "firstVisit": "2026-02-17",
+        "totalSpent": 35,
+        "name": "fgjghj",
+        "totalServices": 1,
+        "lastVisit": "2026-02-17",
+        "phone": "",
+        "tenantId": "base_oficial"
+      },
+      {
+        "id": "jHHqbLSE854w2fD9TCPC",
+        "totalSpent": 35,
+        "name": "fgjfghjk",
+        "phone": "",
+        "tenantId": "base_oficial",
+        "totalServices": 1,
+        "lastVisit": "2026-02-17",
+        "firstVisit": "2026-02-17",
+        "active": true
+      },
+      {
+        "id": "p45l0bzypK9ixTQG4xAy",
+        "lastVisit": "2026-02-17",
+        "tenantId": "base_oficial",
+        "active": true,
+        "totalSpent": 35,
+        "totalServices": 1,
+        "name": "asdasd",
+        "firstVisit": "2026-02-17",
+        "phone": ""
+      },
+      {
+        "id": "sgknbUVe3DhLMy3vFGkR",
+        "lastVisit": "2026-02-17",
+        "totalSpent": 15,
+        "name": "fgjbn",
+        "active": true,
+        "phone": "",
+        "totalServices": 1,
+        "tenantId": "base_oficial",
+        "firstVisit": "2026-02-17"
+      },
+      {
+        "id": "z7yTGOfNJwNAlfxdMonz",
+        "tenantId": "base_oficial",
+        "totalServices": 1,
+        "firstVisit": "2026-02-17",
+        "totalSpent": 35,
+        "name": "ana",
+        "phone": "",
+        "active": true,
+        "lastVisit": "2026-02-17"
+      }
+    ],
+    "catalog_services": [
+      {
+        "id": "2RGwgHpWhyXPF30kzYbi",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "active": true,
+        "manualConsumables": [],
+        "tenantId": "base_oficial",
+        "name": "Uñas acrílicas (base)",
+        "manualMaterials": [],
+        "basePrice": 25
+      },
+      {
+        "id": "37uT7DbxcA97Dz8Ww2QQ",
+        "active": true,
+        "basePrice": 20,
+        "manualConsumables": [],
+        "tenantId": "base_oficial",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "name": "Rubber uñas cortas 1 tono",
+        "manualMaterials": [
+          "TC24NycqF9eWd6hjr33s",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "X2rKITOLuEoKWuhKOaV5",
+          "Ji26It111HQhPYLuG9pd",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "gdJBChnLFS338xYjp9tE"
+        ]
+      },
+      {
+        "id": "4zIT0MynmMSzeWe5i8Ds",
+        "name": "segs 1",
+        "active": true,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1771314953,
+          "nanoseconds": 952000000
+        },
+        "manualMaterials": [
+          {
+            "qty": 5,
+            "materialId": "Zh82Cw63Qcysu0KexjT9"
+          }
+        ],
+        "tenantId": "base_oficial",
+        "basePrice": 12
+      },
+      {
+        "id": "8nVYCdQ0OxPG7Rpnk0du",
+        "name": "Gel builder 1 tono",
+        "basePrice": 35,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "tenantId": "base_oficial",
+        "manualConsumables": [],
+        "manualMaterials": [
+          "IILLtyPVQ8QHLDnHETa5",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "2h1i8uZqZAGFFJSOy7ic",
+          "Ji26It111HQhPYLuG9pd",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "gdJBChnLFS338xYjp9tE"
+        ],
+        "active": true
+      },
+      {
+        "id": "9krasP7M3y0iO4HTrkTi",
+        "manualConsumables": [],
+        "tenantId": "base_oficial",
+        "name": "Manicura limpieza",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "manualMaterials": [],
+        "active": true,
+        "basePrice": 7
+      },
+      {
+        "id": "FoGgexoVs76hGmqW89Zg",
+        "tenantId": "base_oficial",
+        "manualConsumables": [],
+        "basePrice": 25,
+        "name": "Rubber uñas largas 1 tono",
+        "manualMaterials": [
+          "TC24NycqF9eWd6hjr33s",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "X2rKITOLuEoKWuhKOaV5",
+          "Ji26It111HQhPYLuG9pd",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "gdJBChnLFS338xYjp9tE"
+        ],
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "active": true
+      },
+      {
+        "id": "OCZ0WktyU8xflSz9nGv0",
+        "manualMaterials": [
+          "TC24NycqF9eWd6hjr33s",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "2h1i8uZqZAGFFJSOy7ic",
+          "Ji26It111HQhPYLuG9pd",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "gdJBChnLFS338xYjp9tE"
+        ],
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "manualConsumables": [],
+        "active": true,
+        "basePrice": 12,
+        "tenantId": "base_oficial",
+        "name": "Manicura en gel 1 solo color"
+      },
+      {
+        "id": "QMtMDRl0Q29faBOVBfSA",
+        "active": true,
+        "name": "Uñas poligel (base)",
+        "manualMaterials": [
+          "TC24NycqF9eWd6hjr33s",
+          "IILLtyPVQ8QHLDnHETa5",
+          "I4mqQsEBeXbjSsYzTb0s"
+        ],
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "basePrice": 15,
+        "manualConsumables": [],
+        "tenantId": "base_oficial"
+      },
+      {
+        "id": "Yy10tt4b9p1i2xIyPQy2",
+        "tenantId": "base_oficial",
+        "name": "Gel Builder Alargamiento con TIPS",
+        "manualMaterials": [
+          "6iImf5vtT2p8ac3NUkdU",
+          "TC24NycqF9eWd6hjr33s",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "2h1i8uZqZAGFFJSOy7ic",
+          "Ji26It111HQhPYLuG9pd",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "gdJBChnLFS338xYjp9tE",
+          "IILLtyPVQ8QHLDnHETa5"
+        ],
+        "basePrice": 35,
+        "manualConsumables": [],
+        "active": true,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        }
+      },
+      {
+        "id": "ZWAs2o6eKIpxNamvszKK",
+        "manualMaterials": [
+          "TC24NycqF9eWd6hjr33s",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "2h1i8uZqZAGFFJSOy7ic",
+          "Ji26It111HQhPYLuG9pd",
+          "QoV4rzm8ppEotkYuARa3",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "a5uNlvzZdGQNdZnfbHf1",
+          "gdJBChnLFS338xYjp9tE"
+        ],
+        "tenantId": "base_oficial",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "name": "Pedicure francesa",
+        "basePrice": 18,
+        "manualConsumables": [],
+        "active": true
+      },
+      {
+        "id": "gXXp0jxbULWJ0KiqETlQ",
+        "name": "Manicura con diseño",
+        "active": true,
+        "manualMaterials": [
+          "TC24NycqF9eWd6hjr33s",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "2h1i8uZqZAGFFJSOy7ic",
+          "Ji26It111HQhPYLuG9pd",
+          "QoV4rzm8ppEotkYuARa3",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "gdJBChnLFS338xYjp9tE"
+        ],
+        "tenantId": "base_oficial",
+        "manualConsumables": [],
+        "basePrice": 15,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        }
+      },
+      {
+        "id": "i293AlWHJiq14OsfJGrL",
+        "manualConsumables": [],
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "basePrice": 40,
+        "tenantId": "base_oficial",
+        "name": "Jelly spa 1 tono",
+        "active": true,
+        "manualMaterials": [
+          {
+            "qty": 5,
+            "materialId": "Zh82Cw63Qcysu0KexjT9"
+          }
+        ]
+      },
+      {
+        "id": "nt8roGjilLT0u9A3KI6P",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "basePrice": 30,
+        "manualConsumables": [],
+        "name": "Pedicure spa velo terapia 1 tono",
+        "tenantId": "base_oficial",
+        "active": true,
+        "manualMaterials": []
+      },
+      {
+        "id": "qDQVxadSHFzuVN7ZViEV",
+        "basePrice": 10,
+        "manualConsumables": [],
+        "name": "Pedicura limpieza",
+        "manualMaterials": [],
+        "active": true,
+        "tenantId": "base_oficial",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        }
+      },
+      {
+        "id": "qfLHDmOhW4SCrAUPtcYE",
+        "active": true,
+        "tenantId": "base_oficial",
+        "manualConsumables": [],
+        "name": "Pedicure 1 tono",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1767909992,
+          "nanoseconds": 694000000
+        },
+        "basePrice": 15,
+        "manualMaterials": [
+          "TC24NycqF9eWd6hjr33s",
+          "pqOj1ddR3CfU2ovFtrqF",
+          "2h1i8uZqZAGFFJSOy7ic",
+          "Ji26It111HQhPYLuG9pd",
+          "I4mqQsEBeXbjSsYzTb0s",
+          "a5uNlvzZdGQNdZnfbHf1",
+          "gdJBChnLFS338xYjp9tE"
+        ]
+      },
+      {
+        "id": "rdOUQLqFN0dy6UwlMF56",
+        "basePrice": 35,
+        "tenantId": "base_oficial",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1769131584,
+          "nanoseconds": 354000000
+        },
+        "manualMaterials": [
+          {
+            "materialId": "IILLtyPVQ8QHLDnHETa5",
+            "qty": 1
+          },
+          {
+            "materialId": "TuHLKtkugZHtQNk0EmAj",
+            "qty": 1
+          },
+          {
+            "materialId": "pqOj1ddR3CfU2ovFtrqF",
+            "qty": 1
+          },
+          {
+            "qty": 1,
+            "materialId": "Ji26It111HQhPYLuG9pd"
+          },
+          {
+            "materialId": "I4mqQsEBeXbjSsYzTb0s",
+            "qty": 1
+          },
+          {
+            "qty": 1,
+            "materialId": "gdJBChnLFS338xYjp9tE"
+          },
+          {
+            "qty": 21,
+            "materialId": "TC24NycqF9eWd6hjr33s"
+          },
+          {
+            "qty": 1,
+            "materialId": "2h1i8uZqZAGFFJSOy7ic"
+          }
+        ],
+        "manualConsumables": [],
+        "name": "Gel Builder Alargamiento con MOLDES",
+        "active": true
+      }
+    ],
+    "catalog_extras": [
+      {
+        "id": "1hpkCovaXYK5RxPsU8cx",
+        "price": 0.5,
+        "name": "Esponja",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "active": true,
+        "tenantId": "base_oficial"
+      },
+      {
+        "id": "1p9BtSPwEUQwavNdVyRx",
+        "tenantId": "base_oficial",
+        "name": "Efecto Tornasol (Uña)",
+        "priceSuggested": 0.5,
+        "price": 0.5,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "active": true
+      },
+      {
+        "id": "3khMd1YwipkB4zxonPI3",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "active": true,
+        "tenantId": "base_oficial",
+        "price": 0.5,
+        "name": "Mano alzada"
+      },
+      {
+        "id": "5SQSUcgMjUhjjtAAReuQ",
+        "tenantId": "base_oficial",
+        "active": true,
+        "price": 2.5,
+        "name": "Reconstrucción",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        }
+      },
+      {
+        "id": "I2wgArstPhjAzIdOzAEV",
+        "price": 0.3,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "active": true,
+        "priceSuggested": 0,
+        "tenantId": "base_oficial",
+        "name": "Efecto espejo diseño"
+      },
+      {
+        "id": "MR9uvh3aXCSCawrSmgMa",
+        "active": true,
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "name": "Relieve 1",
+        "price": 0.3,
+        "tenantId": "base_oficial"
+      },
+      {
+        "id": "SDHgF46GYtYWUb2nK8B7",
+        "active": true,
+        "name": "Flor 3D",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "price": 0.5,
+        "tenantId": "base_oficial"
+      },
+      {
+        "id": "eFExZYDrLzKJOFDbGzh2",
+        "tenantId": "base_oficial",
+        "name": "Encapsulado",
+        "priceSuggested": 0.5,
+        "appliesToCategories": [],
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768937791,
+          "nanoseconds": 837000000
+        },
+        "active": true,
+        "price": 0.5
+      },
+      {
+        "id": "nTn7AuaQDdSNMTVuNapE",
+        "active": true,
+        "name": "Efecto Aurora/ glaseado",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "tenantId": "base_oficial",
+        "price": 0.3
+      },
+      {
+        "id": "piBVg8EeireYg0mpitOr",
+        "tenantId": "base_oficial",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "priceSuggested": 0.5,
+        "name": "Efecto espejo completo",
+        "active": true,
+        "price": 0.5
+      },
+      {
+        "id": "rBssVth31daaVxsRpGAE",
+        "name": "Relieve 2",
+        "tenantId": "base_oficial",
+        "createdAt": {
+          "type": "firestore/timestamp/1.0",
+          "seconds": 1768181721,
+          "nanoseconds": 328000000
+        },
+        "price": 0.5,
+        "active": true
+      }
+    ]
+  }
+}
