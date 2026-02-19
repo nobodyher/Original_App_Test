@@ -298,22 +298,22 @@ export default function HistoryTab() {
   return (
     <div className="flex flex-col h-full bg-background animate-fade-in text-text-main">
       {/* ... Header ... */}
-      {/* Header code omitted for brevity in search context, ensuring correct replacement target */}
+
 
       {/* --- HEADER --- */}
-      <div className="border-b border-border bg-surface flex flex-col md:flex-row items-center justify-between p-4 md:px-8 shrink-0 relative z-40 gap-4 md:h-20">
-        <div className="flex items-center gap-4 w-full md:w-auto flex-wrap">
+      <div className="border-b border-border bg-surface flex flex-col md:flex-row items-center justify-between py-6 px-4 md:px-8 shrink-0 relative z-40 gap-4 md:h-20 md:rounded-xl md:border md:mx-6 md:mt-4">
+        <div className="flex items-center gap-2 w-full md:w-auto md:gap-4">
           {/* Search Input */}
-          <div className="relative w-full md:w-64">
+          <div className="relative flex-1 md:w-64 md:flex-none">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
               <Search size={16} />
             </div>
             <input
               type="text"
-              placeholder="Buscar (Cliente, Servicio, Staff)..."
+              placeholder="Buscar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-surface-highlight border border-border rounded-xl pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all placeholder:text-text-muted/70"
+              className="w-full bg-surface-highlight border border-border rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all placeholder:text-text-muted/70"
             />
           </div>
 
@@ -321,7 +321,7 @@ export default function HistoryTab() {
           <div className="relative">
              <button
                onClick={() => setIsEmployeeFilterOpen(!isEmployeeFilterOpen)}
-               className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all border ${
+               className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
                  selectedEmployeeIds.length > 0
                    ? "bg-primary-500 text-black border-primary-500 shadow-lg shadow-primary-500/20"
                    : "bg-surface-highlight text-text-muted hover:text-text-main border-border"
@@ -375,7 +375,7 @@ export default function HistoryTab() {
           {/* Deleted Items Toggle */}
           <button
             onClick={() => setShowDeleted(!showDeleted)}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all border ${
+            className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
               showDeleted
                 ? "bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20"
                 : "bg-surface-highlight text-text-muted hover:text-text-main border-border"
@@ -390,7 +390,7 @@ export default function HistoryTab() {
         </div>
 
         {/* Total del día */}
-        <div className="w-full md:w-auto flex flex-col items-center justify-center text-center md:items-end md:text-right">
+        <div className="w-full md:w-auto flex flex-col items-center justify-center text-center md:items-end md:text-right mt-2 md:mt-0">
           <span className="text-xs text-text-muted uppercase font-bold tracking-wider">
             Total Ventas
           </span>
@@ -406,8 +406,8 @@ export default function HistoryTab() {
         <div className="w-full md:w-[400px] flex flex-col shrink-0 relative z-30 md:sticky md:top-4 md:self-start h-fit bg-transparent">
           
           {/* Calendar Card Container */}
-          <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden mx-4 md:mx-0 md:mr-6">
-            <div className="p-4 md:p-6 border-b border-border flex items-center justify-between bg-surface relative z-10">
+          <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden mx-4 mt-4 md:mx-0 md:mt-0 md:mr-6">
+            <div className="pt-4 pb-2 px-4 md:p-6 border-b border-border flex items-center justify-between bg-surface relative z-10">
               <button
                 onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
                 className="p-2 hover:bg-white/5 rounded-full text-text-muted hover:text-white transition flex-shrink-0"

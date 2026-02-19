@@ -19,6 +19,10 @@ import StaffScreen from "./features/staff/StaffScreen";
 import FinanceScreen from "./features/finance/FinanceScreen";
 import OwnerScreen from "./features/admin/OwnerScreen";
 import LoginScreen from "./features/auth/LoginScreen";
+import MasterAdminScreen from "./features/admin/MasterAdminScreen";
+import SuspendedAccountScreen from "./features/auth/SuspendedAccountScreen";
+import DeletedAccountScreen from "./features/auth/DeletedAccountScreen";
+import { MASTER_ADMIN_UID } from "./constants/app";
 
 import { useAuth } from "./hooks/useAuth";
 import { useSalonData } from "./hooks/useSalonData";
@@ -38,7 +42,7 @@ const App = () => {
   }, []);
 
   const authReady = !!isDeviceAuthorized;
-  const { currentUser, users, loading, login, logout } =
+  const { currentUser, users, loading, isSuspended, userDocMissing, login, logout } =
     useAuth(authReady);
 
   const {
@@ -143,6 +147,24 @@ const App = () => {
     return <LoadingScreen />;
   }
 
+  // --- Cuenta Eliminada ---
+  // Si está autenticado en Firebase (isDeviceAuthorized) pero Firestore dice explícitamente que no existe doc
+  if (!loading && isDeviceAuthorized && userDocMissing) {
+    return <DeletedAccountScreen onLogout={logout} />;
+  }
+
+  // --- Bloqueo por Suspensión ---
+  // Si el tenant está suspendido y el usuario NO es el master admin, mostrar pantalla de bloqueo
+  if (isSuspended && currentUser && currentUser.id !== MASTER_ADMIN_UID) {
+    return (
+      <SuspendedAccountScreen
+        onLogout={() => {
+          logout();
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <div className="animate-fade-in-up">
@@ -221,6 +243,19 @@ const App = () => {
           />
 
           <Route
+            path="/saas-control"
+            element={
+              <MasterAdminRoute currentUser={currentUser}>
+                <MasterAdminScreen 
+                  showNotification={showNotification} 
+                  currentUser={currentUser}
+                  onLogout={logout}
+                />
+              </MasterAdminRoute>
+            }
+          />
+
+          <Route
             path="*"
             element={
               <Navigate
@@ -257,6 +292,30 @@ const ProtectedRoute = ({
   }
 
   if (currentUser.role !== allowedRole) {
+    return (
+      <Navigate
+        to={currentUser.role === "owner" ? "/admin" : "/staff"}
+        replace
+      />
+    );
+  }
+
+  return <>{children}</>;
+};
+
+// Componente para proteger la ruta del Master Admin
+const MasterAdminRoute = ({
+  currentUser,
+  children,
+}: {
+  currentUser: AppUser | null;
+  children: React.ReactNode;
+}) => {
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (currentUser.id !== MASTER_ADMIN_UID) {
     return (
       <Navigate
         to={currentUser.role === "owner" ? "/admin" : "/staff"}

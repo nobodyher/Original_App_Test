@@ -12,19 +12,21 @@ import {
   Menu,
   PanelLeftClose,
   DollarSign,
+  ShieldCheck,
 } from "lucide-react";
 import { UserAvatar } from "../ui/UserAvatar";
-import { usePhotoUpload } from "../../hooks/usePhotoUpload"; // Adjust path as needed
+import { usePhotoUpload } from "../../hooks/usePhotoUpload"; 
 import type { AppUser } from "../../types";
-import ThemeToggle from "../ui/ThemeToggle"; // Adjust path as needed
+import ThemeToggle from "../ui/ThemeToggle"; 
 import { useNavigate } from "react-router-dom";
+import { MASTER_ADMIN_UID } from "../../constants/app";
 
-export type ViewType = "dashboard" | "history" | "analytics" | "clients" | "admin" | "finance";
+export type ViewType = "dashboard" | "history" | "analytics" | "clients" | "admin" | "finance" | "saas-control";
 export type ConfigTab = "catalog" | "inventory" | "personal";
 
 interface SidebarProps {
   currentView: ViewType;
-  adminSubTab: ConfigTab;
+  adminSubTab: ConfigTab | null;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
   isAdminOpen: boolean;
@@ -51,6 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { isUploading, handlePhotoChange } = usePhotoUpload(currentUser, showNotification);
+  const isMasterAdmin = currentUser?.id === MASTER_ADMIN_UID;
 
   const handleAdminClick = () => {
     if (!isSidebarOpen) {
@@ -70,18 +73,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   /* 
      Navigation Logic:
      - For Finance: Navigate to /finance
-     - For Others: Navigate to /admin and set view
+     - For SaaS Control: Navigate to /saas-control
+     - For Others: Call onNavigate (handled by parent or navigate to /admin)
   */
   const handleNavigation = (view: ViewType) => {
     if (view === "finance") {
       navigate("/finance");
+    } else if (view === "saas-control") {
+      navigate("/saas-control");
     } else {
-      // If we are currently in /finance (or elsewhere), navigate to /admin
-      // In a real app, we might need to check current location.
-      // But OwnerScreen handles the view state for /admin.
-      // So calling onNavigate(view) should be enough if we are inside OwnerScreen.
-      // BUT if this Sidebar is used in FinanceScreen, onNavigate needs to redirect to /admin?
-      // Since props.onNavigate comes from parent, the parent should handle it.
       onNavigate(view);
     }
   };
@@ -203,6 +203,26 @@ const Sidebar: React.FC<SidebarProps> = ({
           />
           {isSidebarOpen && <span>Clientes</span>}
         </button>
+
+        {/* SaaS Control - Master Admin Only (MOVED HERE as requested) */}
+        {isMasterAdmin && (
+          <button
+            onClick={() => handleNavigation("saas-control")}
+            className={`w-full flex items-center ${isSidebarOpen ? "justify-start px-4 gap-4" : "justify-center px-2 gap-0"} py-3 rounded-xl transition-all duration-200 group text-sm font-semibold ${
+              currentView === "saas-control"
+                ? "bg-primary-900/20 text-primary-500 border-r-2 border-primary-500 rounded-r-none"
+                : "text-text-muted hover:bg-surface-highlight hover:text-text-main"
+            }`}
+            title={!isSidebarOpen ? "SaaS Control" : undefined}
+          >
+            <ShieldCheck
+              size={20}
+              strokeWidth={currentView === "saas-control" ? 2 : 1.5}
+              className={`transition-colors duration-200 ${currentView === "saas-control" ? "text-primary-500" : "text-text-dim group-hover:text-text-main"}`}
+            />
+            {isSidebarOpen && <span>SaaS Control</span>}
+          </button>
+        )}
 
         {/* Administration (Accordion) */}
         <div className="pt-2">

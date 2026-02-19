@@ -23,3 +23,5 @@ export const ACTIONS = {
   UPDATE: "update",
   DELETE: "delete",
 } as const;
+
+export const MASTER_ADMIN_UID = "UmfOxeIMw9gxLkXgeGoCamxBZ6p1";

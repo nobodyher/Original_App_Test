@@ -10,6 +10,8 @@ export const useAuth = (enabled: boolean) => {
   const [loading, setLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [currentTenantId, setCurrentTenantId] = useState<string | null>(null);
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [userDocMissing, setUserDocMissing] = useState(false);
 
   // 1. Fetch tenantId from the authenticated user's Firestore document
   useEffect(() => {
@@ -21,13 +23,18 @@ export const useAuth = (enabled: boolean) => {
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
           setCurrentTenantId(snapshot.data().tenantId || "");
+          setUserDocMissing(false);
         } else {
           console.warn("User document not found in Firestore");
           setCurrentTenantId("");
+          setUserDocMissing(true);
         }
       } catch (e) {
         console.error("Error fetching user tenant:", e);
         setCurrentTenantId("");
+        // If error is permission denied, it might also mean deleted/invalid, 
+        // but let's be careful. For now, we assume it exists to avoid blocking 
+        // unless explicitly missing.
       }
     };
 
@@ -64,6 +71,31 @@ export const useAuth = (enabled: boolean) => {
         console.error("Error cargando usuarios:", error);
         setLoading(false);
       },
+    );
+
+    return () => unsub();
+  }, [enabled, currentTenantId]);
+
+  // 3. Real-time listener on the tenant document — detects suspension instantly
+  useEffect(() => {
+    if (!enabled || !currentTenantId) return;
+
+    const tenantRef = doc(db, "tenants", currentTenantId);
+    const unsub = onSnapshot(
+      tenantRef,
+      (snap) => {
+        if (snap.exists()) {
+          setIsSuspended(snap.data().status === "suspended");
+        } else {
+          // Tenant doc doesn't exist yet — treat as active
+          setIsSuspended(false);
+        }
+      },
+      (error) => {
+        // If we can't read the tenant doc (e.g. rules deny it), treat as active
+        console.warn("Could not read tenant status:", error);
+        setIsSuspended(false);
+      }
     );
 
     return () => unsub();
@@ -125,6 +157,8 @@ export const useAuth = (enabled: boolean) => {
     currentUser,
     users,
     loading,
+    isSuspended,
+    userDocMissing,
     login,
     logout,
   };

@@ -14,6 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import Sidebar from "../../components/layout/Sidebar";
+import MobileNavigation from "../../components/layout/MobileNavigation";
 import * as salonService from "../../services/salonService";
 import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import { useSalonContext } from "../../context/SalonContext";
@@ -346,10 +347,24 @@ const FinanceScreen: React.FC = () => {
           navigate("/admin");
         }}
         showNotification={showNotification}
+
+      />
+
+      <MobileNavigation 
+        currentUser={currentUser}
+        currentView="finance"
+        onNavigate={(view) => {
+          if (view !== "finance") {
+            localStorage.setItem("owner_currentView", view);
+            navigate("/admin");
+          }
+        }}
+        onLogout={handleLogout}
+        showNotification={showNotification}
       />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <main className="flex-1 overflow-y-auto relative bg-background scroll-smooth p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto relative bg-background scroll-smooth p-4 md:p-8 pt-24 md:pt-8">
           <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-fade-in-up">
             {/* Header with Title and Date */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 py-4 md:py-6">

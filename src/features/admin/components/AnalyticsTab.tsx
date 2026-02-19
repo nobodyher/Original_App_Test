@@ -310,8 +310,8 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                     borderRadius: "0.75rem",
                   }}
                   itemStyle={{ color: "#F1F5F9" }}
-                  formatter={(value: any) => [
-                    `$${Number(value).toFixed(2)}`,
+                  formatter={(value: number | undefined) => [
+                    `$${Number(value || 0).toFixed(2)}`,
                     "Ingresos",
                   ]}
                 />
@@ -387,8 +387,8 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ services }) => {
                           borderRadius: "0.75rem",
                         }}
                         itemStyle={{ color: "#F1F5F9" }}
-                        formatter={(value: any, name: any, props: any) => [
-                          `${value} ventas ($${props.payload.revenue.toFixed(
+                        formatter={(value: number | undefined, name: string | undefined, props: { payload?: { revenue: number } }) => [
+                          `${value} ventas ($${(props.payload?.revenue || 0).toFixed(
                             2,
                           )})`,
                           name,

@@ -23,6 +23,10 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'owner';
     }
 
+    function isMasterAdmin() {
+      return request.auth.uid == "UmfOxeIMw9gxLkXgeGoCamxBZ6p1";
+    }
+
     // Validaciones Multi-Tenant
     function isSameTenant() {
       return resource.data.tenantId == getUserTenantId();
@@ -35,60 +39,76 @@ service cloud.firestore {
     // --- REGLAS POR COLECCIÓN ---
 
     match /users/{userId} {
-      // Un usuario puede leer su propio perfil o perfiles de su mismo tenant
-      allow read: if isAuthenticated() && (userId == request.auth.uid || isSameTenant());
-      allow write: if isOwner() && (userId == request.auth.uid || isSameTenant()); 
+      // Un usuario puede leer su propio perfil o perfiles de su mismo tenant, master admin puede leer todo
+      allow read: if isAuthenticated() && (userId == request.auth.uid || isSameTenant() || isMasterAdmin());
+      allow write: if (isOwner() && (userId == request.auth.uid || isSameTenant())) || isMasterAdmin(); 
     }
 
     match /services/{serviceId} {
-      allow read: if isAuthenticated() && isSameTenant();
+      allow read: if (isAuthenticated() && isSameTenant()) || isMasterAdmin();
       allow create: if isAuthenticated() && isCreatingSameTenant();
-      allow update, delete: if isOwner() && isSameTenant();
+      allow update, delete: if (isOwner() && isSameTenant()) || isMasterAdmin();
     }
 
     match /expenses/{expenseId} {
-      allow read: if isAuthenticated() && isSameTenant();
+      allow read: if (isAuthenticated() && isSameTenant()) || isMasterAdmin();
       allow create: if isAuthenticated() && isCreatingSameTenant();
-      allow update, delete: if isOwner() && isSameTenant();
+      allow update, delete: if (isOwner() && isSameTenant()) || isMasterAdmin();
     }
 
     match /clients/{clientId} {
-      allow read: if isAuthenticated() && isSameTenant();
+      allow read: if (isAuthenticated() && isSameTenant()) || isMasterAdmin();
       allow create: if isAuthenticated() && isCreatingSameTenant();
       allow update: if isAuthenticated() && isSameTenant();
-      allow delete: if isOwner() && isSameTenant();
+      allow delete: if (isOwner() && isSameTenant()) || isMasterAdmin();
     }
 
     // Unified inventory collection (replaces consumables and chemical_products)
     match /inventory/{id} {
-      allow read: if isAuthenticated() && isSameTenant();
+      allow read: if (isAuthenticated() && isSameTenant()) || isMasterAdmin();
       allow create: if isAuthenticated() && isCreatingSameTenant();
       allow update: if isAuthenticated() && isSameTenant() && isCreatingSameTenant();
-      allow delete: if isOwner() && isSameTenant();
+      allow delete: if (isOwner() && isSameTenant()) || isMasterAdmin();
 
       // Inventory history subcollection
       match /history/{historyId} {
-        allow read: if isAuthenticated();
-        allow write: if isAuthenticated();
+        // Enforce same-tenant access via parent document check (costly but safe)
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/inventory/$(id)).data.tenantId == getUserTenantId() ||
+          isMasterAdmin()
+        );
+        allow write: if isAuthenticated() && (
+          get(/databases/$(database)/documents/inventory/$(id)).data.tenantId == getUserTenantId() ||
+          isMasterAdmin()
+        );
       }
     }
 
     match /catalog_services/{id} {
-      allow read: if isAuthenticated() && isSameTenant();
+      allow read: if (isAuthenticated() && isSameTenant()) || isMasterAdmin();
       // Write requires owner AND same tenant — prevents cross-tenant catalog writes
       allow create: if isOwner() && isCreatingSameTenant();
-      allow update, delete: if isOwner() && isSameTenant();
+      allow update, delete: if (isOwner() && isSameTenant()) || isMasterAdmin();
     }
 
     match /catalog_extras/{id} {
-      allow read: if isAuthenticated() && isSameTenant();
+      allow read: if (isAuthenticated() && isSameTenant()) || isMasterAdmin();
       allow create: if isOwner() && isCreatingSameTenant();
-      allow update, delete: if isOwner() && isSameTenant();
+      allow update, delete: if (isOwner() && isSameTenant()) || isMasterAdmin();
     }
 
     match /meta/{docId} {
       allow read: if isAuthenticated();
       allow write: if isOwner();
+    }
+
+    // Tenants — Lectura restringida al propio tenant o master admin
+    match /tenants/{tenantId} {
+      allow read: if isAuthenticated() && (
+        tenantId == getUserTenantId() || 
+        isMasterAdmin()
+      );
+      allow write: if isMasterAdmin();
     }
 
     // Regla de denegación total por defecto — ninguna colección no listada es accesible

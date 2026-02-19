@@ -1,23 +1,29 @@
 import React from "react";
-import { TrendingUp } from "lucide-react";
+import { DashboardSkeleton } from "./Skeleton";
 
 const LoadingScreen: React.FC = () => {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center overflow-hidden relative">
-      {/* Background Blobs - Void Style */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50vh] h-[50vh] bg-primary-900/20 rounded-full blur-[100px] animate-pulse" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50vh] h-[50vh] bg-primary-800/10 rounded-full blur-[100px] animate-pulse delay-700" />
-
-      <div className="relative z-10 text-center">
-        <div className="inline-flex items-center justify-center p-6 bg-surface/40 backdrop-blur-xl rounded-[2rem] shadow-[0_0_30px_rgba(6,182,212,0.2)] border border-white/10 mb-6 ">
-          <TrendingUp className="text-primary-500 animate-bounce" size={56} />
+    <div className="flex h-screen bg-bg-main overflow-hidden animate-in fade-in duration-300">
+      {/* Sidebar Mockup (Desktop) */}
+      <div className="hidden md:flex flex-col w-52 bg-surface border-r border-border shrink-0 p-4 relative z-20">
+        <div className="h-8 w-32 bg-surface-highlight rounded-lg animate-pulse mb-8 ml-2 mt-2" />
+        <div className="space-y-2">
+           {[1, 2, 3, 4, 5, 6].map((i) => (
+             <div key={i} className="h-12 w-full bg-surface-highlight rounded-xl animate-pulse opacity-60" />
+           ))}
         </div>
-        <p className="text-text-main text-lg font-medium tracking-wide animate-pulse">
-          Iniciando sistema...
-        </p>
+        <div className="mt-auto pt-4 border-t border-border">
+            <div className="h-14 w-full bg-surface-highlight rounded-xl animate-pulse" />
+        </div>
+      </div>
+
+      {/* Main Content Mockup */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+           <DashboardSkeleton />
+        </div>
       </div>
     </div>
   );
 };
-
 export default LoadingScreen;
