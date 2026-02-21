@@ -557,7 +557,7 @@ const FinanceScreen: React.FC = () => {
                 {/* Financial Context Cards */}
                 <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Card A: Fondo de Reposición */}
-                  <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-surface p-5 flex items-center gap-4 group hover:border-cyan-500/40 transition-all">
+                  <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-cyan-500/20 bg-surface p-5 flex items-center gap-4 group hover:border-cyan-500/40 transition-all shadow-sm dark:shadow-none">
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent pointer-events-none" />
                     <div className="shrink-0 w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                       <Package size={22} className="text-cyan-400" />
@@ -572,7 +572,7 @@ const FinanceScreen: React.FC = () => {
                   </div>
 
                   {/* Card B: Ganancia Disponible */}
-                  <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-surface p-5 flex items-center gap-4 group hover:border-emerald-500/40 transition-all">
+                  <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-emerald-500/20 bg-surface p-5 flex items-center gap-4 group hover:border-emerald-500/40 transition-all shadow-sm dark:shadow-none">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
                     <div className="shrink-0 w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                       <Wallet size={22} className="text-emerald-400" />

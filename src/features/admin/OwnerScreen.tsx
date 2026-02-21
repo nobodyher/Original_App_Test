@@ -214,6 +214,7 @@ const OwnerScreen: React.FC = () => {
                     users={users}
                     currentUser={currentUser}
                     catalogServices={catalogServices}
+                    catalogExtras={catalogExtras}
                     inventoryItems={inventoryItems}
                     showNotification={showNotification}
                     onNavigateToInventory={handleNavigateToInventory}

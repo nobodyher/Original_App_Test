@@ -58,7 +58,7 @@ export interface SalonContextType {
   ) => Promise<void>;
   deleteCatalogService: (id: string) => Promise<void>;
 
-  addExtra: (name: string, price: number, tenantId: string) => Promise<void>;
+  addExtra: (name: string, price: number, tenantId: string) => Promise<string>;
   updateExtra: (id: string, data: Partial<CatalogExtra>) => Promise<void>;
   deleteExtra: (id: string) => Promise<void>;
 
@@ -69,6 +69,7 @@ export interface SalonContextType {
 const SalonContext = createContext<SalonContextType | undefined>(undefined);
 
 // 2. Hook Personalizado
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSalonContext = () => {
   const context = useContext(SalonContext);
   if (!context) {

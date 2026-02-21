@@ -21,17 +21,20 @@ import type {
   PaymentMethod,
   Service,
   
-  
+  CatalogExtra,
   CatalogService,
   CreateServicePayload,
   InventoryItem,
 } from "../types";
 import { 
   calculateTotalReplenishmentCost, 
+  calculateExtraReplenishmentCost,
   deductInventoryByRecipe, 
   restoreInventoryByRecipe, 
   batchDeductInventoryByRecipe,
   batchRestoreInventoryByRecipe,
+  batchDeductInventoryByExtraRecipe,
+  batchRestoreInventoryByExtraRecipe
 } from "./inventoryService";
 
 export interface NewServiceState {
@@ -75,6 +78,7 @@ export const addService = async (
   newService: NewServiceState,
   inventoryItems: InventoryItem[],
   catalogServices: CatalogService[],
+  catalogExtras: CatalogExtra[] = [],
   totalCost: number,
 ): Promise<void> => {
   if (!newService.client || newService.services.length === 0) {
@@ -90,12 +94,20 @@ export const addService = async (
   }
 
   const commissionPct = clamp(Number(currentUser.commissionPct || 0), 0, 100);
-  // Calcular el costo total de reposición sumando todos los servicios
-  const totalReposicion = calculateTotalReplenishmentCost(
+  // Calcular el costo total de reposición sumando todos los servicios y extras
+  const totalReposicionServicios = calculateTotalReplenishmentCost(
     newService.services,
     catalogServices,
     inventoryItems
   );
+  
+  const totalReposicionExtras = calculateExtraReplenishmentCost(
+    newService.extras,
+    catalogExtras,
+    inventoryItems
+  );
+
+  const totalReposicion = totalReposicionServicios + totalReposicionExtras;
 
   // 1. INICIAR EL LOTE (El Camión) 🚚
   const batch = writeBatch(db);
@@ -183,6 +195,17 @@ export const addService = async (
     );
   });
 
+  // Iteramos sobre los extras vendidos
+  newService.extras.forEach((extraItem) => {
+    batchDeductInventoryByExtraRecipe(
+      batch,
+      extraItem.extraId,
+      extraItem.extraName,
+      inventoryItems,
+      catalogExtras
+    );
+  });
+
   try {
     await batch.commit();
   } catch (error) {
@@ -199,6 +222,7 @@ export const updateService = async (
       oldService: Service;
       inventoryItems: InventoryItem[];
       catalogServices: CatalogService[];
+      catalogExtras?: CatalogExtra[];
   }
 ): Promise<void> => {
   // CASO A: Actualización simple (sin cambios de inventario)
@@ -218,6 +242,39 @@ export const updateService = async (
               inventoryContext.catalogServices
           );
       }
+  }
+
+  // 1.5 Restaurar stock de extras antiguos (Note: this is manual for now because updateService doesn't use batch, so we don't use batch functions)
+  if (inventoryContext.oldService && inventoryContext.oldService.extras && inventoryContext.catalogExtras) {
+      // ExtraItem has extraId and extraName. We'll need a utility to restore extras without batch if update doesn't use batch, OR use a batch!
+      // However the catalogExtras is not passed to restoreInventoryByRecipe, so we must be careful. Let's just create a batch here for extras or use a similar function.
+      // Wait, updateService isn't using a batch for `restoreInventoryByRecipe`. Oh, right, `restoreInventoryByRecipe` executes directly.
+      // I'll need to create `restoreInventoryByExtraRecipe` in `inventoryService`! Or I can use a batch for both. Let's use a batch for extras to be safe since I wrote the batch versions.
+      const batch = writeBatch(db);
+      for (const oldExtra of inventoryContext.oldService.extras) {
+          batchRestoreInventoryByExtraRecipe(
+              batch,
+              oldExtra.extraId,
+              oldExtra.extraName,
+              inventoryContext.inventoryItems,
+              inventoryContext.catalogExtras
+          );
+      }
+      
+      // 2.5 Aplicar nuevos descuentos extras
+      if (updated.extras) {
+          for (const newExtra of updated.extras) {
+              batchDeductInventoryByExtraRecipe(
+                  batch,
+                  newExtra.extraId,
+                  newExtra.extraName,
+                  inventoryContext.inventoryItems,
+                  inventoryContext.catalogExtras
+              );
+          }
+      }
+      
+      await batch.commit();
   }
 
   // 2. Aplicar nuevos descuentos (si hay nuevos servicios)
@@ -256,6 +313,7 @@ export const softDeleteService = async (
     service: Service;
     inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
+    catalogExtras?: CatalogExtra[];
   }
 ): Promise<void> => {
   // Si hay contexto de inventario, restaurar antes de marcar como eliminado
@@ -271,6 +329,19 @@ export const softDeleteService = async (
         inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
+    }
+    
+    // Restaurar inventario de cada extra
+    if (inventoryContext.service.extras && inventoryContext.catalogExtras) {
+      for (const extraItem of inventoryContext.service.extras) {
+        batchRestoreInventoryByExtraRecipe(
+          batch,
+          extraItem.extraId,
+          extraItem.extraName,
+          inventoryContext.inventoryItems,
+          inventoryContext.catalogExtras
+        );
+      }
     }
     
     // Marcar como eliminado en el mismo batch
@@ -299,6 +370,7 @@ export const softDeleteServiceAdmin = async (
     service: Service;
     inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
+    catalogExtras?: CatalogExtra[];
   }
 ): Promise<void> => {
   // Si hay contexto de inventario, restaurar antes de marcar como eliminado
@@ -314,6 +386,19 @@ export const softDeleteServiceAdmin = async (
         inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
+    }
+    
+    // Restaurar inventario de cada extra
+    if (inventoryContext.service.extras && inventoryContext.catalogExtras) {
+      for (const extraItem of inventoryContext.service.extras) {
+        batchRestoreInventoryByExtraRecipe(
+          batch,
+          extraItem.extraId,
+          extraItem.extraName,
+          inventoryContext.inventoryItems,
+          inventoryContext.catalogExtras
+        );
+      }
     }
     
     // Marcar como eliminado en el mismo batch
@@ -341,6 +426,7 @@ export const permanentlyDeleteService = async (
     service: Service;
     inventoryItems: InventoryItem[];
     catalogServices: CatalogService[];
+    catalogExtras?: CatalogExtra[];
   }
 ): Promise<void> => {
   // Si hay contexto de inventario, restaurar antes de borrar permanentemente
@@ -356,6 +442,19 @@ export const permanentlyDeleteService = async (
         inventoryContext.inventoryItems,
         inventoryContext.catalogServices
       );
+    }
+    
+    // Restaurar inventario de cada extra
+    if (inventoryContext.service.extras && inventoryContext.catalogExtras) {
+      for (const extraItem of inventoryContext.service.extras) {
+        batchRestoreInventoryByExtraRecipe(
+          batch,
+          extraItem.extraId,
+          extraItem.extraName,
+          inventoryContext.inventoryItems,
+          inventoryContext.catalogExtras
+        );
+      }
     }
     
     // Borrar documento en el mismo batch

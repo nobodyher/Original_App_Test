@@ -71,7 +71,7 @@ interface OwnerConfigTabProps {
   ) => Promise<void>;
   deleteCatalogService: (id: string) => Promise<void>;
 
-  addExtra: (name: string, price: number, tenantId: string) => Promise<void>;
+  addExtra: (name: string, price: number, tenantId: string) => Promise<string>;
   updateExtra: (id: string, data: Partial<CatalogExtra>) => Promise<void>;
   deleteExtra: (id: string) => Promise<void>;
 }
@@ -180,6 +180,7 @@ const OwnerConfigTab: React.FC<OwnerConfigTabProps> = ({
     if (initialTab && initialTab !== activeTab) {
       setActiveTab(initialTab);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTab]);
 
   // ==========================================================================

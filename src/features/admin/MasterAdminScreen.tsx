@@ -107,7 +107,12 @@ const MasterAdminScreen: React.FC<MasterAdminScreenProps> = ({ showNotification,
         "catalog_extras"
       ];
 
-      const exportData: any = {
+      const exportData: { 
+        tenantId: string; 
+        salonName: string; 
+        exportedAt: string; 
+        data: Record<string, unknown[]> 
+      } = {
         tenantId,
         salonName,
         exportedAt: new Date().toISOString(),

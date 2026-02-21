@@ -23,7 +23,7 @@ interface CatalogManagerProps {
 
   // Extras Data & Actions
   catalogExtras: CatalogExtra[];
-  addExtra: (name: string, price: number) => Promise<void>;
+  addExtra: (name: string, price: number) => Promise<string>;
   updateExtra: (id: string, updates: Partial<CatalogExtra>) => Promise<void>;
   deleteExtra: (id: string) => Promise<void>;
 
@@ -90,6 +90,7 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({
         ) : (
           <ExtrasManager
             catalogExtras={catalogExtras}
+            inventoryItems={inventoryItems}
             currentUser={currentUser}
             addExtra={addExtra}
             updateExtra={updateExtra}

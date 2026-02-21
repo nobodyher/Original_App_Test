@@ -97,7 +97,21 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
 
   // Search States for Service Editor
   const [materialSearch, setMaterialSearch] = useState("");
+  const [isMaterialDropdownOpen, setIsMaterialDropdownOpen] = useState(false);
+  const materialDropdownRef = React.useRef<HTMLDivElement>(null);
 
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        materialDropdownRef.current &&
+        !materialDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsMaterialDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Service Form Tabs
   const [serviceFormTab, setServiceFormTab] = useState<
@@ -341,15 +355,18 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
     });
   };
 
-  const handleToggleMaterial = (materialId: string) => {
+  const handleAddMaterial = (materialId: string) => {
     setSelectedMaterials((prev) => {
       const exists = prev.some((m) => m.materialId === materialId);
-      if (exists) {
-        return prev.filter((m) => m.materialId !== materialId);
-      } else {
-        return [...prev, { materialId, qty: 0 }]; // Default 0 to force user input
-      }
+      if (exists) return prev; // Do nothing if already exists
+      return [...prev, { materialId, qty: 0 }];
     });
+  };
+
+  const handleRemoveMaterial = (materialId: string) => {
+    setSelectedMaterials((prev) =>
+      prev.filter((m) => m.materialId !== materialId)
+    );
   };
 
   const handleMaterialQtyChange = (materialId: string, qty: number) => {
@@ -882,16 +899,20 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
               {serviceFormTab === "materials" && (
                 <div className="space-y-6">
                   {/* Search Interface */}
-                  <div className="space-y-2 relative">
+                  <div className="space-y-2 relative" ref={materialDropdownRef}>
                     <label className="text-sm font-medium text-text-muted">
                       Buscar Material
                     </label>
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Buscar químico o consumible..."
+                        placeholder="Buscar material..."
                         value={materialSearch}
-                        onChange={(e) => setMaterialSearch(e.target.value)}
+                        onFocus={() => setIsMaterialDropdownOpen(true)}
+                        onChange={(e) => {
+                          setMaterialSearch(e.target.value);
+                          setIsMaterialDropdownOpen(true);
+                        }}
                         className="w-full pl-10 pr-4 py-3 bg-surface text-text-main border border-border rounded-xl transition-all duration-200 focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 outline-none shadow-sm"
                       />
                       <div className="absolute left-3 top-3.5 text-gray-400">
@@ -900,39 +921,63 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                     </div>
 
                     {/* Dropdown Results */}
-                    {materialSearch.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-surface border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                    {isMaterialDropdownOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-surface border border-border rounded-xl shadow-xl max-h-48 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                         {allMaterials
                           .filter((m) =>
                             m.name
                               .toLowerCase()
                               .includes(materialSearch.toLowerCase()),
                           )
-                          .slice(0, 5) // Limit to 5 results
-                          .map((material) => (
-                            <button
-                              key={`${material.type}-${material.id}`}
-                              onClick={() => {
-                                handleToggleMaterial(material.id);
-                                setMaterialSearch(""); // Clear search after selection
-                              }}
-                              className="flex items-center justify-between px-4 py-2 text-sm hover:bg-surface-highlight transition-colors group cursor-pointer border-b border-border last:border-0"
-                            >
-                              <div>
-                                <p className="font-medium text-text-main group-hover:text-primary-600 transition-colors">
-                                  {material.name}
-                                </p>
-                                <p className="text-xs text-text-muted">
-                                  ${material.cost.toFixed(3)} /{" "}
-                                  {material.unit}
-                                </p>
-                              </div>
-                              <Plus
-                                size={16}
-                                className="text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                              />
-                            </button>
-                          ))}
+                          .map((material) => {
+                            const isSelected = selectedMaterials.some(
+                              (m) => m.materialId === material.id,
+                            );
+
+                            return (
+                              <button
+                                key={`${material.type}-${material.id}`}
+                                onClick={() => {
+                                  if (!isSelected) {
+                                    handleAddMaterial(material.id);
+                                    setMaterialSearch("");
+                                    setIsMaterialDropdownOpen(false);
+                                  }
+                                }}
+                                className={`flex items-center justify-between px-4 py-2 text-sm transition-colors group border-b border-border last:border-0 w-full ${
+                                  isSelected
+                                    ? "bg-surface-highlight cursor-default"
+                                    : "hover:bg-surface-highlight cursor-pointer"
+                                }`}
+                              >
+                                <div className="text-left">
+                                  <p
+                                    className={`font-medium transition-colors ${
+                                      isSelected
+                                        ? "text-text-muted"
+                                        : "text-text-main group-hover:text-primary-600"
+                                    }`}
+                                  >
+                                    {material.name}
+                                  </p>
+                                  <p className="text-xs text-text-muted text-left">
+                                    ${material.cost.toFixed(3)} / {material.unit}
+                                  </p>
+                                </div>
+                                {isSelected ? (
+                                  <div className="flex items-center gap-1 text-xs text-emerald-500 font-bold bg-emerald-500/10 px-2 py-1 rounded-full">
+                                    <CheckCircle size={12} />
+                                    Ya seleccionado
+                                  </div>
+                                ) : (
+                                  <Plus
+                                    size={16}
+                                    className="text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  />
+                                )}
+                              </button>
+                            );
+                          })}
                         {allMaterials.filter((m) =>
                           m.name
                             .toLowerCase()
@@ -1009,7 +1054,7 @@ export const ServicesManager: React.FC<ServicesManagerProps> = ({
                               </div>
 
                               <button
-                                onClick={() => handleToggleMaterial(item.id)}
+                                onClick={() => handleRemoveMaterial(item.id)}
                                 className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                                 title="Eliminar"
                               >

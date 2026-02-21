@@ -13,10 +13,10 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  RefreshCw,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
-import { openNewInventoryUnit } from "../../../../services/inventoryService";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -52,6 +52,7 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
 
   // Alert Modal State
   const [alertConfig, setAlertConfig] = useState<{
@@ -69,24 +70,6 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     showCancel: false,
   });
 
-  // New State for "Reset Content" in Edit Mode
-  const [resetContent, setResetContent] = useState(false);
-
-  // Open Unit Modal State
-  const [openUnitConfig, setOpenUnitConfig] = useState<{
-      isOpen: boolean;
-      item: InventoryItem | null;
-  }>({
-      isOpen: false,
-      item: null
-  });
-  const [openUnitForm, setOpenUnitForm] = useState<{
-      reason: string;
-      notes: string;
-  }>({
-      reason: 'Ajuste manual',
-      notes: ''
-  });
 
   // Incident Modal State
   const [incidentModal, setIncidentModal] = useState<{
@@ -154,6 +137,19 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
     setCurrentPage(1);
   }, [searchTerm]);
 
+  // Handle click outside for custom unit dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isUnitDropdownOpen && !target.closest('.unit-dropdown-container')) {
+        setIsUnitDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isUnitDropdownOpen]);
+
   // Cost Per Unit Calculation
   const calculatedUnitCost = useMemo(() => {
     const price = parseFloat(String(formData.purchasePrice ?? 0)) || 0;
@@ -184,63 +180,12 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
       setFormData(initialFormState);
     }
     setIsModalOpen(true);
-    setResetContent(false); // Reset checkbox state on open
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingItem(null);
     setFormData(initialFormState);
-  };
-
-  const handleOpenUnit = (item: InventoryItem) => {
-    if (item.stock <= 0) {
-        setAlertConfig({
-            isOpen: true,
-            title: "Stock Insuficiente",
-            message: "No hay unidades selladas en stock para abrir.",
-            variant: "danger",
-            showCancel: false,
-        });
-        return;
-    }
-
-    setAlertConfig({
-        isOpen: true,
-        title: "Abrir Nueva Unidad",
-        message: `Se descontará 1 unidad del stock de "${item.name}" y se reiniciará su contenido de uso al máximo. ¿Confirmar?`,
-        variant: "info",
-        showCancel: true,
-        onConfirm: () => handleSimpleOpenUnit(item)
-    });
-  };
-
-  const handleSimpleOpenUnit = async (item: InventoryItem) => {
-      if (!currentUser) return;
-      
-      // Close alert immediately to show action is happening, or keep it open?
-      // Better to close and show toast.
-      setAlertConfig(prev => ({ ...prev, isOpen: false }));
-
-      try {
-           // Import dinamico o uso directo si ya esta importado. 
-           // Asumimos que openNewInventoryUnit ya esta disponible o lo importamos.
-           // Revisando imports... esta importado como openNewInventoryUnit.
-           await openNewInventoryUnit(
-              item,
-              "Reposición (Uso normal)",
-              "", 
-              {
-                  uid: currentUser.id,
-                  displayName: currentUser.name,
-                  tenantId: currentUser.tenantId || ""
-              }
-          );
-          showNotification("Unidad abierta y contenido reseteado", "success");
-      } catch (error) {
-          console.error("Error opening unit:", error);
-          showNotification("Error al abrir unidad", "error");
-      }
   };
 
   const handleReportIncident = async (type: 'minor' | 'medium' | 'total' | 'damaged') => {
@@ -328,14 +273,10 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
         active: true,
       };
 
-      // Handle Content Reset Logic
-      if (editingItem && !resetContent) {
-           // If NOT resetting, preserve existing currentContent
-           payload.currentContent = editingItem.currentContent && editingItem.currentContent > 0 
-                ? editingItem.currentContent 
-                : content; 
+      // Ensure currentContent defaults to full content if not present and there is stock
+      if (payload.currentContent === undefined || payload.currentContent === null) {
+          payload.currentContent = content;
       }
-      // If resetContent is TRUE (or new item), payload.currentContent is already set to 'content' from above initialization
 
       // 3. EXECUTE ACTION
       if (editingItem) {
@@ -575,14 +516,6 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                           >
                             <Edit2 size={18} />
                           </button>
-                          <button
-                            onClick={() => handleOpenUnit(item)}
-                            className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors border border-transparent hover:border-orange-200"
-                            title="Abrir Nueva Unidad"
-                          >
-                            <RefreshCw size={18} />
-                          </button>
-
                           {/* Incident Button - Owner Only */}
                           {currentUser?.role === 'owner' && (
                               <button
@@ -750,21 +683,61 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                   <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
                     Unidad de Medida
                   </label>
-                  <select
-                    value={formData.unit ?? "unid"}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="unid">Unidad (unid)</option>
-                    <option value="ml">Mililitros (ml)</option>
-                    <option value="g">Gramos (g)</option>
-                    <option value="kg">Kilogramos (kg)</option>
-                    <option value="L">Litros (L)</option>
-                    <option value="oz">Onzas (oz)</option>
-                    <option value="caja">Caja</option>
-                    <option value="par">Par</option>
-                    <option value="set">Set</option>
-                  </select>
+                  <div className="relative unit-dropdown-container">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsUnitDropdownOpen(!isUnitDropdownOpen);
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-300 dark:hover:border-gray-600"
+                    >
+                      <span>
+                        {formData.unit === "unid"
+                          ? "Unidad (unid)"
+                          : formData.unit === "ml"
+                          ? "Mililitros (ml)"
+                          : "Gramos (g)"}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-400 transition-transform duration-200 ${
+                          isUnitDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {/* Custom Dropdown Options */}
+                    {isUnitDropdownOpen && (
+                      <div className="absolute z-[60] mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <ul className="py-1">
+                          {[
+                            { id: "unid", label: "Unidad (unid)" },
+                            { id: "ml", label: "Mililitros (ml)" },
+                            { id: "g", label: "Gramos (g)" },
+                          ].map((option) => (
+                            <li key={option.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({ ...formData, unit: option.id });
+                                  setIsUnitDropdownOpen(false);
+                                }}
+                                className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-gray-900 dark:text-gray-100"
+                              >
+                                <span className={formData.unit === option.id ? "font-bold text-indigo-600 dark:text-indigo-400" : ""}>
+                                  {option.label}
+                                </span>
+                                {formData.unit === option.id && (
+                                  <Check size={16} className="text-indigo-600 dark:text-indigo-400" />
+                                )}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Calculator Feedback */}
@@ -815,23 +788,6 @@ export const InventoryManager: React.FC<InventoryManagerProps> = ({
                 </div>
               </div>
 
-              {editingItem && (
-                  <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-800 mt-4">
-                    <input
-                      type="checkbox"
-                      id="resetContentDetails"
-                      checked={resetContent}
-                      onChange={(e) => setResetContent(e.target.checked)}
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    />
-                    <label htmlFor="resetContentDetails" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                       ¿Resetear contenido al máximo?
-                       <span className="block text-xs text-gray-500 font-normal mt-0.5">
-                         Marca esto si el producto está nuevo/lleno (útil para correcciones).
-                       </span>
-                    </label>
-                  </div>
-              )}
 
             </div>
 

@@ -17,6 +17,7 @@ import type {
   
   
   ServiceItem,
+  ExtraItem,
   MaterialInput,
   InventoryItem,
 } from "../types";
@@ -127,7 +128,7 @@ export const deleteCatalogService = async (id: string): Promise<void> => {
 
 // Extras Management
 
-export const addExtra = async (name: string, price: number, tenantId: string): Promise<void> => {
+export const addExtra = async (name: string, price: number, tenantId: string): Promise<string> => {
   if (!name.trim() || price < 0) {
     throw new Error("Datos inválidos");
   }
@@ -136,7 +137,7 @@ export const addExtra = async (name: string, price: number, tenantId: string): P
     throw new Error("TenantId es requerido para crear un extra");
   }
 
-  await addDoc(collection(db, "catalog_extras"), {
+  const docRef = await addDoc(collection(db, "catalog_extras"), {
     name: name.trim(),
     price,
     priceSuggested: price,
@@ -144,6 +145,7 @@ export const addExtra = async (name: string, price: number, tenantId: string): P
     createdAt: serverTimestamp(),
     tenantId
   });
+  return docRef.id;
 };
 
 export const updateExtra = async (
@@ -206,6 +208,53 @@ export const calculateTotalReplenishmentCost = (
     // No consumables logic needed - removed
 
     totalCost += serviceCost;
+  }
+  return totalCost;
+};
+
+export const calculateExtraReplenishmentCost = (
+  extras: ExtraItem[],
+  catalogExtras: CatalogExtra[] = [],
+  inventoryItems: InventoryItem[] = []
+): number => {
+  let totalCost = 0;
+
+  for (const extra of extras) {
+    let extraCost = 0;
+    const catalogExtra = catalogExtras.find(
+      (ce) => ce.id === extra.extraId || 
+              ce.name?.toLowerCase() === extra.extraName.toLowerCase()
+    );
+
+    // 1. MATERIALES
+    let materialsToCalc: MaterialInput[] = [];
+    if (catalogExtra?.manualMaterials) {
+        materialsToCalc = catalogExtra.manualMaterials;
+    }
+
+    // Multiplicar por amount (uñas/sesiones si aplica, extras usualmente no multiplican los materiales base por el "nailsCount" sino que es 1 paquete por set, pero si "nailsCount" es relevante, podrías multiplicar por qty = material.qty * nailsCount. Dejaremos que use el qty de la receta como uso total del extra)
+    // Extra uses the recipe per extra application (so 1x recipe no matter nailsCount, or 1/10th per nail?). Let's stick to 1x recipe since extras are applied once to service.
+    for (const item of materialsToCalc) {
+        let materialId = "";
+        let qty = 1;
+
+        if (typeof item === 'string') {
+            materialId = item;
+        } else if (typeof item === 'object' && item !== null) {
+             materialId = item.id || item.materialId || "";
+             qty = item.quantity || item.qty || item.amount || 1;
+        }
+
+        const product = inventoryItems.find(p => p.id === materialId || p.originalId === materialId);
+        if (product) {
+             const yieldTotal = product.content || 1;
+             const unitCost = yieldTotal > 0 ? (product.purchasePrice || 0) / yieldTotal : 0;
+             // Here we just add the cost of the material formula
+             extraCost += unitCost * qty;
+        }
+    }
+
+    totalCost += extraCost;
   }
   return totalCost;
 };
@@ -438,6 +487,71 @@ export const batchDeductInventoryByRecipe = (
   });
 };
 
+export const batchDeductInventoryByExtraRecipe = (
+  batch: WriteBatch,
+  extraId: string,
+  extraName: string,
+  inventoryItems: InventoryItem[],
+  catalogExtras: CatalogExtra[] = []
+) => {
+  const catalogExtra = catalogExtras.find(
+    (e) => e.id === extraId || e.name.toLowerCase() === extraName.toLowerCase()
+  );
+
+  let materialsToDeduct: MaterialInput[] = [];
+  
+  if (catalogExtra?.manualMaterials) {
+    materialsToDeduct = catalogExtra.manualMaterials;
+  }
+
+  if (materialsToDeduct.length === 0) return;
+
+  materialsToDeduct.forEach((item) => {
+      let materialId: string = "";
+      let qtyUsed = 0;
+
+      if (typeof item === 'string') {
+        materialId = item;
+        qtyUsed = 1; 
+      } else if (typeof item === 'object' && item !== null) {
+        materialId = item.id || item.materialId || ""; 
+        qtyUsed = item.quantity || item.qty || item.amount || 1;
+      }
+
+      if (!materialId) return;
+
+      let product = inventoryItems.find((p) => p.id === materialId || p.originalId === materialId);
+      
+      if (!product) {
+         const normalizedSearchName = materialId.toLowerCase().replace(/_/g, ' ').trim();
+         product = inventoryItems.find(p => {
+            const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+            return normalizedProductName === normalizedSearchName;
+         });
+      }
+
+      if (!product) return;
+
+      let currentContent = product.currentContent ?? product.content ?? 0;
+      let stock = product.stock;
+      const contentPerUnit = product.content || 1;
+      
+      currentContent -= qtyUsed;
+
+      while (currentContent < 0 && stock > 0) {
+          stock--;
+          currentContent += contentPerUnit;
+      }
+      
+      const productRef = doc(db, INVENTORY_COLLECTION, product.id);
+      
+      batch.update(productRef, {
+          stock: stock,
+          currentContent: parseFloat(currentContent.toFixed(2)),
+      });
+  });
+};
+
 
 
 
@@ -510,6 +624,71 @@ export const batchRestoreInventoryByRecipe = (
       }
 
       // 4. ACTUALIZAR BATCH
+      const productRef = doc(db, INVENTORY_COLLECTION, product.id);
+      
+      batch.update(productRef, {
+          stock: stock,
+          currentContent: parseFloat(currentContent.toFixed(2)),
+      });
+  });
+};
+
+export const batchRestoreInventoryByExtraRecipe = (
+  batch: WriteBatch,
+  extraId: string,
+  extraName: string,
+  inventoryItems: InventoryItem[],
+  catalogExtras: CatalogExtra[] = []
+) => {
+  const catalogExtra = catalogExtras.find(
+    (e) => e.id === extraId || e.name.toLowerCase() === extraName.toLowerCase()
+  );
+
+  let materialsToRestore: MaterialInput[] = [];
+  
+  if (catalogExtra?.manualMaterials) {
+    materialsToRestore = catalogExtra.manualMaterials;
+  }
+
+  if (materialsToRestore.length === 0) return;
+
+  materialsToRestore.forEach((item) => {
+      let materialId: string = "";
+      let qtyUsed = 0;
+
+      if (typeof item === 'string') {
+        materialId = item;
+        qtyUsed = 1;
+      } else if (typeof item === 'object' && item !== null) {
+        materialId = item.id || item.materialId || ""; 
+        qtyUsed = item.quantity || item.qty || item.amount || 1;
+      }
+
+      if (!materialId) return;
+
+      let product = inventoryItems.find((p) => p.id === materialId || p.originalId === materialId);
+      
+      if (!product) {
+         const normalizedSearchName = materialId.toLowerCase().replace(/_/g, ' ').trim();
+         product = inventoryItems.find(p => {
+            const normalizedProductName = p.name.toLowerCase().replace(/_/g, ' ').trim();
+            return normalizedProductName === normalizedSearchName;
+         });
+      }
+
+      if (!product) return;
+
+      let currentContent = product.currentContent ?? product.content ?? 0;
+      let stock = product.stock;
+      const contentPerUnit = product.content || 1;
+
+      currentContent += qtyUsed;
+
+      while (currentContent > contentPerUnit) {
+          stock++;
+          currentContent -= contentPerUnit;
+      }
+
       const productRef = doc(db, INVENTORY_COLLECTION, product.id);
       
       batch.update(productRef, {

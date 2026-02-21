@@ -118,6 +118,8 @@ export type CatalogExtra = {
   active: boolean;
   tenantId?: string;
   createdAt?: Timestamp | null;
+  manualMaterials?: { materialId: string; qty: number }[]; // IDs de productos químicos y cantidad de uso
+  manualConsumables?: RecipeItem[]; // IDs y cantidades de consumibles seleccionados manualmente
 };
 
 

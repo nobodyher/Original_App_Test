@@ -20,7 +20,7 @@ import type {
   AppUser,
   Service,
   Expense,
-  
+  CatalogExtra,
   CatalogService,
   OwnerFilters,
   Toast,
@@ -39,14 +39,15 @@ interface OwnerDashboardProps {
   currentUser: AppUser | null;
   
   catalogServices: CatalogService[];
+  catalogExtras: CatalogExtra[];
   inventoryItems: InventoryItem[];
   
   showNotification: (message: string, type?: Toast["type"]) => void;
   onNavigateToInventory?: (tab: "inventory") => void;
   // Actions
   updateServiceCost: (id: string, cost: number) => Promise<void>;
-  softDeleteService: (id: string, userId?: string, inventoryContext?: { service: Service; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
-  permanentlyDeleteService: (id: string, inventoryContext?: { service: Service; inventoryItems: InventoryItem[]; catalogServices: CatalogService[] }) => Promise<void>;
+  softDeleteService: (id: string, userId?: string, inventoryContext?: { service: Service; inventoryItems: InventoryItem[]; catalogServices: CatalogService[]; catalogExtras?: CatalogExtra[] }) => Promise<void>;
+  permanentlyDeleteService: (id: string, inventoryContext?: { service: Service; inventoryItems: InventoryItem[]; catalogServices: CatalogService[]; catalogExtras?: CatalogExtra[] }) => Promise<void>;
   restoreDeletedService: (id: string) => Promise<void>;
 }
 
@@ -59,6 +60,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   currentUser,
   
   catalogServices,
+  catalogExtras,
   inventoryItems,
   
   showNotification,
@@ -140,6 +142,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               service: serviceToDelete,
               inventoryItems,
               catalogServices,
+              catalogExtras,
             });
             showNotification("Servicio eliminado e inventario restaurado");
           } else {
@@ -159,6 +162,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               service: serviceToDelete,
               inventoryItems,
               catalogServices,
+              catalogExtras,
             });
             showNotification("Servicio eliminado e inventario restaurado");
           } else {
@@ -384,7 +388,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
       {/* Premium Stats Cards - Banking Style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {/* Revenue Card - Surface with simple border */}
-        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+        <div className="bg-surface border border-gray-200 dark:border-white/10 rounded-[2rem] p-3 md:p-6 shadow-sm dark:shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
             <DollarSign className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>
@@ -430,7 +434,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Expenses Card - Surface with simple border */}
-        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+        <div className="bg-surface border border-gray-200 dark:border-white/10 rounded-[2rem] p-3 md:p-6 shadow-sm dark:shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
             <CreditCard className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>
@@ -455,7 +459,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Replenishment Card - Surface with simple border */}
-        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
+        <div className="bg-surface border border-gray-200 dark:border-white/10 rounded-[2rem] p-3 md:p-6 shadow-sm dark:shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
             <Package className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>
@@ -480,7 +484,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
         </div>
 
         {/* Net Profit Card - Surface with simple border */}
-        <div className="bg-surface border border-white/10 rounded-[2rem] p-3 md:p-6 shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ring-4 ring-white/5">
+        <div className="bg-surface border border-gray-200 dark:border-white/10 rounded-[2rem] p-3 md:p-6 shadow-sm dark:shadow-none relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ring-4 ring-gray-100 dark:ring-white/5">
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10 text-current z-0 pointer-events-none group-hover:scale-110 transition-transform">
             <Wallet className="w-16 h-16 md:w-24 md:h-24 text-text-muted" />
           </div>

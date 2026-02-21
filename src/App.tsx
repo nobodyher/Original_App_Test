@@ -220,10 +220,9 @@ const App = () => {
                     salonService.addService(
                       user,
                       data,
-                      
-                      
                       items,
                       catalogServices,
+                      catalogExtras,
                       total,
                     )
                   }
